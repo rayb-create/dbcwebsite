@@ -5,7 +5,7 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager 
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase App instance
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
