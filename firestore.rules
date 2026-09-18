@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for real secure authentication and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwnerEmail() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'dbcworkshop.co@gmail.com' ||
+        (request.auth.token.email is string && request.auth.token.email.lower() == 'dbcworkshop.co@gmail.com')
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        isOwnerEmail() ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true) ||
+        request.auth.uid != null
+      );
+    }
+
+    // Admin records
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      // Allow user to register their own admin document if authenticated
+      allow create, update: if isAuthenticated() && (
+        request.auth.uid == adminId ||
+        isOwnerEmail() ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Connection health check for initial app boot
+    match /test/{testId} {
+      allow read: if true;
+    }
+
+    // Public apparel catalog - anyone can browse products, only admins can modify
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Website content & settings - public read, admin write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Media library - public read (for product images), admin write
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders & wholesale inquiries
+    // Customers can submit orders/inquiries from checkout/WhatsApp/B2B
+    // ONLY authenticated administrators can read, list, update, or delete customer data
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "DBC Clothing Workshop",
+  "description": "B2B & B2C Algerian clothing workshop specializing in premium heavyweight hoodies, joggers, long-sleeve tees, and customized apparel with nationwide delivery across all 69 Wilayas and built-in store SEO management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

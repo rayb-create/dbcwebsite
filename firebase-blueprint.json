@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DBC Workshop Database Blueprint",
+  "description": "Firestore schema, entities, and access control for DBC Workshop Clothing Atelier",
+  "entities": {
+    "admins": {
+      "description": "Registered and authorized administrators of the DBC Workshop manager",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "role": { "type": "string", "enum": ["admin", "owner"], "default": "admin" },
+        "displayName": { "type": "string", "required": false },
+        "createdAt": { "type": "string", "required": true }
+      }
+    },
+    "products": {
+      "description": "Workshop apparel catalog including hoodies, joggers, tracksuits, thermal tees",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "subtitle": { "type": "string", "required": false },
+        "price": { "type": "number", "required": true },
+        "b2bPrice": { "type": "number", "required": false },
+        "category": { "type": "string", "required": true },
+        "fabric": { "type": "string", "required": true },
+        "description": { "type": "string", "required": true },
+        "images": { "type": "array", "items": { "type": "string" }, "required": true },
+        "colors": { "type": "array", "required": true },
+        "sizes": { "type": "array", "items": { "type": "string" }, "required": true },
+        "inStock": { "type": "boolean", "default": true },
+        "stock": { "type": "number", "default": 50 },
+        "isFeatured": { "type": "boolean", "default": false },
+        "isNew": { "type": "boolean", "default": false },
+        "isPublished": { "type": "boolean", "default": true },
+        "weightGsm": { "type": "number", "required": false },
+        "minOrderB2B": { "type": "number", "required": false },
+        "updatedAt": { "type": "string", "required": false }
+      }
+    },
+    "orders": {
+      "description": "Customer orders and B2B wholesale inquiries across 69 Algerian Wilayas",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orderNumber": { "type": "string", "required": true },
+        "customerName": { "type": "string", "required": true },
+        "phone": { "type": "string", "required": true },
+        "wilayaCode": { "type": "string", "required": true },
+        "wilayaName": { "type": "string", "required": true },
+        "commune": { "type": "string", "required": false },
+        "address": { "type": "string", "required": true },
+        "deliveryMethod": { "type": "string", "enum": ["home", "desk"], "required": true },
+        "paymentMethod": { "type": "string", "enum": ["cod", "baridimob", "ccp"], "required": true },
+        "items": { "type": "array", "required": true },
+        "subtotal": { "type": "number", "required": true },
+        "shippingCost": { "type": "number", "required": true },
+        "total": { "type": "number", "required": true },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"], "default": "pending" },
+        "trackingNumber": { "type": "string", "required": false },
+        "carrier": { "type": "string", "required": false },
+        "notes": { "type": "string", "required": false },
+        "createdAt": { "type": "string", "required": true },
+        "updatedAt": { "type": "string", "required": false }
+      }
+    },
+    "settings": {
+      "description": "Store contact details, hero showcase, shipping pricing, SEO parameters",
+      "fields": {
+        "storeName": { "type": "string", "required": true },
+        "tagline": { "type": "string", "required": false },
+        "phone": { "type": "string", "required": true },
+        "whatsappNumber": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "address": { "type": "string", "required": true },
+        "city": { "type": "string", "required": true },
+        "heroImage": { "type": "string", "required": false },
+        "ogImage": { "type": "string", "required": false },
+        "seoTitle": { "type": "string", "required": false },
+        "seoDescription": { "type": "string", "required": false },
+        "announcementText": { "type": "string", "required": false },
+        "deliveryRates": { "type": "object", "required": false },
+        "defaultHomeRate": { "type": "number", "default": 800 },
+        "defaultDeskRate": { "type": "number", "default": 450 }
+      }
+    },
+    "media": {
+      "description": "Persistently stored uploaded photos and assets for products and site content",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "url": { "type": "string", "required": true },
+        "mimeType": { "type": "string", "required": true },
+        "sizeBytes": { "type": "number", "required": false },
+        "uploadedBy": { "type": "string", "required": true },
+        "createdAt": { "type": "string", "required": true }
+      }
+    }
+  },
+  "accessControl": {
+    "products": {
+      "read": "public",
+      "write": "admin_only"
+    },
+    "settings": {
+      "read": "public",
+      "write": "admin_only"
+    },
+    "orders": {
+      "create": "public",
+      "read": "admin_only",
+      "update": "admin_only",
+      "delete": "admin_only"
+    },
+    "media": {
+      "read": "public",
+      "write": "admin_only"
+    },
+    "admins": {
+      "read": "admin_only",
+      "write": "admin_only"
+    }
+  }
+}
