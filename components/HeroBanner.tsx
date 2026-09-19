@@ -145,7 +145,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 </button>
               )}
             </div>
-         
+           )}         
 
           {/* Bottom Bar: Discrete Campaign Brand Cue & Smooth Scroll to Written Info */}
           <div className="flex items-center justify-between pb-2">
