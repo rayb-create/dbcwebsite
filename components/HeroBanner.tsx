@@ -14,6 +14,7 @@ import {
 import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
 import { CoverPhotoModal } from './CoverPhotoModal';
+import { useAuth } from '../context/AuthContext';
 
 interface HeroBannerProps {
   onExploreCollection: () => void;
@@ -26,6 +27,7 @@ interface HeroBannerProps {
   currentLanguage: Language;
   storeSettings: StoreSettings;
   mediaAssets?: MediaAsset[];
+  isAdmin?: Boolean;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -38,7 +40,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   currentLanguage,
   storeSettings,
   mediaAssets = [],
+  isAdmin: propIsAdmin,
 }) => {
+  const { isAdmin: authIsAdmin } = useAuth();
+  const isAdmin = propIsAdmin ?? authIsAdmin;
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
   const [justUploadedToast, setJustUploadedToast] = useState(false);
@@ -116,8 +121,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <span className="font-semibold tracking-wider uppercase">{t.b2bB2cBadge}</span>
             </div>
 
-            {/* Quick Cover Adjustment Trigger for owner/admin */}
-            <div className="flex items-center gap-2">
+            {/* Quick Cover Adjustment Trigger for owner/admin ONLY */}
+            {isAdmin && (
+              <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsCoverModalOpen(true)}
@@ -139,7 +145,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 </button>
               )}
             </div>
-          </div>
+          )}
 
           {/* Bottom Bar: Discrete Campaign Brand Cue & Smooth Scroll to Written Info */}
           <div className="flex items-center justify-between pb-2">
@@ -278,7 +284,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       )}
 
       {/* 4. Website Picture Cover Management Modal */}
-      <CoverPhotoModal
+      {isAdmin && (
+        <CoverPhotoModal
         isOpen={isCoverModalOpen}
         onClose={() => setIsCoverModalOpen(false)}
         currentImage={storeSettings.heroImage || ''}
@@ -309,6 +316,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         mediaAssets={mediaAssets}
         currentLanguage={currentLanguage}
       />
+      )}
     </div>
   );
 };
