@@ -27,7 +27,7 @@ interface HeroBannerProps {
   currentLanguage: Language;
   storeSettings: StoreSettings;
   mediaAssets?: MediaAsset[];
-  isAdmin?: Boolean;
+  isAdmin?: boolean;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -124,28 +124,29 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             {/* Quick Cover Adjustment Trigger for owner/admin ONLY */}
             {isAdmin && (
               <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsCoverModalOpen(true)}
-                className="px-3 py-1.5 bg-black/45 hover:bg-black/75 text-white/90 hover:text-white rounded-full text-[11px] font-mono flex items-center gap-1.5 shadow-md backdrop-blur-md border border-white/20 transition-colors cursor-pointer"
-                title={isArabic ? 'تعديل صورة الواجهة، وتحديد موضع التركيز' : 'Modifier la photo de couverture et le cadrage'}
-              >
-                <Camera className="w-3.5 h-3.5 text-[#C9A96E]" />
-                <span className="hidden sm:inline">{isArabic ? 'تعديل صورة الواجهة' : 'Photo de couverture'}</span>
-              </button>
-
-              {storeSettings.heroImage && (
                 <button
                   type="button"
-                  onClick={handleRemoveHeroImage}
-                  className="p-1.5 bg-black/45 hover:bg-rose-700/80 text-white/80 hover:text-white rounded-full text-[11px] font-mono shadow-md backdrop-blur-md border border-white/20 transition-colors cursor-pointer"
-                  title={isArabic ? 'استعادة الصورة الافتراضية' : 'Réinitialiser la photo'}
+                  onClick={() => setIsCoverModalOpen(true)}
+                  className="px-3 py-1.5 bg-black/45 hover:bg-black/75 text-white/90 hover:text-white rounded-full text-[11px] font-mono flex items-center gap-1.5 shadow-md backdrop-blur-md border border-white/20 transition-colors cursor-pointer"
+                  title={isArabic ? 'تعديل صورة الواجهة، وتحديد موضع التركيز' : 'Modifier la photo de couverture et le cadrage'}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Camera className="w-3.5 h-3.5 text-[#C9A96E]" />
+                  <span className="hidden sm:inline">{isArabic ? 'تعديل صورة الواجهة' : 'Photo de couverture'}</span>
                 </button>
-              )}
-            </div>
-           )}         
+
+                {storeSettings.heroImage && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveHeroImage}
+                    className="p-1.5 bg-black/45 hover:bg-rose-700/80 text-white/80 hover:text-white rounded-full text-[11px] font-mono shadow-md backdrop-blur-md border border-white/20 transition-colors cursor-pointer"
+                    title={isArabic ? 'استعادة الصورة الافتراضية' : 'Réinitialiser la photo'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Bottom Bar: Discrete Campaign Brand Cue & Smooth Scroll to Written Info */}
           <div className="flex items-center justify-between pb-2">
@@ -283,39 +284,39 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
-      {/* 4. Website Picture Cover Management Modal */}
+      {/* 4. Website Picture Cover Management Modal (Admin Only) */}
       {isAdmin && (
         <CoverPhotoModal
-        isOpen={isCoverModalOpen}
-        onClose={() => setIsCoverModalOpen(false)}
-        currentImage={storeSettings.heroImage || ''}
-        currentFocalPosition={focalPosition}
-        currentOverlayStrength={overlayStrength}
-        onSaveCover={(url, newFocalPos, newOverlayStr) => {
-          const updates: Partial<StoreSettings> = {
-            heroImage: url,
-            heroImages: url ? [url] : [],
-          };
-          if (newFocalPos) updates.heroFocalPosition = newFocalPos;
-          if (newOverlayStr) updates.heroOverlayStrength = newOverlayStr;
+          isOpen={isCoverModalOpen}
+          onClose={() => setIsCoverModalOpen(false)}
+          currentImage={storeSettings.heroImage || ''}
+          currentFocalPosition={focalPosition}
+          currentOverlayStrength={overlayStrength}
+          onSaveCover={(url, newFocalPos, newOverlayStr) => {
+            const updates: Partial<StoreSettings> = {
+              heroImage: url,
+              heroImages: url ? [url] : [],
+            };
+            if (newFocalPos) updates.heroFocalPosition = newFocalPos;
+            if (newOverlayStr) updates.heroOverlayStrength = newOverlayStr;
 
-          if (onUpdateHeroSettings) {
-            onUpdateHeroSettings(updates);
-          } else if (onUpdateHeroImage) {
-            onUpdateHeroImage(url);
-          }
+            if (onUpdateHeroSettings) {
+              onUpdateHeroSettings(updates);
+            } else if (onUpdateHeroImage) {
+              onUpdateHeroImage(url);
+            }
 
-          setToastText(
-            url 
-              ? (isArabic ? 'تم حفظ وتحديث صورة الواجهة بنجاح !' : 'Photo de couverture mise à jour avec succès !')
-              : (isArabic ? 'تمت استعادة الصورة الافتراضية' : 'Photo de couverture réinitialisée !')
-          );
-          setJustUploadedToast(true);
-          setTimeout(() => setJustUploadedToast(false), 3500);
-        }}
-        mediaAssets={mediaAssets}
-        currentLanguage={currentLanguage}
-      />
+            setToastText(
+              url 
+                ? (isArabic ? 'تم حفظ وتحديث صورة الواجهة بنجاح !' : 'Photo de couverture mise à jour avec succès !')
+                : (isArabic ? 'تمت استعادة الصورة الافتراضية' : 'Photo de couverture réinitialisée !')
+            );
+            setJustUploadedToast(true);
+            setTimeout(() => setJustUploadedToast(false), 3500);
+          }}
+          mediaAssets={mediaAssets}
+          currentLanguage={currentLanguage}
+        />
       )}
     </div>
   );
