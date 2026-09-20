@@ -6,10 +6,10 @@ import {
   Camera, 
   Trash2, 
   Check, 
-  ChevronDown,
-  Sparkles,
-  ShieldCheck,
-  Truck
+  ChevronDown, 
+  Sparkles, 
+  ShieldCheck, 
+  Truck 
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
@@ -43,7 +43,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   isAdmin: propIsAdmin,
 }) => {
   const { isAdmin: authIsAdmin } = useAuth();
-  const isAdmin = propIsAdmin ?? authIsAdmin;
+  // Ensure strict boolean evaluation: only authenticated administrators have admin privileges
+  const isAdmin = Boolean(propIsAdmin ?? authIsAdmin);
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
   const [justUploadedToast, setJustUploadedToast] = useState(false);
@@ -70,6 +71,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   const handleRemoveHeroImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    // Security check: non-admins cannot delete or reset the cover image
+    if (!isAdmin) return;
+
     if (onUpdateHeroSettings) {
       onUpdateHeroSettings({ heroImage: '', heroImages: [] });
     } else if (onUpdateHeroImage) {
@@ -165,7 +169,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <span className="font-semibold tracking-wider uppercase">{t.b2bB2cBadge}</span>
             </div>
 
-            {/* Quick Cover Adjustment Trigger for owner/admin ONLY */}
+            {/* Quick Cover Adjustment Trigger for authenticated owner/admin ONLY */}
             {isAdmin && (
               <div className="flex items-center gap-2">
                 <button
@@ -328,7 +332,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
-      {/* 4. Website Picture Cover Management Modal (Admin Only) */}
+      {/* 4. Website Picture Cover Management Modal (Strictly Admin Only) */}
       {isAdmin && (
         <CoverPhotoModal
           isOpen={isCoverModalOpen}
@@ -336,7 +340,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           currentImage={storeSettings.heroImage || ''}
           currentFocalPosition={focalPosition}
           currentOverlayStrength={overlayStrength}
+          isAdmin={isAdmin}
           onSaveCover={(url, newFocalPos, newOverlayStr) => {
+            // Additional security check: prevent saves if not admin
+            if (!isAdmin) return;
+
             const updates: Partial<StoreSettings> = {
               heroImage: url,
               heroImages: url ? [url] : [],
