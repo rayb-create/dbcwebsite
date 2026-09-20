@@ -500,7 +500,6 @@ export function App() {
 
   // Direct Product Order Trigger (e.g. from Product Card Quick Order)
   const handleQuickOrder = (product: Product) => {
-    const isWholesale = false;
     const defaultSize = product.sizes?.[0] || 'L';
     const defaultColor = product.colors?.[0] || 'Noir';
     handleAddToCart(product, defaultSize, defaultColor, 1);
