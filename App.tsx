@@ -25,30 +25,30 @@ import {
   Camera
 } from 'lucide-react';
 
-import { Product, CartItem, StoreSettings, Currency, MediaAsset, Order } from './types';
-import { PRODUCTS, INITIAL_STORE_SETTINGS, SEED_ORDERS } from './data/mockData';
-import { Language, TRANSLATIONS } from './data/i18n';
-import { formatPrice } from './utils/format';
-import { generateWhatsAppCheckoutUrl, generateWhatsAppCustomInquiryUrl } from './utils/whatsapp';
+import { Product, CartItem, StoreSettings, Currency, MediaAsset, Order } from './src/types';
+import { PRODUCTS, INITIAL_STORE_SETTINGS, SEED_ORDERS } from './src/data/mockData';
+import { Language, TRANSLATIONS } from './src/data/i18n';
+import { formatPrice } from './src/utils/format';
+import { generateWhatsAppCheckoutUrl, generateWhatsAppCustomInquiryUrl } from './src/utils/whatsapp';
 
 // Contexts
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './src/context/AuthContext';
 
 // Components
-import { Navbar } from './components/Navbar';
-import { HeroBanner } from './components/HeroBanner';
-import { ProductCard } from './components/ProductCard';
-import { ProductDetailModal } from './components/ProductDetailModal';
-import { CartDrawer } from './components/CartDrawer';
-import { WishlistModal } from './components/WishlistModal';
-import { ContactModal } from './components/ContactModal';
-import { B2BInquiryModal } from './components/B2BInquiryModal';
-import { OrderLookupModal } from './components/OrderLookupModal';
-import { AdminModal } from './components/AdminModal';
-import { AdminLogin } from './components/admin/AdminLogin';
-import { FloatingWhatsAppWidget } from './components/FloatingWhatsAppWidget';
-import { WorkshopStylistModal } from './components/WorkshopStylistModal';
-import { Footer } from './components/Footer';
+import { Navbar } from './src/components/Navbar';
+import { HeroBanner } from './src/components/HeroBanner';
+import { ProductCard } from './src/components/ProductCard';
+import { ProductDetailModal } from './src/components/ProductDetailModal';
+import { CartDrawer } from './src/components/CartDrawer';
+import { WishlistModal } from './src/components/WishlistModal';
+import { ContactModal } from './src/components/ContactModal';
+import { B2BInquiryModal } from './src/components/B2BInquiryModal';
+import { OrderLookupModal } from './src/components/OrderLookupModal';
+import { AdminModal } from './src/components/AdminModal';
+import { AdminLogin } from './src/components/admin/AdminLogin';
+import { FloatingWhatsAppWidget } from './src/components/FloatingWhatsAppWidget';
+import { WorkshopStylistModal } from './src/components/WorkshopStylistModal';
+import { Footer } from './src/components/Footer';
 
 export function App() {
   // Authentication & Admin Context
