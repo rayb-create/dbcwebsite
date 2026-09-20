@@ -13,7 +13,8 @@ import {
   ChevronDown,
   MessageCircle,
   Truck,
-  Package
+  Package,
+  CreditCard
 } from 'lucide-react';
 import { Currency, StoreSettings } from '../types';
 import { Language, TRANSLATIONS } from '../data/i18n';
@@ -86,77 +87,87 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-colors duration-200">
+    <header className="sticky top-0 z-40 w-full max-w-full bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-colors duration-200 overflow-hidden">
       {/* Top Algerian Delivery & Contact Bar */}
-      <div className="bg-[#1F1D1A] text-[#ECE7DF] px-4 py-1.5 text-xs font-mono tracking-wider flex items-center justify-between overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-2 mx-auto sm:mx-0">
-          <Truck className="w-3.5 h-3.5 text-[#C9A96E]" />
-          <span>{t.topbarDelivery}</span>
+      <div className="w-full bg-[#1F1D1A] text-[#ECE7DF] px-2.5 sm:px-4 py-1.5 text-xs font-mono tracking-wider flex items-center justify-between gap-2 overflow-hidden">
+        {/* Delivery Info */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-initial">
+          <Truck className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
+          <span className="truncate text-[10px] sm:text-xs">{t.topbarDelivery}</span>
         </div>
 
-        <div className="hidden sm:flex items-center gap-4 text-[11px]">
+        {/* Top Header Controls: Order Lookup (Delivery) & Contact Phone */}
+        <div className="flex items-center gap-1.5 sm:gap-4 text-[10px] sm:text-[11px] shrink-0">
           <button
             onClick={onOpenOrderLookup}
-            className="text-[#C9A96E] hover:text-white flex items-center gap-1.5 cursor-pointer font-bold transition-colors bg-[#332E27] px-2 py-0.5 rounded border border-[#C9A96E]/30"
+            className="text-[#C9A96E] hover:text-white flex items-center gap-1 sm:gap-1.5 cursor-pointer font-bold transition-colors bg-[#332E27] px-1.5 sm:px-2 py-0.5 rounded border border-[#C9A96E]/30"
+            title="Suivi de Commande & 69 Wilayas"
           >
-            <Package className="w-3.5 h-3.5 text-[#C9A96E]" />
-            <span>{t.navOrderLookup} (69 Wilayas)</span>
+            <Package className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C9A96E] shrink-0" />
+            <span>{t.navOrderLookup}</span>
+            <span className="hidden sm:inline">(69 Wilayas)</span>
           </button>
-          <span className="text-[#5C554A]">|</span>
-          <span className="text-[#8C8377]">
+
+          <span className="hidden sm:inline text-[#5C554A]">|</span>
+          <span className="hidden lg:inline text-[#8C8377]">
             Alger • Oran • Constantine • Sétif + 65 Wilayas
           </span>
-          <span className="text-[#5C554A]">|</span>
+          <span className="hidden sm:inline text-[#5C554A]">|</span>
+
           <button
             onClick={onOpenContact}
             className="text-[#ECE7DF] hover:text-[#C9A96E] flex items-center gap-1 cursor-pointer transition-colors"
+            title={t.navContact}
           >
-            <Phone className="w-3 h-3 text-[#C9A96E]" />
-            <span>{storeSettings.phone}</span>
+            <Phone className="w-3 h-3 text-[#C9A96E] shrink-0" />
+            <span className="hidden xs:inline sm:inline">{storeSettings.phone}</span>
           </button>
         </div>
       </div>
 
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-1.5 sm:gap-4">
           {/* Mobile menu trigger */}
-          <div className="flex items-center lg:hidden">
+          <div className="flex items-center lg:hidden shrink-0">
             <button
               id="mobile-menu-toggle-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#2C2825] hover:text-black focus:outline-none"
+              className="p-1.5 sm:p-2 text-[#2C2825] hover:text-black focus:outline-none"
               aria-label="Toggle Navigation Menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
             <button
               id="mobile-search-toggle-btn"
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 ml-1 text-[#2C2825] hover:text-black"
+              className="p-1.5 sm:p-2 text-[#2C2825] hover:text-black"
               aria-label="Search"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Brand Logo & Tagline */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => onSelectCategory('all')}>
-            <div className="w-10 h-10 bg-[#1F1D1A] text-white flex items-center justify-center rounded font-serif text-xl font-bold tracking-tighter shadow-sm border border-[#3D3730]">
+          <div 
+            className="flex items-center gap-1.5 sm:gap-3 cursor-pointer min-w-0 flex-1 lg:flex-initial" 
+            onClick={() => onSelectCategory('all')}
+          >
+            <div className="w-7 h-7 sm:w-10 sm:h-10 bg-[#1F1D1A] text-white flex items-center justify-center rounded font-serif text-sm sm:text-xl font-bold tracking-tighter shadow-sm border border-[#3D3730] shrink-0">
               DBC
             </div>
-            <div>
-              <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#1F1C19] block leading-none">
+            <div className="min-w-0">
+              <span className="font-serif text-sm sm:text-2xl font-bold tracking-tight text-[#1F1C19] block leading-none truncate">
                 DBC WORKSHOP
               </span>
-              <span className="text-[10px] font-mono tracking-widest text-[#8C6D3B] uppercase block mt-1">
-                Atelier de Confection • B2B & B2C Algérie
+              <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-[#8C6D3B] uppercase block mt-0.5 sm:mt-1 truncate max-w-[110px] sm:max-w-none">
+                Atelier de Confection • Algérie
               </span>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -181,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right Action Icons & Selectors */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
             {/* Desktop Search */}
             <div className="hidden md:flex items-center relative">
               <input
@@ -191,11 +202,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 placeholder={t.searchPlaceholder}
                 className="w-44 lg:w-56 pl-8 pr-3 py-1.5 text-xs font-sans bg-[#F2EDE4] border border-[#DDD4C5] rounded focus:outline-none focus:border-black focus:w-64 transition-all"
               />
-              <Search className="w-3.5 h-3.5 text-[#7C756B] absolute left-2.5" />
+              <Search className="w-3.5 h-3.5 text-[#7C756B] absolute left-2.5 rtl:left-auto rtl:right-2.5" />
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange('')}
-                  className="absolute right-2 text-[#7C756B] hover:text-black text-xs font-bold"
+                  className="absolute right-2 rtl:right-auto rtl:left-2 text-[#7C756B] hover:text-black text-xs font-bold"
                 >
                   ×
                 </button>
@@ -210,16 +221,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setLangDropdownOpen(!langDropdownOpen);
                   setCurrDropdownOpen(false);
                 }}
-                className="px-2 py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-xs font-mono flex items-center gap-1 cursor-pointer"
+                className="px-1.5 py-1 sm:px-2 sm:py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-[11px] sm:text-xs font-mono flex items-center gap-0.5 sm:gap-1 cursor-pointer"
                 title="Changer la langue / تغيير اللغة"
               >
-                <Globe className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8C6D3B]" />
                 <span className="uppercase font-bold">{currentLanguage}</span>
-                <ChevronDown className="w-3 h-3 text-[#7C756B]" />
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C756B]" />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 mt-1 w-44 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-44 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3 py-1 text-[10px] font-mono text-[#8C8377] uppercase border-b border-[#F0EAE1]">
                     Langue / اللغة
                   </div>
@@ -230,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onLanguageChange(lang.code);
                         setLangDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
+                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
                         currentLanguage === lang.code ? 'font-bold text-[#8C6D3B] bg-[#FAF8F5]' : 'text-[#2C2825]'
                       }`}
                     >
@@ -250,15 +261,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setCurrDropdownOpen(!currDropdownOpen);
                   setLangDropdownOpen(false);
                 }}
-                className="px-2 py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
+                className="px-1.5 py-1 sm:px-2 sm:py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-[11px] sm:text-xs font-mono font-bold flex items-center gap-0.5 sm:gap-1 cursor-pointer"
                 title="Devise / العملة"
               >
                 <span>{currency}</span>
-                <ChevronDown className="w-3 h-3 text-[#7C756B]" />
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C756B]" />
               </button>
 
               {currDropdownOpen && (
-                <div className="absolute right-0 mt-1 w-28 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-28 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3 py-1 text-[10px] font-mono text-[#8C8377] uppercase border-b border-[#F0EAE1]">
                     Devise
                   </div>
@@ -269,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onCurrencyChange(c);
                         setCurrDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
+                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
                         currency === c ? 'font-bold text-[#8C6D3B] bg-[#FAF8F5]' : 'text-[#2C2825]'
                       }`}
                     >
@@ -281,21 +292,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Order Lookup Tracker Trigger */}
+            {/* Desktop Order Lookup Tracker Trigger */}
             <button
               id="navbar-order-lookup-btn"
               onClick={onOpenOrderLookup}
-              className="px-2.5 py-1 bg-white hover:bg-[#F2EDE4] text-[#1F1C19] border border-[#DDD4C5] rounded text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+              className="hidden sm:flex px-2.5 py-1 bg-white hover:bg-[#F2EDE4] text-[#1F1C19] border border-[#DDD4C5] rounded text-xs font-mono items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
               title="Suivi de Commande & Livraison 69 Wilayas"
             >
               <Truck className="w-3.5 h-3.5 text-[#8C6D3B]" />
               <span className="hidden md:inline">{t.navOrderLookup}</span>
             </button>
 
-            {/* Contact Trigger */}
+            {/* Desktop Contact Trigger */}
             <button
               onClick={onOpenContact}
-              className="p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors cursor-pointer"
+              className="hidden sm:flex p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors cursor-pointer"
               title={t.navContact}
             >
               <Phone className="w-5 h-5" />
@@ -305,28 +316,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="navbar-wishlist-btn"
               onClick={onOpenWishlist}
-              className="p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative cursor-pointer"
+              className="p-1.5 sm:p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative cursor-pointer"
               title="Favoris"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#8C6D3B] text-white text-[10px] font-mono font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#8C6D3B] text-white text-[9px] sm:text-[10px] font-mono font-bold rounded-full flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
             </button>
 
-            {/* Cart Icon */}
+            {/* Cart / Shop Icon */}
             <button
               id="navbar-cart-btn"
               onClick={onOpenCart}
-              className="p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-2 cursor-pointer font-mono text-xs"
+              className="p-1.5 sm:p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-1.5 sm:gap-2 cursor-pointer font-mono text-xs"
               title={t.cartTitle}
             >
               <div className="relative">
-                <ShoppingBag className="w-5 h-5" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
@@ -419,28 +430,55 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Language and Currency Selectors */}
-          <div className="pt-3 border-t border-[#E8E2D8] space-y-2">
-            <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5 text-[#8C6D3B]" />
-              <span>Langue / Language</span>
+          <div className="pt-3 border-t border-[#E8E2D8] space-y-3">
+            <div>
+              <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
+                <Globe className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <span>Langue / Language</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      onLanguageChange(lang.code);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`py-1.5 px-2 rounded text-xs font-mono text-center cursor-pointer ${
+                      currentLanguage === lang.code
+                        ? 'bg-[#1F1D1A] text-white font-bold'
+                        : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
+                    }`}
+                  >
+                    {lang.native.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => {
-                    onLanguageChange(lang.code);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`py-1.5 px-2 rounded text-xs font-mono text-center cursor-pointer ${
-                    currentLanguage === lang.code
-                      ? 'bg-[#1F1D1A] text-white font-bold'
-                      : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
-                  }`}
-                >
-                  {lang.native.split(' ')[0]}
-                </button>
-              ))}
+
+            <div>
+              <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <span>Devise / Currency</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {CURRENCIES.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      onCurrencyChange(c);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`py-1.5 px-2 rounded text-xs font-mono text-center cursor-pointer ${
+                      currency === c
+                        ? 'bg-[#1F1D1A] text-white font-bold'
+                        : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
+                    }`}
+                  >
+                    {c} {c === 'DZD' ? '(د.ج)' : ''}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
