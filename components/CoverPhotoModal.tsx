@@ -24,6 +24,7 @@ interface CoverPhotoModalProps {
   onSaveCover: (imageUrl: string, focalPosition?: string, overlayStrength?: 'subtle' | 'medium' | 'dark') => void;
   mediaAssets?: MediaAsset[];
   currentLanguage: Language;
+  isAdmin?: boolean;
 }
 
 const PRESET_COVERS = [
@@ -58,6 +59,7 @@ export const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
   onSaveCover,
   mediaAssets = [],
   currentLanguage,
+  isAdmin = true,
 }) => {
   const isArabic = currentLanguage === 'ar';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +88,13 @@ export const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
     }
   }, [isOpen, currentImage, currentFocalPosition, currentOverlayStrength]);
 
+  // If not admin, the modal cannot be rendered
+  if (!isAdmin || !isOpen) {
+    return null;
+  }
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
@@ -107,6 +115,7 @@ export const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    if (!isAdmin) return;
     e.preventDefault();
     setIsDragging(false);
     const files = e.dataTransfer.files;
@@ -128,455 +137,409 @@ export const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
   };
 
   const handleApplyUrl = () => {
+    if (!isAdmin) return;
     if (customUrlInput.trim()) {
       setSelectedUrl(customUrlInput.trim());
     }
   };
 
   const handleConfirmSave = () => {
+    if (!isAdmin) return;
     onSaveCover(selectedUrl, focalPosition, overlayStrength);
     onClose();
   };
 
   const handleRemoveCover = () => {
+    if (!isAdmin) return;
     onSaveCover('');
     setSelectedUrl('');
     setShowRemoveConfirm(false);
     onClose();
   };
 
-  const filteredLibrary = mediaAssets.filter((asset) => 
-    asset.name.toLowerCase().includes(libraryFilter.toLowerCase())
+  // Filter media library to images
+  const availableMedia = mediaAssets.filter(
+    (m) => m.type === 'image' && (!libraryFilter || m.title.toLowerCase().includes(libraryFilter.toLowerCase()))
   );
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div 
-        className={`bg-white rounded-xl border border-[#DDD4C5] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
-          isArabic ? 'text-right' : 'text-left'
-        }`}
-        dir={isArabic ? 'rtl' : 'ltr'}
-      >
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[#FAF8F5] border border-[#DDD4C5] rounded-xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[#EAE3D5] flex items-center justify-between bg-[#FAF8F5]">
+        <div className="px-6 py-4 border-b border-[#EAE3D5] flex items-center justify-between bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#F2EDE4] border border-[#DDD4C5] flex items-center justify-center text-[#8C6D3B]">
+            <div className="w-8 h-8 rounded-lg bg-[#FAF8F5] border border-[#DDD4C5] flex items-center justify-center text-[#8C6D3B]">
               <ImageIcon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-                {isArabic ? 'تعديل أو إضافة أو إزالة صورة الواجهة' : 'Modifier, Ajouter ou Supprimer la Couverture'}
-              </h3>
-              <p className="text-[11px] text-[#7C756B] font-mono">
-                {isArabic 
-                  ? 'الصورة المعروضة في أعلى واجهة المتجر والبانر الرئيسي' 
-                  : 'Image principale du haut de page de votre boutique DBC'}
+              <h2 className="text-sm font-serif font-bold text-[#1F1D1A]">
+                {isArabic ? 'تعديل صورة غلاف واجهة المتجر' : 'Photo de Couverture du Site'}
+              </h2>
+              <p className="text-[11px] font-mono text-[#787167]">
+                {isArabic ? 'صورة الحملة الإعلانية الرئيسية لواجهة DBC Workshop' : 'Image de campagne principale du Hero Banner'}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#7C756B] hover:bg-[#EAE3D5] hover:text-[#1F1C19] transition-colors cursor-pointer"
-            title={isArabic ? 'إغلاق' : 'Fermer'}
+            className="p-1.5 text-[#787167] hover:text-black hover:bg-[#F2EDE4] rounded-lg transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Body: Scrollable */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* Current / Selected Preview Card */}
-          <div className="bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E1D5] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-[#5A5247] uppercase font-bold flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-[#8C6D3B]" />
-                <span>{isArabic ? 'المعاينة المباشرة' : 'Aperçu actuel'}</span>
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
+          {/* Real-time Live Preview */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-mono font-bold text-[#4A4338] uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#C9A96E]" />
+                {isArabic ? 'معاينة الغلاف' : 'Aperçu Direct'}
               </span>
-
-              {selectedUrl ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded">
-                  <Check className="w-3 h-3" />
-                  <span>{isArabic ? 'صورة محددة' : 'Image prête'}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 bg-[#EAE3D5] text-[#7C756B] rounded">
-                  {isArabic ? 'لا توجد صورة واجهة' : 'Aucune photo'}
+              {selectedUrl && (
+                <span className="text-[11px] font-mono text-[#8C6D3B] bg-[#F2EDE4] px-2 py-0.5 rounded">
+                  {selectedUrl.startsWith('data:') ? 'Image importée (optimisée)' : 'Image URL'}
                 </span>
               )}
             </div>
 
-            {selectedUrl ? (
-              <div className="space-y-3">
-                <div className="relative aspect-[16/9] sm:aspect-[21/9] rounded-lg overflow-hidden border border-[#DDD4C5] bg-[#1E1B18] shadow-inner group flex items-center justify-center">
+            <div 
+              className="relative w-full aspect-[16/9] rounded-lg overflow-hidden border border-[#DDD4C5] bg-[#1F1D1A] shadow-inner flex items-center justify-center"
+            >
+              {selectedUrl ? (
+                <>
                   <img
                     src={selectedUrl}
-                    alt="Aperçu de la couverture"
+                    alt="Preview"
+                    className="w-full h-full object-cover transition-all"
                     style={{ objectPosition: focalPosition }}
-                    className="w-full h-full object-cover select-none transition-all duration-300"
                   />
-                  {/* Dynamic overlay scrim simulation */}
-                  {overlayStrength === 'subtle' && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/15 pointer-events-none" />
-                  )}
-                  {overlayStrength === 'medium' && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25 pointer-events-none" />
-                  )}
-                  {overlayStrength === 'dark' && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/40 pointer-events-none" />
-                  )}
-
-                  {/* Sample typography simulation on preview */}
-                  <div className="absolute bottom-3 left-4 text-left pointer-events-none">
-                    <span className="text-[10px] font-mono tracking-wider text-[#C9A96E] uppercase font-bold drop-shadow">
-                      DBC Workshop Algérie
+                  {/* Applied Overlay Preview */}
+                  <div 
+                    className={`absolute inset-0 pointer-events-none transition-opacity ${
+                      overlayStrength === 'subtle' 
+                        ? 'bg-gradient-to-t from-black/35 via-black/10 to-black/20'
+                        : overlayStrength === 'dark'
+                        ? 'bg-gradient-to-t from-black/70 via-black/30 to-black/55'
+                        : 'bg-gradient-to-t from-black/50 via-black/15 to-black/35'
+                    }`}
+                  />
+                  {/* Subtle mock overlay text */}
+                  <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between pointer-events-none text-white/90">
+                    <div>
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#C9A96E] block">
+                        DBC WORKSHOP
+                      </span>
+                      <span className="text-xs font-serif font-bold block truncate">
+                        {isArabic ? 'مشغل الخياطة والستريتوير' : 'Atelier de Confection Algérie'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono bg-black/50 px-2 py-0.5 rounded border border-white/20">
+                      {focalPosition}
                     </span>
-                    <h4 className="font-serif text-sm sm:text-base font-bold text-white drop-shadow">
-                      Aperçu Plein Écran
-                    </h4>
                   </div>
-
-                  {/* Floating controls over the preview */}
-                  <div className="absolute top-3 right-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowRemoveConfirm(true)}
-                      className="px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded text-[11px] font-mono flex items-center gap-1 shadow cursor-pointer transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>{isArabic ? 'إزالة' : 'Retirer'}</span>
-                    </button>
-                  </div>
+                </>
+              ) : (
+                <div className="text-center p-6 text-white/40">
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs font-mono">
+                    {isArabic ? 'سيتم استخدام الصورة الافتراضية للموقع' : 'La photo par défaut sera utilisée'}
+                  </p>
                 </div>
-
-                {/* Focal Position & Overlay Strength Configuration Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {/* Focal Position */}
-                  <div className="bg-white p-3 rounded-lg border border-[#E8E1D5] space-y-2">
-                    <label className="text-xs font-mono font-bold text-[#5A5247] flex items-center justify-between">
-                      <span>{isArabic ? 'موضع التركيز (Focal Point)' : 'Point de focalisation'}</span>
-                      <span className="text-[11px] font-normal text-[#8C6D3B]">{focalPosition}</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5 text-[11px] font-mono">
-                      {[
-                        { id: 'center', label: isArabic ? 'الوسط' : 'Centre' },
-                        { id: 'top', label: isArabic ? 'أعلى' : 'Haut' },
-                        { id: 'bottom', label: isArabic ? 'أسفل' : 'Bas' },
-                        { id: 'center top', label: isArabic ? 'وسط-أعلى' : 'Centre-Haut' },
-                        { id: 'left', label: isArabic ? 'يسار' : 'Gauche' },
-                        { id: 'right', label: isArabic ? 'يمين' : 'Droite' },
-                      ].map((pos) => (
-                        <button
-                          key={pos.id}
-                          type="button"
-                          onClick={() => setFocalPosition(pos.id)}
-                          className={`py-1 px-1.5 rounded text-center border transition-all cursor-pointer ${
-                            focalPosition === pos.id
-                              ? 'bg-[#1F1D1A] text-[#FAF8F5] border-[#1F1D1A] font-bold shadow-xs'
-                              : 'bg-[#FAF8F5] text-[#5A5247] border-[#DDD4C5] hover:border-[#8C6D3B]'
-                          }`}
-                        >
-                          {pos.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Overlay Strength */}
-                  <div className="bg-white p-3 rounded-lg border border-[#E8E1D5] space-y-2">
-                    <label className="text-xs font-mono font-bold text-[#5A5247] flex items-center justify-between">
-                      <span>{isArabic ? 'قوة التعتيم (Overlay)' : 'Voile de contraste'}</span>
-                      <span className="text-[11px] font-normal text-[#8C6D3B]">{overlayStrength}</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5 text-[11px] font-mono">
-                      {[
-                        { id: 'subtle', label: isArabic ? 'خفيف' : 'Léger' },
-                        { id: 'medium', label: isArabic ? 'متوسط' : 'Moyen' },
-                        { id: 'dark', label: isArabic ? 'داكن' : 'Sombre' },
-                      ].map((str) => (
-                        <button
-                          key={str.id}
-                          type="button"
-                          onClick={() => setOverlayStrength(str.id as 'subtle' | 'medium' | 'dark')}
-                          className={`py-1 px-1.5 rounded text-center border transition-all cursor-pointer ${
-                            overlayStrength === str.id
-                              ? 'bg-[#1F1D1A] text-[#FAF8F5] border-[#1F1D1A] font-bold shadow-xs'
-                              : 'bg-[#FAF8F5] text-[#5A5247] border-[#DDD4C5] hover:border-[#8C6D3B]'
-                          }`}
-                        >
-                          {str.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 border-2 border-dashed border-[#DDD4C5] rounded-lg text-center space-y-2">
-                <ImageIcon className="w-8 h-8 text-[#A8A196] mx-auto" />
-                <p className="text-xs text-[#7C756B] font-mono">
-                  {isArabic 
-                    ? 'لم يتم تحديد أي صورة واجهة حتى الآن. اختر خياراً من الخيارات بالأسفل.' 
-                    : 'Aucune photo de couverture active. Choisissez une méthode ci-dessous.'}
-                </p>
-              </div>
-            )}
-
-            {/* Remove Confirmation Alert */}
-            {showRemoveConfirm && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs font-mono text-rose-900 flex items-center justify-between gap-3 animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{isArabic ? 'هل تريد بالتأكيد إزالة صورة الواجهة من الموقع؟' : 'Confirmer le retrait de la couverture ?'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowRemoveConfirm(false)}
-                    className="px-2.5 py-1 bg-white border border-rose-300 rounded hover:bg-rose-100 transition-colors cursor-pointer"
-                  >
-                    {isArabic ? 'إلغاء' : 'Annuler'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRemoveCover}
-                    className="px-2.5 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors cursor-pointer font-bold"
-                  >
-                    {isArabic ? 'نعم، إزالة' : 'Confirmer'}
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+
+          {/* Focal Position & Overlay Tuning */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white p-3.5 rounded-lg border border-[#EAE3D5]">
+            {/* Focal Position */}
+            <div>
+              <label className="text-xs font-mono font-bold text-[#4A4338] block mb-1.5 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <span>{isArabic ? 'نقطة تركيز الصورة (Focal)' : 'Cadrage / Point Focal'}</span>
+              </label>
+              <select
+                value={focalPosition}
+                onChange={(e) => setFocalPosition(e.target.value)}
+                className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#DDD4C5] rounded text-xs font-mono focus:outline-none focus:border-black cursor-pointer"
+              >
+                <option value="center">{isArabic ? 'الوسط (تلقائي)' : 'Centre (Par défaut)'}</option>
+                <option value="top">{isArabic ? 'أعلى الصورة' : 'Haut'}</option>
+                <option value="bottom">{isArabic ? 'أسفل الصورة' : 'Bas'}</option>
+                <option value="center 30%">{isArabic ? 'أعلى الوسط (ملابس وجسم)' : 'Haut centré (30%)'}</option>
+                <option value="left">{isArabic ? 'يسار' : 'Gauche'}</option>
+                <option value="right">{isArabic ? 'يمين' : 'Droite'}</option>
+              </select>
+            </div>
+
+            {/* Overlay Strength */}
+            <div>
+              <label className="text-xs font-mono font-bold text-[#4A4338] block mb-1.5 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <span>{isArabic ? 'شدة التعتيم السينمائي' : 'Intensité du Dégradé'}</span>
+              </label>
+              <div className="grid grid-cols-3 gap-1">
+                {(['subtle', 'medium', 'dark'] as const).map((strength) => (
+                  <button
+                    key={strength}
+                    type="button"
+                    onClick={() => setOverlayStrength(strength)}
+                    className={`py-1.5 px-2 rounded text-[11px] font-mono text-center border cursor-pointer transition-colors ${
+                      overlayStrength === strength
+                        ? 'bg-[#1F1D1A] text-white border-black font-bold'
+                        : 'bg-[#FAF8F5] text-[#5A5247] border-[#DDD4C5] hover:bg-[#F2EDE4]'
+                    }`}
+                  >
+                    {strength === 'subtle' 
+                      ? (isArabic ? 'خفيف' : 'Subtil') 
+                      : strength === 'medium' 
+                      ? (isArabic ? 'متوسط' : 'Moyen') 
+                      : (isArabic ? 'داكن' : 'Foncé')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Remove Cover Alert Confirm */}
+          {showRemoveConfirm && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center gap-2 text-rose-800 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>
+                  {isArabic
+                    ? 'هل أنت متأكد من رغبتك في إزالة صورة الواجهة والعودة للصورة الافتراضية؟'
+                    : 'Confirmer la suppression de la photo personnalisée ?'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRemoveConfirm(false)}
+                  className="px-2.5 py-1 bg-white border border-rose-300 text-rose-700 rounded text-xs hover:bg-rose-100 cursor-pointer"
+                >
+                  {isArabic ? 'إلغاء' : 'Annuler'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  className="px-3 py-1 bg-rose-600 text-white rounded text-xs font-bold hover:bg-rose-700 cursor-pointer"
+                >
+                  {isArabic ? 'نعم، إزالة' : 'Supprimer'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Source Tabs */}
           <div>
-            <div className="flex items-center border-b border-[#DDD4C5] gap-2 pb-px overflow-x-auto text-xs font-mono">
+            <div className="flex items-center gap-1 border-b border-[#EAE3D5] mb-4">
               <button
                 type="button"
                 onClick={() => setActiveSourceTab('upload')}
-                className={`pb-2 px-3 flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
+                className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
                   activeSourceTab === 'upload'
-                    ? 'border-[#8C6D3B] text-[#8C6D3B] font-bold'
-                    : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-[#787167] hover:text-black'
                 }`}
               >
                 <UploadCloud className="w-3.5 h-3.5" />
-                <span>{isArabic ? 'رفع من الجهاز' : 'Depuis l’appareil'}</span>
+                <span>{isArabic ? 'رفع صورة من جهازك' : 'Télécharger'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveSourceTab('url')}
-                className={`pb-2 px-3 flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
+                className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
                   activeSourceTab === 'url'
-                    ? 'border-[#8C6D3B] text-[#8C6D3B] font-bold'
-                    : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-[#787167] hover:text-black'
                 }`}
               >
                 <LinkIcon className="w-3.5 h-3.5" />
-                <span>{isArabic ? 'رابط ويب (URL)' : 'Lien URL'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveSourceTab('library')}
-                className={`pb-2 px-3 flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-                  activeSourceTab === 'library'
-                    ? 'border-[#8C6D3B] text-[#8C6D3B] font-bold'
-                    : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
-                }`}
-              >
-                <Library className="w-3.5 h-3.5" />
-                <span>
-                  {isArabic ? 'مكتبة صور الورشة' : 'Médiathèque'} ({mediaAssets.length})
-                </span>
+                <span>{isArabic ? 'رابط مباشر' : 'Lien URL'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveSourceTab('presets')}
-                className={`pb-2 px-3 flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
+                className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
                   activeSourceTab === 'presets'
-                    ? 'border-[#8C6D3B] text-[#8C6D3B] font-bold'
-                    : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-[#787167] hover:text-black'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isArabic ? 'نماذج جاهزة' : 'Photos suggérées'}</span>
+                <span>{isArabic ? 'اقتراحات الأتيليه' : 'Modèles Studio'}</span>
               </button>
+
+              {mediaAssets.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveSourceTab('library')}
+                  className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
+                    activeSourceTab === 'library'
+                      ? 'border-black text-black'
+                      : 'border-transparent text-[#787167] hover:text-black'
+                  }`}
+                >
+                  <Library className="w-3.5 h-3.5" />
+                  <span>{isArabic ? 'مكتبة الوسائط' : 'Médiathèque'}</span>
+                  <span className="text-[10px] bg-[#EAE3D5] px-1.5 py-0.2 rounded-full">
+                    {availableMedia.length}
+                  </span>
+                </button>
+              )}
             </div>
 
-            {/* Tab 1: Upload from Device */}
+            {/* TAB 1: File Upload (Drag & Drop + Native input) */}
             {activeSourceTab === 'upload' && (
-              <div className="pt-4 space-y-3">
+              <div className="space-y-3">
                 <input
-                  ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  ref={fileInputRef}
                   onChange={handleFileChange}
+                  accept="image/png, image/jpeg, image/webp, image/jpg"
                   className="hidden"
                 />
 
                 <div
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                  className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-all ${
                     isDragging
-                      ? 'border-[#8C6D3B] bg-[#F4EFE6]'
-                      : 'border-[#DDD4C5] bg-[#FAF8F5] hover:border-[#8C6D3B] hover:bg-[#F2EDE4]'
+                      ? 'border-black bg-[#F2EDE4]'
+                      : 'border-[#DDD4C5] bg-white hover:border-[#8C6D3B] hover:bg-[#FAF8F5]'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-white border border-[#DDD4C5] flex items-center justify-center text-[#8C6D3B] mb-2.5 shadow-2xs">
-                    {isProcessing ? (
-                      <div className="w-5 h-5 border-2 border-[#8C6D3B] border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <UploadCloud className="w-6 h-6" />
-                    )}
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#FAF8F5] border border-[#DDD4C5] flex items-center justify-center text-[#8C6D3B]">
+                    <UploadCloud className="w-6 h-6" />
                   </div>
-                  <h4 className="font-serif text-sm font-bold text-[#1F1C19] mb-1">
-                    {isProcessing 
-                      ? (isArabic ? 'جاري ضغط وتحسين الصورة للسحابة...' : 'Optimisation et compression pour le cloud...')
-                      : (isArabic ? 'انقر لاختيار صورة من هاتفك أو حاسوبك' : 'Cliquez ou glissez-déposez une photo ici')}
-                  </h4>
-                  <p className="text-xs text-[#7C756B] font-mono max-w-sm leading-relaxed">
-                    {isArabic 
-                      ? 'يدعم صور JPG, PNG, WEBP (يتم تحسين الحجم تلقائياً لتوافق السحابة)' 
-                      : 'Formats acceptés : JPG, PNG, WEBP (compression automatique < 400 Ko)'}
+                  <p className="text-xs font-mono font-bold text-[#1F1D1A] mb-1">
+                    {isProcessing
+                      ? (isArabic ? 'جاري ضغط وتحسين الصورة...' : 'Traitement et compression en cours...')
+                      : isArabic
+                      ? 'انقر هنا لاختيار صورة، أو اسحب الملف وأفلته'
+                      : 'Glissez-déposez une photo ou cliquez pour parcourir'}
+                  </p>
+                  <p className="text-[11px] font-mono text-[#787167]">
+                    JPG, PNG, WebP • {isArabic ? 'يتم ضغط الصورة تلقائياً لسرعة تحميل فائقة' : 'Compression automatique pour performance mobile rapide'}
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs font-mono text-rose-700 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>{errorMessage}</span>
-                  </div>
+                  <p className="text-xs text-rose-600 font-mono">{errorMessage}</p>
                 )}
               </div>
             )}
 
-            {/* Tab 2: Web Image URL */}
+            {/* TAB 2: Direct URL input */}
             {activeSourceTab === 'url' && (
-              <div className="pt-4 space-y-3">
-                <label className="block text-xs font-mono text-[#7C756B] uppercase">
-                  {isArabic ? 'أدخل رابط صورة مباشر من الإنترنت' : 'Saisir l’URL directe d’une image'}
-                </label>
+              <div className="space-y-3">
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={customUrlInput}
                     onChange={(e) => setCustomUrlInput(e.target.value)}
                     placeholder="https://images.unsplash.com/..."
-                    className="flex-1 px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
+                    className="flex-1 px-3 py-2 bg-white border border-[#DDD4C5] rounded text-xs font-mono focus:outline-none focus:border-black"
                   />
                   <button
                     type="button"
                     onClick={handleApplyUrl}
-                    className="px-4 py-2 bg-[#1F1D1A] hover:bg-[#3D3730] text-white rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#1F1D1A] hover:bg-black text-white rounded text-xs font-mono font-bold cursor-pointer"
                   >
                     {isArabic ? 'معاينة' : 'Appliquer'}
                   </button>
                 </div>
-                <p className="text-[11px] text-[#8C8377] font-mono">
+                <p className="text-[11px] font-mono text-[#787167]">
                   {isArabic 
-                    ? 'مثال: رابط صورة من استضافة سحابية، Unsplash، أو موقعك الخارجي.' 
-                    : 'Astuce : Vous pouvez coller un lien Unsplash ou toute image hébergée en ligne.'}
+                    ? 'أدخل رابط مباشر لصورة عالية الدقة (Unsplash, Cloudinary, إلخ)' 
+                    : 'Entrez une URL directe d’image haute définition hébergée en ligne.'}
                 </p>
               </div>
             )}
 
-            {/* Tab 3: Media Library */}
+            {/* TAB 3: Atelier Presets */}
+            {activeSourceTab === 'presets' && (
+              <div className="grid grid-cols-2 gap-3">
+                {PRESET_COVERS.map((preset, idx) => {
+                  const isSelected = selectedUrl === preset.url;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedUrl(preset.url)}
+                      className={`group relative aspect-[16/10] rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-black ring-2 ring-black'
+                          : 'border-[#DDD4C5] hover:border-[#8C6D3B]'
+                      }`}
+                    >
+                      <img
+                        src={preset.url}
+                        alt={preset.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-2.5 flex flex-col justify-end text-white">
+                        <span className="text-[11px] font-serif font-bold leading-tight truncate">
+                          {isArabic ? preset.titleAr : preset.title}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[9px] font-mono text-[#C9A96E] flex items-center gap-0.5 mt-0.5">
+                            <Check className="w-3 h-3" />
+                            {isArabic ? 'محددة' : 'Sélectionnée'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TAB 4: Media Library */}
             {activeSourceTab === 'library' && (
-              <div className="pt-4 space-y-3">
+              <div className="space-y-3">
                 <input
                   type="text"
                   value={libraryFilter}
                   onChange={(e) => setLibraryFilter(e.target.value)}
-                  placeholder={isArabic ? 'البحث في مكتبة الصور...' : 'Filtrer les médias par nom...'}
-                  className="w-full px-3 py-1.5 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
+                  placeholder={isArabic ? 'بحث في وسائط المتجر...' : 'Filtrer les médias...'}
+                  className="w-full px-3 py-1.5 bg-white border border-[#DDD4C5] rounded text-xs font-mono focus:outline-none"
                 />
 
-                {filteredLibrary.length === 0 ? (
-                  <div className="p-6 border border-dashed border-[#DDD4C5] rounded-lg text-center text-xs font-mono text-[#7C756B]">
-                    {isArabic 
-                      ? 'لا توجد صور في مكتبة الورشة حالياً. يمكنك رفع صور من تبويب "رفع من الجهاز".' 
-                      : 'Aucun média disponible dans la bibliothèque. Téléversez-en un depuis l’onglet précédent.'}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-56 overflow-y-auto p-1">
-                    {filteredLibrary.map((asset) => {
-                      const isSelected = selectedUrl === asset.url;
-                      return (
-                        <div
-                          key={asset.id}
-                          onClick={() => setSelectedUrl(asset.url)}
-                          className={`relative aspect-video rounded-lg overflow-hidden border cursor-pointer group transition-all ${
-                            isSelected
-                              ? 'border-[#8C6D3B] ring-2 ring-[#8C6D3B]'
-                              : 'border-[#DDD4C5] hover:border-[#8C6D3B]'
-                          }`}
-                        >
-                          <img
-                            src={asset.url}
-                            alt={asset.name}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                            <span className="text-[10px] font-mono text-white truncate w-full">
-                              {asset.name}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-[#8C6D3B] text-white rounded-full flex items-center justify-center shadow">
-                              <Check className="w-3 h-3" />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab 4: Curated Workshop Samples */}
-            {activeSourceTab === 'presets' && (
-              <div className="pt-4 space-y-3">
-                <p className="text-xs text-[#7C756B] font-mono">
-                  {isArabic 
-                    ? 'اختر صورة من النماذج الحرفية الاحترافية المختارة خصيصاً لورشة الملابس DBC:' 
-                    : 'Sélectionnez une photo professionnelle de confection textile prête à l’emploi :'}
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {PRESET_COVERS.map((preset, idx) => {
-                    const isSelected = selectedUrl === preset.url;
+                <div className="grid grid-cols-3 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                  {availableMedia.map((media) => {
+                    const isSelected = selectedUrl === media.url;
                     return (
                       <div
-                        key={idx}
-                        onClick={() => setSelectedUrl(preset.url)}
-                        className={`p-2 rounded-lg border cursor-pointer transition-all flex items-center gap-3 ${
+                        key={media.id}
+                        onClick={() => setSelectedUrl(media.url)}
+                        className={`group relative aspect-video rounded border overflow-hidden cursor-pointer ${
                           isSelected
-                            ? 'border-[#8C6D3B] bg-[#F2EDE4] ring-1 ring-[#8C6D3B]'
-                            : 'border-[#DDD4C5] bg-white hover:border-[#8C6D3B] hover:bg-[#FAF8F5]'
+                            ? 'border-black ring-2 ring-black'
+                            : 'border-[#DDD4C5] hover:border-[#8C6D3B]'
                         }`}
                       >
-                        <div className="w-16 h-12 rounded overflow-hidden bg-[#EAE4D8] shrink-0">
-                          <img
-                            src={preset.url}
-                            alt={preset.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-serif text-xs font-bold text-[#1F1C19] truncate">
-                            {isArabic ? preset.titleAr : preset.title}
-                          </h5>
-                          <span className="text-[10px] text-[#8C6D3B] font-mono block">
+                        <img
+                          src={media.url}
+                          alt={media.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-mono">
+                          <span>
                             {isSelected ? (isArabic ? '✓ محددة حالياً' : '✓ Sélectionnée') : (isArabic ? 'انقر للتحديد' : 'Cliquer pour choisir')}
                           </span>
                         </div>
