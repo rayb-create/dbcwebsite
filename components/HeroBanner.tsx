@@ -45,9 +45,20 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   isSettingsLoaded = false,
 }) => {
   const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
-  // Normal unauthenticated visitors must NEVER see or access cover controls:
-  // Strictly require an authenticated user with verified admin privileges
-  const isAdmin = Boolean(currentUser && !authLoading && (propIsAdmin !== undefined ? propIsAdmin : authIsAdmin));
+
+  // Strict verified admin authorization check:
+  // Normal unauthenticated or public visitors must NEVER see or use cover controls.
+  // Requires:
+  // 1. Finished authentication loading (!authLoading)
+  // 2. Verified active authenticated user exists (currentUser)
+  // 3. User is authorized as admin in AuthContext (authIsAdmin === true)
+  // 4. If an explicit prop was provided, it must not be false (propIsAdmin !== false)
+  const isAdmin = Boolean(
+    !authLoading &&
+    currentUser &&
+    authIsAdmin === true &&
+    propIsAdmin !== false
+  );
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
   const [justUploadedToast, setJustUploadedToast] = useState(false);
