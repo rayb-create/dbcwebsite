@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full max-w-full bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-colors duration-200 overflow-hidden">
+    <header className="sticky top-0 z-50 w-full max-w-full bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-colors duration-200">
       {/* Top Algerian Delivery & Contact Bar */}
       <div className="w-full bg-[#1F1D1A] text-[#ECE7DF] px-2.5 sm:px-4 py-1.5 text-xs font-mono tracking-wider flex items-center justify-between gap-2 overflow-hidden">
         {/* Delivery Info */}
