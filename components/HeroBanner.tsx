@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
   MessageCircle, 
@@ -6,10 +6,10 @@ import {
   Camera, 
   Trash2, 
   Check, 
-  ChevronDown, 
-  Sparkles, 
-  ShieldCheck, 
-  Truck 
+  ChevronDown,
+  Sparkles,
+  ShieldCheck,
+  Truck
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
@@ -28,6 +28,7 @@ interface HeroBannerProps {
   storeSettings: StoreSettings;
   mediaAssets?: MediaAsset[];
   isAdmin?: boolean;
+  isSettingsLoaded?: boolean;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -41,10 +42,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   storeSettings,
   mediaAssets = [],
   isAdmin: propIsAdmin,
+  isSettingsLoaded = false,
 }) => {
-  const { isAdmin: authIsAdmin } = useAuth();
-  // Ensure strict boolean evaluation: only authenticated administrators have admin privileges
-  const isAdmin = Boolean(propIsAdmin ?? authIsAdmin);
+  const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
+  // Normal unauthenticated visitors must NEVER see or access cover controls:
+  // Strictly require an authenticated user with verified admin privileges
+  const isAdmin = Boolean(currentUser && !authLoading && (propIsAdmin !== undefined ? propIsAdmin : authIsAdmin));
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
   const [justUploadedToast, setJustUploadedToast] = useState(false);
@@ -61,7 +64,45 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   // Fallback fashion campaign visual for DBC Workshop if no custom photo uploaded yet
   const fallbackHeroImage = 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=2400&q=85';
-  const heroImageSrc = storeSettings.heroImage || fallbackHeroImage;
+
+  // Safety timeout if Firestore takes unusually long, so the hero doesn't remain blank indefinitely
+  const [settingsTimeout, setSettingsTimeout] = useState(false);
+  useEffect(() => {
+    if (isSettingsLoaded) return;
+    const timer = setTimeout(() => {
+      setSettingsTimeout(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [isSettingsLoaded]);
+
+  // Cover configuration is known when:
+  // - A custom heroImage is already populated (from localStorage or Firestore)
+  // - Or isSettingsLoaded is true
+  // - Or safety timeout reached
+  const isCoverDetermined = Boolean(
+    (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0) ||
+    isSettingsLoaded ||
+    settingsTimeout
+  );
+
+  // Only resolve to fallbackHeroImage if settings have loaded and there genuinely is NO saved cover.
+  // If settings are still loading, leave heroImageSrc as empty string to avoid flashing the default AI image.
+  const heroImageSrc = (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0)
+    ? storeSettings.heroImage
+    : isCoverDetermined
+      ? fallbackHeroImage
+      : '';
+
+  const [isImgLoaded, setIsImgLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete && heroImageSrc) {
+      setIsImgLoaded(true);
+    } else if (!heroImageSrc) {
+      setIsImgLoaded(false);
+    }
+  }, [heroImageSrc]);
 
   // Focal point positioning (configurable via admin / modal)
   const focalPosition = storeSettings.heroFocalPosition || 'center';
@@ -71,9 +112,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   const handleRemoveHeroImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    // Security check: non-admins cannot delete or reset the cover image
     if (!isAdmin) return;
-
     if (onUpdateHeroSettings) {
       onUpdateHeroSettings({ heroImage: '', heroImages: [] });
     } else if (onUpdateHeroImage) {
@@ -149,12 +188,21 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         } as React.CSSProperties}
       >
         {/* Campaign Photography */}
-        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <img
-            src={heroImageSrc}
-            alt={storeSettings.storeName || 'DBC Clothing Workshop'}
-            className="hero-campaign-img w-full h-full object-cover select-none transition-all duration-300"
-          />
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 bg-[#1E1B18]">
+          {heroImageSrc ? (
+            <img
+              ref={imgRef}
+              src={heroImageSrc}
+              alt={storeSettings.storeName || 'DBC Clothing Workshop'}
+              className={`hero-campaign-img w-full h-full object-cover select-none transition-opacity duration-500 ${
+                isImgLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setIsImgLoaded(true)}
+            />
+          ) : (
+            /* Subtle skeleton loading placeholder while saved cover setting is being retrieved */
+            <div className="w-full h-full bg-[#1E1B18] animate-pulse" />
+          )}
 
           {/* Clean, subtle cinematic tone mapping */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-black/35 pointer-events-none" />
@@ -169,7 +217,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <span className="font-semibold tracking-wider uppercase">{t.b2bB2cBadge}</span>
             </div>
 
-            {/* Quick Cover Adjustment Trigger for authenticated owner/admin ONLY */}
+            {/* Quick Cover Adjustment Trigger for owner/admin ONLY */}
             {isAdmin && (
               <div className="flex items-center gap-2">
                 <button
@@ -332,7 +380,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
-      {/* 4. Website Picture Cover Management Modal (Strictly Admin Only) */}
+      {/* 4. Website Picture Cover Management Modal (Admin Only) */}
       {isAdmin && (
         <CoverPhotoModal
           isOpen={isCoverModalOpen}
@@ -342,9 +390,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           currentOverlayStrength={overlayStrength}
           isAdmin={isAdmin}
           onSaveCover={(url, newFocalPos, newOverlayStr) => {
-            // Additional security check: prevent saves if not admin
             if (!isAdmin) return;
-
             const updates: Partial<StoreSettings> = {
               heroImage: url,
               heroImages: url ? [url] : [],
