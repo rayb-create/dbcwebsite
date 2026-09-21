@@ -41,7 +41,8 @@ interface ProductDetailModalProps {
     isMadeToMeasure: boolean,
     measurements?: CustomMeasurements,
     monogram?: any,
-    customPrice?: number
+    customPrice?: number,
+    quantity?: number
   ) => void;
   onOpenSizeGuide: () => void;
   currentLanguage: Language;
@@ -66,13 +67,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
 
-  // Strict multi-factor verified admin check:
-  // Public/logged-out customers must NEVER be treated as admin.
-  // Requires:
-  // 1. Auth loading finished (!authLoading)
-  // 2. Verified active Firebase user exists (currentUser)
-  // 3. User holds confirmed admin permissions (authIsAdmin === true)
-  // 4. If an explicit prop was supplied, it must not be false (propIsAdmin !== false)
+  // Strict verified admin check: public/logged-out visitors are ALWAYS false
   const isAdmin = Boolean(
     !authLoading &&
     currentUser &&
@@ -85,6 +80,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>(product?.sizes?.[1] || product?.sizes?.[0] || 'L');
+  const [quantity, setQuantity] = useState<number>(1);
   const [isMadeToMeasure, setIsMadeToMeasure] = useState(false);
   const [activeTab, setActiveTab] = useState<'specs' | 'story' | 'b2b' | 'reviews'>('specs');
   const [addedSuccess, setAddedSuccess] = useState(false);
@@ -96,9 +92,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? product.images 
     : ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80'];
 
-  // Reset selected image when product changes
+  // Reset selected image and quantity when product changes
   useEffect(() => {
     setSelectedImageIdx(0);
+    setQuantity(1);
   }, [product?.id]);
 
   // Keyboard navigation for image slider
@@ -115,212 +112,203 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, product, images.length]);
 
-  // Handle touch swipes for image carousel on mobile
+  const handlePrevImage = () => {
+    setSelectedImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setSelectedImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
+    if (touchStartX === null || images.length <= 1) return;
     const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40) {
-      if (diff > 0 && selectedImageIdx < images.length - 1) {
-        setSelectedImageIdx((prev) => prev + 1);
-      } else if (diff < 0 && selectedImageIdx > 0) {
-        setSelectedImageIdx((prev) => prev - 1);
-      }
+    const diffX = touchStartX - touchEndX;
+    if (diffX > 35) {
+      handleNextImage();
+    } else if (diffX < -35) {
+      handlePrevImage();
     }
     setTouchStartX(null);
   };
 
-  const handleShare = async () => {
-    if (!product) return;
-    const shareData = {
-      title: `${product.name} - DBC Clothing Workshop`,
-      text: `${product.name} (${product.category}) - Confection artisanale algérienne.`,
-      url: window.location.href,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch {
-        // User cancelled or share failed
-      }
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      alert(isArabic ? 'تم نسخ الرابط إلى الحافظة' : 'Lien copié dans le presse-papiers !');
-    }
-  };
+  // Custom measurements state
+  const [measurements, setMeasurements] = useState<CustomMeasurements>({
+    chest: 104,
+    waist: 86,
+    sleeve: 64,
+    inseam: 80,
+    fitPreference: 'tailored',
+    specialNotes: '',
+  });
 
   if (!isOpen || !product) return null;
 
-  const currentPrice = product.price;
+  const unitPrice = product.price;
+  const productReviews = REVIEWS.filter((r) => r.productId === product.id);
 
-  const handleAddToCartClick = () => {
+  const handleAdd = () => {
     onAddToCart(
       product,
-      selectedSize,
+      isMadeToMeasure ? 'Sur-Mesure (M2M)' : selectedSize,
       selectedColorIdx,
       isMadeToMeasure,
+      isMadeToMeasure ? measurements : undefined,
       undefined,
-      undefined,
-      currentPrice
+      unitPrice,
+      quantity
     );
+
     setAddedSuccess(true);
     setTimeout(() => {
       setAddedSuccess(false);
       onClose();
-    }, 900);
+    }, 700);
   };
 
-  const directWhatsAppUrl = generateProductWhatsAppUrl({
-    product,
-    selectedColor: product.colors[selectedColorIdx]?.name,
-    selectedSize,
-    currentLanguage,
-    whatsappNumber: storeSettings?.whatsappNumber || '+213550458812',
-    isMadeToMeasure,
-  });
+  const handleWhatsAppOrder = () => {
+    const selectedColor = product.colors[selectedColorIdx]?.name || 'Standard';
+    const url = generateProductWhatsAppUrl(product, storeSettings, {
+      selectedColor,
+      selectedSize,
+      quantity,
+      isMadeToMeasure,
+      currency,
+      language: currentLanguage,
+      intent: 'order',
+    });
+    window.open(url, '_blank');
+  };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="bg-[#FAF8F5] border border-[#DDD4C5] rounded-lg max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-5xl bg-[#FAF8F5] rounded border border-[#DCD4C7] shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-[#E8E1D5] bg-white sticky top-0 z-10">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-3 bg-[#1F1D1A] text-white border-b border-[#3B352E]">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#25D366]" />
-            <span className="font-mono text-xs uppercase tracking-widest text-[#8C6D3B] font-semibold">
-              {product.category} • DBC Atelier
+            <span className="text-xs font-mono text-[#C9A96E] uppercase font-bold">
+              DBC Workshop Confection Algérie
+            </span>
+            <span className="text-[#68625B]">•</span>
+            <span className="text-xs font-mono text-[#B3AAA0]">
+              {product.fabricWeight || 'Heavyweight Fleece'}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={handleShare}
-              className="p-1.5 hover:bg-[#F2EDE4] rounded-full text-[#6E6659] hover:text-[#1F1C19] transition-colors cursor-pointer"
-              title={isArabic ? 'مشاركة هذا الموديل' : 'Partager cet article'}
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-            <button
-              id="product-detail-close-btn"
-              onClick={onClose}
-              className="p-1.5 hover:bg-[#F2EDE4] rounded-full text-[#6E6659] hover:text-[#1F1C19] transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-[#B3AAA0] hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Modal Body (Scrollable) */}
-        <div className="overflow-y-auto p-4 sm:p-6 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Left Column: Image Gallery & Badges (6 cols) */}
-            <div className="lg:col-span-6 space-y-3">
-              {/* Main Image View with aspect ratio & touch slider */}
+        {/* Modal content body */}
+        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+            {/* Left Column: Product Gallery (6 cols) */}
+            <div className="lg:col-span-6 space-y-4">
+              {/* Main Photo Gallery with Sliding Buttons & Gestures */}
               <div 
-                className="relative aspect-4/5 w-full bg-[#EDE7DD] rounded-lg overflow-hidden border border-[#E2DAD0] select-none group"
+                className="relative aspect-[4/5] bg-[#F2EDE4] rounded overflow-hidden border border-[#E0D7C9] select-none group"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
               >
                 <img
+                  key={selectedImageIdx}
                   src={images[selectedImageIdx] || images[0]}
-                  alt={`${product.name} - Vue ${selectedImageIdx + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                  alt={`${product.name} - Photo ${selectedImageIdx + 1}`}
+                  className="w-full h-full object-cover transition-all duration-300"
                 />
 
-                {/* Arrow navigators */}
+                {/* Sliding Buttons (Left & Right) */}
                 {images.length > 1 && (
                   <>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-                      }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#1F1C19] flex items-center justify-center shadow-md backdrop-blur-xs transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
+                      id="product-detail-modal-prev-btn"
+                      onClick={handlePrevImage}
                       aria-label="Image précédente"
+                      title="Image précédente (Touche flèche gauche)"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-lg border border-[#DDD4C5] flex items-center justify-center backdrop-blur-xs transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer z-20"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="w-5 h-5 text-[#1F1D1A]" />
                     </button>
+
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#1F1C19] flex items-center justify-center shadow-md backdrop-blur-xs transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
+                      id="product-detail-modal-next-btn"
+                      onClick={handleNextImage}
                       aria-label="Image suivante"
+                      title="Image suivante (Touche flèche droite)"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-lg border border-[#DDD4C5] flex items-center justify-center backdrop-blur-xs transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer z-20"
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-5 h-5 text-[#1F1D1A]" />
                     </button>
+
+                    {/* Image Counter Badge */}
+                    <div className="absolute top-3 right-3 px-2.5 py-1 bg-[#1F1D1A]/85 text-white font-mono text-xs rounded backdrop-blur-xs flex items-center gap-1.5 z-10 shadow-xs">
+                      <span>{selectedImageIdx + 1} / {images.length}</span>
+                    </div>
+
+                    {/* Slide Indicator Dots */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-black/45 backdrop-blur-xs rounded-full z-20">
+                      {images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedImageIdx(idx)}
+                          aria-label={`Aller à la photo ${idx + 1}`}
+                          className={`transition-all duration-300 rounded-full cursor-pointer ${
+                            selectedImageIdx === idx 
+                              ? 'w-5 h-1.5 bg-white shadow-xs' 
+                              : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </>
                 )}
 
-                {/* Badges on top of image */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                  {product.gsm && (
-                    <span className="px-2.5 py-1 bg-[#1F1C19]/85 text-[#EFE9DF] text-[10px] font-mono tracking-wider uppercase rounded-xs backdrop-blur-xs">
-                      {product.gsm}
-                    </span>
-                  )}
-                  {product.madeToMeasure && (
-                    <span className="px-2 py-0.5 bg-[#C9A96E] text-[#1F1C19] text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs shadow-xs">
-                      Sur-Mesure
+                {/* Tags */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
+                  <span className="px-2.5 py-1 bg-[#1F1D1A]/90 text-white font-mono text-[10px] rounded uppercase font-bold">
+                    {product.fabricWeight || 'Heavyweight Fleece'}
+                  </span>
+                  {product.isB2BAvailable && (
+                    <span className="px-2.5 py-1 bg-white/90 text-[#8C6D3B] font-mono text-[10px] rounded uppercase font-bold border border-[#DDD4C5]">
+                      Vente B2B & B2C
                     </span>
                   )}
                 </div>
-
-                {/* Image counter indicator */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-white text-[10px] font-mono rounded-full backdrop-blur-xs">
-                    {selectedImageIdx + 1} / {images.length}
-                  </div>
-                )}
               </div>
 
-              {/* Thumbnails list */}
-              {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                  {images.map((img, idx) => (
+              {/* Thumbnails */}
+              {product.images.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {product.images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIdx(idx)}
-                      className={`relative w-16 h-20 rounded-md overflow-hidden border-2 flex-shrink-0 cursor-pointer transition-all ${
-                        selectedImageIdx === idx 
-                          ? 'border-[#8C6D3B] scale-102 ring-1 ring-[#8C6D3B]/40' 
-                          : 'border-[#E2DAD0] opacity-70 hover:opacity-100'
+                      className={`w-16 h-20 rounded overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
+                        selectedImageIdx === idx ? 'border-[#1F1D1A] scale-105' : 'border-[#DDD4C5] opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt={`Vignette ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
               )}
 
-              {/* Atelier Quality Highlights Card */}
-              <div className="p-3.5 bg-white border border-[#E4DCCE] rounded text-xs space-y-2 text-[#544D42]">
-                <div className="flex items-center gap-2 font-serif font-bold text-[#1F1C19]">
-                  <ShieldCheck className="w-4 h-4 text-[#8C6D3B]" />
-                  <span>{t.atelierQuality}</span>
-                </div>
-                <ul className="space-y-1 font-mono text-[11px] text-[#6E6659] list-disc list-inside">
-                  <li>{t.craftsmanshipPromise}</li>
-                  <li>{product.composition || '100% Coton peigné haut de gamme'}</li>
-                  <li>{t.sewingDetails}</li>
-                </ul>
-              </div>
-
-              {/* 58 Wilayas Fast Delivery Guarantee */}
-              <div className="p-3 bg-[#FAF4EB] border border-[#E0D3BE] rounded text-xs text-[#6B5838] flex items-center gap-3">
-                <Truck className="w-5 h-5 text-[#8C6D3B] flex-shrink-0" />
+              {/* 58 Wilayas Delivery Banner */}
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded flex items-center gap-3 text-xs text-amber-900">
+                <Truck className="w-5 h-5 text-amber-700 flex-shrink-0" />
                 <div>
                   <span className="font-bold block">{t.delivery58Wilayas}</span>
                   <span className="text-[11px] text-amber-800">
@@ -333,7 +321,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             {/* Right Column: Customization & Purchasing (6 cols) */}
             <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
               <div className="space-y-4">
-                {/* Workshop Manager Actions (Edit / Delete this product) - Strictly Admin Only */}
+                {/* Workshop Manager Actions (Edit / Delete this product) - Admin Only */}
                 {isAdmin && (onDeleteProduct || onEditProduct) && (
                   <div className="p-2.5 bg-[#FAF7F2] border border-[#E4DCCE] rounded flex items-center justify-between gap-2 text-xs font-mono">
                     <span className="text-[#8C6D3B] font-semibold flex items-center gap-1.5">
@@ -396,254 +384,286 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-baseline justify-between">
                     <div>
                       <span className="text-[10px] font-mono uppercase text-[#7C756B] block">
-                        {t.atelierPrice}
+                        {t.b2cPrice} (Détail)
                       </span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl sm:text-3xl font-serif font-bold text-[#1F1C19]">
-                          {formatPrice(currentPrice, currency)}
-                        </span>
-                        {product.b2bMinQty && (
-                          <span className="text-xs font-mono text-[#8C6D3B]">
-                            (Tarifs dégressifs dès {product.b2bMinQty} pièces)
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-mono text-xl sm:text-2xl font-bold text-[#1F1C19]">
+                        {formatPrice(unitPrice, currency, isArabic)}
+                      </span>
                     </div>
-                    {product.madeToMeasure && (
-                      <span className="text-[10px] font-mono text-[#8C6D3B] bg-[#FAF4EB] px-2 py-1 rounded border border-[#E8DCCB]">
-                        Standard & Sur-Mesure
-                      </span>
+
+                    {product.wholesalePriceDzd && (
+                      <div className="text-right">
+                        <span className="text-[10px] font-mono uppercase text-[#8C6D3B] block font-bold">
+                          {t.b2bWholesalePrice}
+                        </span>
+                        <span className="font-mono text-lg font-bold text-[#8C6D3B]">
+                          {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
+                        </span>
+                        <span className="text-[10px] font-mono text-[#7C756B] block">
+                          {t.minWholesaleQty}
+                        </span>
+                      </div>
                     )}
-                  </div>
-                  <div className="text-[11px] text-[#6E6659] font-sans flex items-center gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-[#25D366]" />
-                    <span>Confection locale en Algérie avec finitions manuelles vérifiées</span>
                   </div>
                 </div>
 
-                {/* Color Selection */}
-                {Array.isArray(product.colors) && product.colors.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-mono uppercase tracking-wider text-[#4A4338] font-bold block">
-                      {t.colorSelect}: <span className="font-sans normal-case text-[#1F1C19]">{product.colors[selectedColorIdx]?.name}</span>
-                    </label>
-                    <div className="flex flex-wrap gap-2.5">
-                      {product.colors.map((col, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setSelectedColorIdx(idx)}
-                          className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono transition-all cursor-pointer ${
-                            selectedColorIdx === idx 
-                              ? 'border-[#1F1C19] bg-[#1F1C19] text-white shadow-xs' 
-                              : 'border-[#DDD4C5] bg-white text-[#3D3730] hover:border-[#8C6D3B]'
-                          }`}
-                        >
-                          <span 
-                            className="w-3.5 h-3.5 rounded-full border border-black/20 flex-shrink-0"
-                            style={{ backgroundColor: col.hex }} 
-                          />
-                          <span>{col.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Size Selection */}
+                {/* Color Selector */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-[#4A4338] font-bold">
-                      {t.sizeSelect}: <span className="text-[#8C6D3B]">{selectedSize}</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={onOpenSizeGuide}
-                      className="text-xs font-mono text-[#8C6D3B] hover:text-[#5E4723] underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Ruler className="w-3.5 h-3.5" />
-                      <span>{t.sizeGuideBtn}</span>
-                    </button>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="uppercase text-[#615A4F] font-bold">{t.selectColor} :</span>
+                    <span className="text-[#1F1C19] font-semibold">
+                      {product.colors[selectedColorIdx]?.name}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {(product.sizes || ['S', 'M', 'L', 'XL', '2XL']).map((sz) => (
+                  <div className="flex flex-wrap gap-2">
+                    {product.colors.map((color, idx) => (
                       <button
-                        key={sz}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSize(sz);
-                          setIsMadeToMeasure(false);
-                        }}
-                        className={`py-2 px-1 text-center font-mono text-xs rounded border transition-all cursor-pointer font-bold ${
-                          selectedSize === sz && !isMadeToMeasure
-                            ? 'bg-[#1F1C19] text-white border-[#1F1C19] shadow-xs'
-                            : 'bg-white text-[#3D3730] border-[#DDD4C5] hover:border-[#8C6D3B]'
+                        key={idx}
+                        onClick={() => setSelectedColorIdx(idx)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono transition-all cursor-pointer ${
+                          selectedColorIdx === idx
+                            ? 'bg-[#1F1D1A] text-white border-black font-bold shadow-xs'
+                            : 'bg-white text-[#4A4338] border-[#DDD4C5] hover:bg-[#F2EDE4]'
                         }`}
                       >
-                        {sz}
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/20"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span>{color.name}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Made to Measure Toggle (if available) */}
-                {product.madeToMeasure && (
-                  <div className="p-3 bg-[#FAF7F2] border border-[#E2DAD0] rounded-md space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Scissors className="w-4 h-4 text-[#8C6D3B]" />
-                        <span className="text-xs font-mono uppercase font-bold text-[#1F1C19]">
-                          {t.madeToMeasure}
-                        </span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        id="mtm-checkbox"
-                        checked={isMadeToMeasure}
-                        onChange={(e) => setIsMadeToMeasure(e.target.checked)}
-                        className="w-4 h-4 accent-[#8C6D3B] cursor-pointer"
-                      />
+                {/* Size Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="uppercase text-[#615A4F] font-bold">{t.selectSize} :</span>
+                    <button
+                      onClick={onOpenSizeGuide}
+                      className="text-[#8C6D3B] underline hover:text-black flex items-center gap-1 cursor-pointer text-[11px]"
+                    >
+                      <Ruler className="w-3 h-3" />
+                      <span>Guide des tailles</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => {
+                          setSelectedSize(size);
+                          setIsMadeToMeasure(false);
+                        }}
+                        className={`min-w-[48px] py-2 px-3 text-xs font-mono rounded border transition-colors cursor-pointer ${
+                          selectedSize === size && !isMadeToMeasure
+                            ? 'bg-[#1F1D1A] text-white border-black font-bold'
+                            : 'bg-white text-[#4A4338] border-[#DDD4C5] hover:bg-[#F2EDE4]'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quantity Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="uppercase text-[#615A4F] font-bold">
+                      {isArabic ? 'الكمية :' : 'Quantité :'}
+                    </span>
+                    <span className="text-[#8C6D3B] font-semibold">
+                      {quantity} {quantity > 1 ? (isArabic ? 'قطع' : 'pièces') : (isArabic ? 'قطعة' : 'pièce')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex items-center border border-[#DDD4C5] rounded bg-white overflow-hidden shadow-2xs">
+                      <button
+                        type="button"
+                        id="product-detail-qty-minus"
+                        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                        disabled={quantity <= 1}
+                        className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed select-none"
+                        aria-label="Diminuer la quantité"
+                      >
+                        -
+                      </button>
+                      <span className="w-12 h-9 flex items-center justify-center font-mono font-bold text-sm text-[#1F1C19] border-x border-[#DDD4C5] select-none">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        id="product-detail-qty-plus"
+                        onClick={() => setQuantity((prev) => Math.min(99, prev + 1))}
+                        className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] transition-colors cursor-pointer select-none"
+                        aria-label="Augmenter la quantité"
+                      >
+                        +
+                      </button>
                     </div>
-                    <p className="text-[11px] text-[#6E6659] leading-relaxed">
-                      {t.madeToMeasureDesc}
-                    </p>
-                    {isMadeToMeasure && (
-                      <div className="text-[11px] font-mono text-[#8C6D3B] bg-white p-2 rounded border border-[#E8DCCB]">
-                        ✂️ {t.measurementsNotice}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tabs: Specifications / Atelier Story / B2B */}
-                <div className="border-t border-[#E8E1D5] pt-3 space-y-2.5">
-                  <div className="flex border-b border-[#E8E1D5] text-xs font-mono">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('specs')}
-                      className={`pb-1.5 px-3 border-b-2 font-semibold transition-colors cursor-pointer ${
-                        activeTab === 'specs' 
-                          ? 'border-[#8C6D3B] text-[#1F1C19]' 
-                          : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
-                      }`}
-                    >
-                      {t.tabSpecs}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('story')}
-                      className={`pb-1.5 px-3 border-b-2 font-semibold transition-colors cursor-pointer ${
-                        activeTab === 'story' 
-                          ? 'border-[#8C6D3B] text-[#1F1C19]' 
-                          : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
-                      }`}
-                    >
-                      {t.tabStory}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('b2b')}
-                      className={`pb-1.5 px-3 border-b-2 font-semibold transition-colors cursor-pointer ${
-                        activeTab === 'b2b' 
-                          ? 'border-[#8C6D3B] text-[#1F1C19]' 
-                          : 'border-transparent text-[#7C756B] hover:text-[#1F1C19]'
-                      }`}
-                    >
-                      {t.tabB2B}
-                    </button>
-                  </div>
-
-                  <div className="text-xs text-[#544D42] leading-relaxed font-sans min-h-[70px]">
-                    {activeTab === 'specs' && (
-                      <div className="space-y-1.5">
-                        <p>{product.description}</p>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 text-[#6E6659]">
-                          <div>• Grammage: {product.gsm || 'Lourd 350-450 GSM'}</div>
-                          <div>• Coupe: {product.cut || 'Oversize Streetwear'}</div>
-                          <div>• Matière: {product.composition || '100% Coton peigné'}</div>
-                          <div>• Confection: Algérie (Atelier DBC)</div>
-                        </div>
-                      </div>
-                    )}
-                    {activeTab === 'story' && (
-                      <div className="space-y-1.5">
-                        <p>{product.atelierStory || 'Chaque pièce est découpée, assemblée et vérifiée manuellement par nos artisans dans notre atelier en Algérie avec des coutures renforcées et une tenue de lavage irréprochable.'}</p>
-                      </div>
-                    )}
-                    {activeTab === 'b2b' && (
-                      <div className="space-y-1.5 bg-[#FAF4EB] p-2.5 rounded border border-[#E8DCCB]">
-                        <div className="flex items-center gap-1.5 font-serif font-bold text-[#1F1C19]">
-                          <Building2 className="w-4 h-4 text-[#8C6D3B]" />
-                          <span>{t.b2bHeading}</span>
-                        </div>
-                        <p className="text-[11px]">{t.b2bNotice}</p>
-                        <p className="text-[11px] font-mono text-[#8C6D3B]">
-                          Quantité minimale: dès {product.b2bMinQty || 10} pièces. Sérigraphie & broderie sur demande.
-                        </p>
-                      </div>
+                    {quantity > 1 && (
+                      <span className="text-xs font-mono text-[#6E6659]">
+                        Total : <strong className="text-[#1F1C19]">{formatPrice(unitPrice * quantity, currency, isArabic)}</strong>
+                      </span>
                     )}
                   </div>
                 </div>
 
+                {/* Tabs: Specifications & Wholesale */}
+                <div className="pt-2">
+                  <div className="flex border-b border-[#E2DAD0] text-xs font-mono">
+                    <button
+                      onClick={() => setActiveTab('specs')}
+                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
+                        activeTab === 'specs' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
+                      }`}
+                    >
+                      Fiche Technique
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('b2b')}
+                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
+                        activeTab === 'b2b' ? 'border-b-2 border-black font-bold text-[#8C6D3B]' : 'text-[#7C756B]'
+                      }`}
+                    >
+                      Tarifs Gros B2B
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('reviews')}
+                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
+                        activeTab === 'reviews' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
+                      }`}
+                    >
+                      Avis ({productReviews.length})
+                    </button>
+                  </div>
+
+                  <div className="pt-3 text-xs text-[#5C554B]">
+                    {activeTab === 'specs' && (
+                      <div className="space-y-2">
+                        <p className="leading-relaxed font-sans">{product.description}</p>
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <div className="p-2 bg-white rounded border border-[#E2DAD0]">
+                            <span className="text-[10px] font-mono text-[#7C756B] block">Matière :</span>
+                            <span className="font-semibold text-[#1F1C19]">{product.fabric}</span>
+                          </div>
+                          <div className="p-2 bg-white rounded border border-[#E2DAD0]">
+                            <span className="text-[10px] font-mono text-[#7C756B] block">Confection :</span>
+                            <span className="font-semibold text-[#1F1C19]">{product.millOrigin}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'b2b' && (
+                      <div className="space-y-2 p-3 bg-amber-50/60 rounded border border-amber-200/70">
+                        <div className="flex items-center gap-2 font-bold text-amber-950 font-serif">
+                          <Building2 className="w-4 h-4 text-[#8C6D3B]" />
+                          <span>Offre Spéciale Magasins & Boutiques (B2B)</span>
+                        </div>
+                        <p className="text-[11px] text-amber-900 leading-relaxed">
+                          • Tarif préférentiel de <strong>{formatPrice(product.wholesalePriceDzd || Math.round(product.price * 0.7), currency, isArabic)}</strong> par pièce dès 6 unités.
+                        </p>
+                        <p className="text-[11px] text-amber-900 leading-relaxed">
+                          • Possibilité de mixer les tailles (S à 3XL) et couleurs selon vos stocks.
+                        </p>
+                        <p className="text-[11px] text-amber-900 leading-relaxed">
+                          • Personnalisation avec étiquettes ou broderie sur commande industrielle.
+                        </p>
+                      </div>
+                    )}
+
+                    {activeTab === 'reviews' && (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {productReviews.length > 0 ? (
+                          productReviews.map((rev) => (
+                            <div key={rev.id} className="p-2.5 bg-white border border-[#E2DAD0] rounded space-y-1">
+                              <div className="flex justify-between font-mono text-[11px]">
+                                <span className="font-bold text-[#1F1C19]">{rev.author} - {rev.location}</span>
+                                <span className="text-amber-600">★★★★★</span>
+                              </div>
+                              <p className="font-serif text-xs font-semibold text-[#1F1C19]">{rev.title}</p>
+                              <p className="text-[11px] text-[#6E6659]">{rev.comment}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[#7C756B] text-[11px]">Aucun avis pour le moment.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Action Buttons: Add to Cart + WhatsApp Atelier Direct */}
-              <div className="pt-3 border-t border-[#E8E1D5] space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-[#DDD4C5] space-y-2.5">
+                <div className="flex items-center gap-2">
                   <button
-                    type="button"
-                    id="product-detail-add-to-cart-btn"
-                    onClick={handleAddToCartClick}
-                    className={`w-full py-3 px-4 font-mono text-xs uppercase tracking-wider rounded font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                      addedSuccess 
-                        ? 'bg-[#25D366] text-white' 
-                        : 'bg-[#1F1C19] hover:bg-black text-white'
+                    id="product-detail-add-cart-btn"
+                    onClick={handleAdd}
+                    className={`flex-1 py-3 px-4 font-mono text-xs uppercase tracking-wider rounded transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md ${
+                      addedSuccess ? 'bg-emerald-700 text-white' : 'bg-[#1F1D1A] hover:bg-[#3D3730] text-white'
                     }`}
                   >
                     {addedSuccess ? (
                       <>
-                        <Check className="w-4 h-4" />
-                        <span>{t.itemAdded}</span>
+                        <Check className="w-4 h-4 text-emerald-300" />
+                        <span>Ajouté au panier !</span>
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 text-[#C9A96E]" />
-                        <span>{t.addToCart}</span>
+                        <span>{t.addToCart} • {formatPrice(unitPrice * quantity, currency, isArabic)}</span>
                       </>
                     )}
                   </button>
 
-                  <a
-                    id="product-detail-whatsapp-direct-btn"
-                    href={directWhatsAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3 px-4 bg-[#25D366] hover:bg-[#20ba59] text-white font-mono text-xs tracking-wider rounded font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                  <button
+                    onClick={handleWhatsAppOrder}
+                    className="py-3 px-4 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-mono text-xs font-semibold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-transform active:scale-95"
+                    title="Commander directement via WhatsApp avec ce modèle"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>{t.orderViaWhatsApp}</span>
-                  </a>
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span className="hidden sm:inline">WhatsApp</span>
+                  </button>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] font-mono text-[#7C756B] px-1">
-                  <span>Paiement à la livraison • 58 Wilayas</span>
+                {/* Custom WhatsApp Greeting Link Bar */}
+                <div className="p-2.5 bg-[#F4F9F5] border border-[#CDE5D4] rounded-md flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0">
+                      <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                    </div>
+                    <div className="truncate">
+                      <span className="text-[11px] font-mono font-bold text-[#14532D] block truncate">
+                        {isArabic ? 'رابط واتساب ذكي ومجهز للمنتج' : 'Lien WhatsApp personnalisé'}
+                      </span>
+                      <span className="text-[10px] text-[#2C6E49] hidden sm:block">
+                        {isArabic 
+                          ? 'رسالة جاهزة بالموديل، المقاس، اللون وسعر الدينار' 
+                          : 'Modèle auto-rempli avec taille, couleur, réf et wilaya'}
+                      </span>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => setIsCustomWhatsAppOpen(true)}
-                    className="text-[#8C6D3B] hover:underline cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1.5 bg-white hover:bg-[#EAF5EE] text-[#14532D] border border-[#B1D8BD] rounded text-[11px] font-mono font-semibold flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs transition-colors"
                   >
-                    <span>Personnaliser message WhatsApp</span>
-                    <ExternalLink className="w-3 h-3" />
+                    <SlidersHorizontal className="w-3 h-3 text-[#25D366]" />
+                    <span>{isArabic ? 'تخصيص الرسالة' : 'Personnaliser'}</span>
                   </button>
                 </div>
               </div>
-
             </div>
-
           </div>
         </div>
 
-        {/* Custom In-Modal Delete Confirmation - Strictly Admin Only */}
+        {/* Custom In-Modal Delete Confirmation - Admin Only */}
         {isAdmin && showDeleteConfirm && (
           <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-lg border border-[#DDD4C5] shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-150">
@@ -712,8 +732,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           selectedColor={product.colors[selectedColorIdx]?.name}
           selectedSize={selectedSize}
           isMadeToMeasure={isMadeToMeasure}
-          storeSettings={storeSettings}
+          currency={currency}
           currentLanguage={currentLanguage}
+          storeSettings={storeSettings}
         />
       </div>
     </div>
