@@ -1,64 +1,141 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Filter, 
+  Sparkles, 
+  Ruler, 
+  ChevronDown, 
+  Star, 
+  Check, 
+  Phone,
+  Layers,
+  Truck,
+  Building2,
+  Sliders,
+  Plus,
+  RotateCcw,
+  MessageCircle
+} from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { HeroBanner } from './components/HeroBanner';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
-import { OrderLookupModal } from './components/OrderLookupModal';
 import { SizeGuideModal } from './components/SizeGuideModal';
-import { ContactModal } from './components/ContactModal';
-import { B2BModal } from './components/B2BModal';
-import { BespokeStudio } from './components/BespokeStudio';
+import { WishlistModal } from './components/WishlistModal';
 import { AdminLayout } from './components/admin/AdminLayout';
-import { AuthModal } from './components/admin/AuthModal';
-import { PRODUCTS, REVIEWS } from './data/products';
-import { WILAYAS } from './data/delivery';
-import { Product, Currency, Language, CartItem, CustomMeasurements, StoreSettings, MediaAsset, DeliveryCarrier } from './types';
-import { TRANSLATIONS } from './data/i18n';
-import {
-  listenToProducts,
-  listenToStoreSettings,
-  listenToMediaAssets,
-  listenToDeliveries,
-  saveProductToDb,
-  deleteProductFromDb,
-  saveSettingsToDb,
-  saveOrderToDb,
-} from './services/db';
+import { ContactModal } from './components/ContactModal';
+import { B2BWholesaleModal } from './components/B2BWholesaleModal';
+import { FloatingWhatsAppWidget } from './components/FloatingWhatsAppWidget';
+import { ProductWhatsAppModal } from './components/ProductWhatsAppModal';
+import { OrderLookupModal } from './components/OrderLookupModal';
+import { Footer } from './components/Footer';
+
+import { 
+  Product, 
+  CartItem, 
+  Currency, 
+  Order, 
+  CustomMeasurements, 
+  StoreSettings,
+  MediaAsset
+} from './types';
+import { PRODUCTS, REVIEWS, WORKSHOP_FAQS } from './data/products';
+import { DEFAULT_STORE_SETTINGS } from './data/storeSettings';
+import { Language, TRANSLATIONS } from './data/i18n';
+import { formatPrice } from './utils/format';
 import { useAuth } from './context/AuthContext';
 import { 
-  Building2, 
-  Sparkles, 
-  MessageCircle, 
-  Phone, 
-  ShieldCheck, 
-  Truck, 
-  Scissors, 
-  ArrowRight,
-  Filter,
-  CheckCircle2,
-  Lock,
-  LogOut,
-  ChevronDown
-} from 'lucide-react';
+  subscribeProducts, 
+  subscribeStoreSettings, 
+  subscribeOrders, 
+  subscribeMedia,
+  saveProductToDb,
+  deleteProductFromDb,
+  saveOrderToDb,
+  saveStoreSettingsToDb,
+  initializeWorkshopDatabase
+} from './services/db';
+import { compressBase64Image } from './utils/imageCompressor';
 
-export const App: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [currency, setCurrency] = useState<Currency>('DZD');
-  const [currentLanguage, setCurrentLanguage] = useState<Language>('fr');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+export default function App() {
+  // 1. Language state - Default is English ('en') with options for French ('fr'), Arabic ('ar'), Spanish ('es')
+  const [currentLanguage, setCurrentLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('dbc_language') as Language) || 'en';
+  });
+
+  // 2. Currency state - Default is Algerian Dinar ('DZD')
+  const [currency, setCurrency] = useState<Currency>(() => {
+    return (localStorage.getItem('dbc_currency') as Currency) || 'DZD';
+  });
+
+  // 3. Workshop Owner Mutable Products State (Clean start so owner adds their own creations)
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem('dbc_custom_products_v3');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 4. Workshop Store Settings & Contacts State
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
+    try {
+      const saved = localStorage.getItem('dbc_store_settings');
+      return saved ? JSON.parse(saved) : DEFAULT_STORE_SETTINGS;
+    } catch {
+      return DEFAULT_STORE_SETTINGS;
+    }
+  });
+
+  // Cart & Wishlist states
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('dbc_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dbc_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('dbc_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Filter & Search states
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [fabricFilter, setFabricFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
+
+  // Modal states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
-  const [isOrderLookupOpen, setIsOrderLookupOpen] = useState<boolean>(false);
-  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState<boolean>(false);
-  const [isContactOpen, setIsContactOpen] = useState<boolean>(false);
-  const [isB2BOpen, setIsB2BOpen] = useState<boolean>(false);
-  const [isBespokeStudioOpen, setIsBespokeStudioOpen] = useState<boolean>(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [currentPath, setCurrentPath] = useState<string>(
+  const [lastViewedProduct, setLastViewedProduct] = useState<Product | null>(null);
+  const [whatsAppCustomizerProduct, setWhatsAppCustomizerProduct] = useState<Product | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isB2BOpen, setIsB2BOpen] = useState(false);
+  const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
+  const [orderLookupQuery, setOrderLookupQuery] = useState<string>('');
+  const [currentPath, setCurrentPath] = useState(
     window.location.hash === '#admin' ? '/admin' : window.location.pathname
   );
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -69,145 +146,230 @@ export const App: React.FC = () => {
   // Track whether store settings have loaded from persistent storage (localStorage / Firestore)
   const [isSettingsLoaded, setIsSettingsLoaded] = useState<boolean>(() => {
     try {
-      const cached = localStorage.getItem('dbc_store_settings');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return Boolean(parsed && typeof parsed === 'object');
+      const saved = localStorage.getItem('dbc_store_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Boolean(parsed && typeof parsed.heroImage === 'string' && parsed.heroImage.trim().length > 0);
       }
     } catch {
-      // ignore
+      // fallback
     }
     return false;
   });
 
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
-    try {
-      const cached = localStorage.getItem('dbc_store_settings');
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch {
-      // ignore
-    }
-    return {
-      storeName: 'DBC CLOTHING WORKSHOP',
-      tagline: 'Atelier de Confection Algérie • B2B & B2C',
-      heroTitle: 'Confection Textile Algérienne & Streetwear Haut de Gamme',
-      heroSubtitle: 'Spécialiste du molleton lourd 350-450 GSM. Production locale à Alger pour particuliers et marques en gros.',
-      heroCtaText: 'Explorer la Collection',
-      heroImage: '',
-      heroImages: [],
-      heroOverlayStrength: 'medium',
-      heroFocalPosition: 'center',
-      contactPhone: '+213 550 45 88 12',
-      contactEmail: 'contact@dbc-workshop.dz',
-      whatsappNumber: '+213550458812',
-      instagramUrl: 'https://instagram.com/dbc_workshop',
-      facebookUrl: '',
-      tiktokUrl: '',
-      atelierAddress: 'Zone d’Activité, Bordj El Kiffan, Alger',
-      atelierHours: 'Samedi - Jeudi : 08h30 - 18h00',
-      b2bMinQty: 6,
-      freeShippingThresholdDzd: 15000,
-    };
-  });
-
-  const [deliveryCarriers, setDeliveryCarriers] = useState<DeliveryCarrier[]>([]);
-
-  // Hash change detection for routing
+  // Listen to browser navigation changes & hash changes
   useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash === '#admin') {
+    const handlePopState = () => {
+      const hash = window.location.hash;
+      const path = window.location.pathname;
+      if (hash === '#admin') {
         setCurrentPath('/admin');
-      } else if (window.location.hash === '' || window.location.hash === '#') {
-        setCurrentPath('/');
+      } else {
+        setCurrentPath(path);
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
   }, []);
 
-  // Listeners
+  // Save Cart to local storage
   useEffect(() => {
-    const unsubscribeProducts = listenToProducts((dbProducts) => {
-      if (dbProducts && dbProducts.length > 0) {
-        setProducts(dbProducts);
+    try {
+      localStorage.setItem('dbc_cart', JSON.stringify(cartItems));
+    } catch {
+      // LocalStorage error handling
+    }
+  }, [cartItems]);
+
+  // Save Wishlist to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dbc_wishlist', JSON.stringify(wishlistIds));
+    } catch {
+      // LocalStorage error handling
+    }
+  }, [wishlistIds]);
+
+  // Save Orders to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dbc_orders', JSON.stringify(orders));
+    } catch {
+      // LocalStorage error handling
+    }
+  }, [orders]);
+
+  // Save Store Settings to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dbc_store_settings', JSON.stringify(storeSettings));
+    } catch {
+      // LocalStorage error handling
+    }
+  }, [storeSettings]);
+
+  // Subscribe to Cloud Firestore updates in real-time
+  useEffect(() => {
+    const unsubscribeProducts = subscribeProducts((dbProducts) => {
+      setProducts(dbProducts);
+      try {
+        localStorage.setItem('dbc_custom_products_v3', JSON.stringify(dbProducts));
+      } catch {
+        // quota handled
       }
     });
 
-    const unsubscribeSettings = listenToStoreSettings((dbSettings) => {
+    const unsubscribeSettings = subscribeStoreSettings((dbSettings) => {
       if (dbSettings) {
         setStoreSettings((prev) => {
-          const updated = { ...prev, ...dbSettings };
+          const merged = { ...prev, ...dbSettings };
           try {
-            localStorage.setItem('dbc_store_settings', JSON.stringify(updated));
+            localStorage.setItem('dbc_store_settings', JSON.stringify(merged));
           } catch {
-            // ignore
+            // quota handled
           }
-          return updated;
+          return merged;
         });
         setIsSettingsLoaded(true);
       }
     });
 
-    const unsubscribeMedia = listenToMediaAssets((assets) => {
-      setMediaAssets(assets);
+    const unsubscribeOrders = subscribeOrders((dbOrders) => {
+      if (dbOrders && dbOrders.length > 0) {
+        setOrders(dbOrders);
+        try {
+          localStorage.setItem('dbc_orders', JSON.stringify(dbOrders));
+        } catch {
+          // quota handled
+        }
+      }
     });
 
-    const unsubscribeDeliveries = listenToDeliveries((carriers) => {
-      setDeliveryCarriers(carriers);
+    const unsubscribeMedia = subscribeMedia((dbMedia) => {
+      setMediaAssets(dbMedia);
     });
 
     return () => {
       unsubscribeProducts();
       unsubscribeSettings();
+      unsubscribeOrders();
       unsubscribeMedia();
-      unsubscribeDeliveries();
     };
   }, []);
 
-  const t = TRANSLATIONS[currentLanguage];
-  const isArabic = currentLanguage === 'ar';
+  // One-time auto seed if database is entirely empty
+  useEffect(() => {
+    initializeWorkshopDatabase(PRODUCTS, DEFAULT_STORE_SETTINGS);
+  }, []);
 
-  const handleUpdateStoreSettings = async (updates: Partial<StoreSettings>) => {
-    const updated = { ...storeSettings, ...updates };
-    setStoreSettings(updated);
-    try {
-      localStorage.setItem('dbc_store_settings', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-    await saveSettingsToDb(updates);
-  };
+  // SEO & Head Tags Synchronization
+  useEffect(() => {
+    const title = storeSettings.seoTitle || `${storeSettings.storeName} - ${storeSettings.tagline}`;
+    const desc = storeSettings.seoDescription || storeSettings.heroSubtitle || 'Atelier de confection textile en Algérie spécialisé en molleton lourd 350-450 GSM. Vente B2C et confection B2B.';
+    const keywords = storeSettings.seoKeywords || 'confection algerie, streetwear algerie, grossiste hoodie algerie, atelier textile alger, molleton lourd, grossiste vetement algerie, confection sur mesure algerie';
+    const author = storeSettings.seoAuthor || 'DBC Clothing Workshop Algérie';
 
-  const handleDeleteProduct = async (productId: string) => {
-    if (!isAdmin) return;
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    await deleteProductFromDb(productId);
-  };
+    document.title = title;
 
-  const handleSaveProduct = async (productData: Product) => {
-    if (!isAdmin) return;
-    setProducts((prev) => {
-      const idx = prev.findIndex((p) => p.id === productData.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = productData;
-        return next;
+    const updateMetaTag = (selector: string, attr: string, val: string) => {
+      let el = document.querySelector(selector) as HTMLMetaElement;
+      if (!el) {
+        el = document.createElement('meta');
+        const [attrName, attrVal] = selector.replace('meta[', '').replace(']', '').split('=');
+        el.setAttribute(attrName, attrVal.replace(/"/g, ''));
+        document.head.appendChild(el);
       }
-      return [productData, ...prev];
-    });
-    await saveProductToDb(productData);
+      el.setAttribute(attr, val);
+    };
+
+    const ogImg = (storeSettings.ogImage && !storeSettings.ogImage.startsWith('data:'))
+      ? storeSettings.ogImage
+      : (storeSettings.heroImage && !storeSettings.heroImage.startsWith('data:'))
+        ? storeSettings.heroImage
+        : 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80';
+    const canonical = storeSettings.canonicalUrl || window.location.origin;
+
+    updateMetaTag('meta[name="description"]', 'content', desc);
+    updateMetaTag('meta[name="keywords"]', 'content', keywords);
+    updateMetaTag('meta[name="author"]', 'content', author);
+    updateMetaTag('meta[property="og:title"]', 'content', title);
+    updateMetaTag('meta[property="og:description"]', 'content', desc);
+    updateMetaTag('meta[property="og:image"]', 'content', ogImg);
+    updateMetaTag('meta[property="og:site_name"]', 'content', storeSettings.storeName);
+    updateMetaTag('meta[name="twitter:title"]', 'content', title);
+    updateMetaTag('meta[name="twitter:description"]', 'content', desc);
+    updateMetaTag('meta[name="twitter:image"]', 'content', ogImg);
+
+    // Dynamic Schema.org JSON-LD Structured Data
+    let schemaScript = document.getElementById('dbc-schema-jsonld') as HTMLScriptElement;
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.id = 'dbc-schema-jsonld';
+      schemaScript.type = 'application/ld+json';
+      document.head.appendChild(schemaScript);
+    }
+    const schemaObj = {
+      '@context': 'https://schema.org',
+      '@type': 'ClothingStore',
+      'name': storeSettings.storeName,
+      'description': desc,
+      'telephone': storeSettings.phone,
+      'email': storeSettings.email,
+      'address': {
+        '@type': 'PostalAddress',
+        'streetAddress': storeSettings.address,
+        'addressLocality': storeSettings.city,
+        'addressCountry': 'DZ',
+      },
+      'priceRange': '$$',
+      'currenciesAccepted': 'DZD',
+      'paymentAccepted': 'Cash on Delivery, BaridiMob, CCP',
+      'areaServed': 'Algeria (69 Wilayas)',
+      'url': canonical,
+      'image': ogImg,
+    };
+    schemaScript.text = JSON.stringify(schemaObj);
+  }, [storeSettings]);
+
+  // Discount code state
+  const [discountCode, setDiscountCode] = useState<string>('');
+  const [appliedDiscountPct, setAppliedDiscountPct] = useState<number>(0);
+
+  const handleApplyDiscountCode = (code: string): boolean => {
+    const clean = code.trim().toUpperCase();
+    if (clean === 'DBC10') {
+      setAppliedDiscountPct(10);
+      setDiscountCode('DBC10');
+      return true;
+    } else if (clean === 'ATELIER15') {
+      setAppliedDiscountPct(15);
+      setDiscountCode('ATELIER15');
+      return true;
+    } else if (clean === 'GROS20') {
+      setAppliedDiscountPct(20);
+      setDiscountCode('GROS20');
+      return true;
+    }
+    return false;
   };
 
-  const filteredProducts = products.filter((p) => {
-    if (selectedCategory === 'all') return true;
-    return p.category.toLowerCase() === selectedCategory.toLowerCase();
-  });
+  // Switch language and persist
+  const handleLanguageChange = (lang: Language) => {
+    setCurrentLanguage(lang);
+    localStorage.setItem('dbc_language', lang);
+  };
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-  const cartSubtotal = cartItems.reduce((acc, item) => acc + item.pricePerUnit * item.quantity, 0);
+  // Switch currency and persist
+  const handleCurrencyChange = (curr: Currency) => {
+    setCurrency(curr);
+    localStorage.setItem('dbc_currency', curr);
+  };
 
+  // Cart operations
   const handleAddToCart = (
     product: Product,
     size: string,
@@ -220,7 +382,7 @@ export const App: React.FC = () => {
   ) => {
     const selectedColor = product.colors[colorIndex] || product.colors[0];
     const unitPrice = customPrice || product.price;
-    const cartItemId = `${product.id}-${size}-${selectedColor.name}`;
+    const cartItemId = `${product.id}-${size}-${selectedColor.name}-${isMadeToMeasure ? 'm2m' : 'std'}`;
     const qty = Math.max(1, quantityToAdd || 1);
 
     setCartItems((prev) => {
@@ -232,6 +394,7 @@ export const App: React.FC = () => {
             : item
         );
       }
+
       const newItem: CartItem = {
         cartItemId,
         productId: product.id,
@@ -239,7 +402,9 @@ export const App: React.FC = () => {
         size,
         color: selectedColor,
         quantity: qty,
-        isMadeToMeasure: false,
+        isMadeToMeasure,
+        measurements,
+        monogram,
         pricePerUnit: unitPrice,
       };
       return [...prev, newItem];
@@ -264,31 +429,122 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleRemoveItem = (cartItemId: string) => {
+  const handleRemoveCartItem = (cartItemId: string) => {
     setCartItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
   };
 
-  const categories = [
-    { id: 'all', label: isArabic ? 'الكل' : 'Tous les Articles' },
-    { id: 'hoodies', label: isArabic ? 'هوديز' : 'Hoodies' },
-    { id: 'sweatshirts', label: isArabic ? 'سويت شيرت' : 'Sweatshirts' },
-    { id: 'joggings', label: isArabic ? 'جوجينج' : 'Pantalons Jogging' },
-    { id: 'ensembles', label: isArabic ? 'أطقم كاملة' : 'Ensembles' },
-  ];
+  const handleToggleWishlist = (productId: string) => {
+    setWishlistIds((prev) => {
+      if (prev.includes(productId)) {
+        return prev.filter((id) => id !== productId);
+      }
+      return [...prev, productId];
+    });
+  };
 
-  // Route: Admin
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setLastViewedProduct(product);
+  };
+
+  const handleOrderSuccess = (newOrder: Order) => {
+    setOrders((prev) => [newOrder, ...prev]);
+    setCartItems([]);
+    saveOrderToDb(newOrder);
+  };
+
+  const handleOpenOrderLookup = (orderNum?: string) => {
+    setOrderLookupQuery(orderNum || '');
+    setIsOrderLookupOpen(true);
+  };
+
+  // Admin mutation callbacks
+  const handleSaveProduct = async (productData: Product) => {
+    if (!isAdmin) return;
+    setProducts((prev) => {
+      const idx = prev.findIndex((p) => p.id === productData.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = productData;
+        return copy;
+      }
+      return [productData, ...prev];
+    });
+    await saveProductToDb(productData);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!isAdmin) return;
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    await deleteProductFromDb(productId);
+  };
+
+  const handleUpdateSettings = async (updates: Partial<StoreSettings>) => {
+    setStoreSettings((prev) => {
+      const merged = { ...prev, ...updates };
+      try {
+        localStorage.setItem('dbc_store_settings', JSON.stringify(merged));
+      } catch {
+        // quota
+      }
+      return merged;
+    });
+    await saveStoreSettingsToDb(updates);
+  };
+
+  // Filter products by category, fabric, search, and sort
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (activeCategory !== 'all') {
+        const cat = (product.category || '').toLowerCase();
+        if (activeCategory === 'hoodies' && !cat.includes('hoodie')) return false;
+        if (activeCategory === 'sweatshirts' && !cat.includes('sweat')) return false;
+        if (activeCategory === 'pants' && !cat.includes('jogging') && !cat.includes('pantalon')) return false;
+        if (activeCategory === 'sets' && !cat.includes('ensemble') && !cat.includes('set')) return false;
+        if (activeCategory === 'b2b' && !product.wholesalePriceDzd && !product.isB2BAvailable) return false;
+      }
+
+      if (fabricFilter !== 'all') {
+        const fab = (product.fabric || '').toLowerCase();
+        if (fabricFilter === '450' && !fab.includes('450')) return false;
+        if (fabricFilter === '380' && !fab.includes('380') && !fab.includes('400')) return false;
+        if (fabricFilter === '320' && !fab.includes('320') && !fab.includes('350')) return false;
+      }
+
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const matchName = product.name.toLowerCase().includes(q);
+        const matchDesc = product.description.toLowerCase().includes(q);
+        const matchCategory = product.category.toLowerCase().includes(q);
+        const matchFabric = product.fabric.toLowerCase().includes(q);
+        if (!matchName && !matchDesc && !matchCategory && !matchFabric) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'newest') return (b.id || '').localeCompare(a.id || '');
+      return 0;
+    });
+  }, [products, activeCategory, fabricFilter, searchQuery, sortBy]);
+
+  const t = TRANSLATIONS[currentLanguage];
+  const isArabic = currentLanguage === 'ar';
+  const cartCount = cartItems.reduce((acc, i) => acc + i.quantity, 0);
+
+  // If Admin panel is open
   if (currentPath === '/admin') {
     return (
       <AdminLayout
         currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
+        onLanguageChange={handleLanguageChange}
         products={products}
         onSaveProduct={handleSaveProduct}
         onDeleteProduct={handleDeleteProduct}
         storeSettings={storeSettings}
-        onUpdateSettings={handleUpdateStoreSettings}
+        onUpdateSettings={handleUpdateSettings}
         mediaAssets={mediaAssets}
-        deliveryCarriers={deliveryCarriers}
         onClose={() => {
           window.location.hash = '';
           setCurrentPath('/');
@@ -298,19 +554,20 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-[#FAF8F5] text-[#1F1D1A] flex flex-col ${isArabic ? 'rtl' : 'ltr'}`}>
-      {/* Navbar */}
+    <div className={`min-h-screen bg-[#FAF8F5] text-[#1F1C19] flex flex-col ${isArabic ? 'font-sans rtl' : 'font-sans'}`}>
+      {/* 1. Atelier Top Navigation Bar */}
       <Navbar
         currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
+        onLanguageChange={handleLanguageChange}
         currency={currency}
-        onCurrencyChange={setCurrency}
+        onCurrencyChange={handleCurrencyChange}
         cartCount={cartCount}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenOrderLookup={() => setIsOrderLookupOpen(true)}
+        wishlistCount={wishlistIds.length}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenContact={() => setIsContactOpen(true)}
         onOpenB2B={() => setIsB2BOpen(true)}
-        onOpenBespoke={() => setIsBespokeStudioOpen(true)}
+        onOpenOrderLookup={() => handleOpenOrderLookup()}
         onOpenAdmin={() => {
           window.location.hash = 'admin';
           setCurrentPath('/admin');
@@ -318,192 +575,100 @@ export const App: React.FC = () => {
         storeSettings={storeSettings}
       />
 
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Hero Section */}
-        <HeroBanner
-          onExploreCollection={() => {
-            const el = document.getElementById('catalog-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          onOpenB2B={() => setIsB2BOpen(true)}
-          onOpenContact={() => setIsContactOpen(true)}
-          onOpenOrderLookup={() => setIsOrderLookupOpen(true)}
-          onUpdateHeroSettings={handleUpdateStoreSettings}
-          currentLanguage={currentLanguage}
-          storeSettings={storeSettings}
-          mediaAssets={mediaAssets}
-          isAdmin={isAdmin}
-          isSettingsLoaded={isSettingsLoaded}
-        />
+      {/* 2. Hero Presentation Banner */}
+      <HeroBanner
+        onExploreCollection={() => {
+          const el = document.getElementById('catalog-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenContact={() => setIsContactOpen(true)}
+        onOpenOrderLookup={() => handleOpenOrderLookup()}
+        onUpdateHeroSettings={handleUpdateSettings}
+        currentLanguage={currentLanguage}
+        storeSettings={storeSettings}
+        mediaAssets={mediaAssets}
+        isAdmin={isAdmin}
+        isSettingsLoaded={isSettingsLoaded}
+      />
 
-        {/* Catalog Section */}
-        <section id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-          {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-[#E8E1D5] gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#8C6D3B]" />
-                <span className="text-xs font-mono uppercase tracking-widest text-[#8C6D3B] font-bold">
-                  {isArabic ? 'كتالوج ورشة الخياطة' : 'Catalogue Confection Algérie'}
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#1F1D1A]">
-                {isArabic ? 'الموديلات المتوفرة والتفصيل' : 'Nos Articles & Modèles en Molleton'}
-              </h2>
+      {/* 3. Main Catalog Section */}
+      <main id="catalog-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 w-full">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-[#EAE3D5] gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#8C6D3B]" />
+              <span className="text-xs font-mono uppercase tracking-widest text-[#8C6D3B] font-bold">
+                {isArabic ? 'كتالوج ورشة الخياطة' : 'Catalogue Confection Algérie'}
+              </span>
             </div>
-
-            {/* Category Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
-                    selectedCategory === cat.id
-                      ? 'bg-[#1F1D1A] text-white font-bold shadow-xs'
-                      : 'bg-white hover:bg-[#F2EDE4] text-[#544D42] border border-[#DDD4C5]'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#1F1C19]">
+              {isArabic ? 'الموديلات المتوفرة والتفصيل' : 'Nos Articles & Modèles en Molleton'}
+            </h2>
           </div>
 
-          {/* Product Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                currency={currency}
-                currentLanguage={currentLanguage}
-                onSelectProduct={(p) => setSelectedProduct(p)}
-                onQuickAdd={handleQuickAdd}
-              />
+          {/* Quick Filters */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'all', label: isArabic ? 'الكل' : 'Tous' },
+              { id: 'hoodies', label: isArabic ? 'هوديز' : 'Hoodies' },
+              { id: 'sweatshirts', label: isArabic ? 'سويت شيرت' : 'Sweatshirts' },
+              { id: 'pants', label: isArabic ? 'جوجينج' : 'Pantalons' },
+              { id: 'sets', label: isArabic ? 'أطقم كاملة' : 'Ensembles' },
+              { id: 'b2b', label: isArabic ? 'طلبيات الجملة' : 'Grossiste B2B' },
+            ].map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setActiveCategory(c.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-colors cursor-pointer whitespace-nowrap ${
+                  activeCategory === c.id
+                    ? 'bg-[#1F1C19] text-white font-bold'
+                    : 'bg-white hover:bg-[#F2EDE4] text-[#544D42] border border-[#DDD4C5]'
+                }`}
+              >
+                {c.label}
+              </button>
             ))}
           </div>
+        </div>
 
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-16 bg-white rounded border border-[#E8E1D5] p-8">
-              <p className="text-[#6E6659] font-mono text-sm">
-                {isArabic ? 'لا توجد منتجات في هذا التصنيف حالياً.' : 'Aucun modèle dans cette catégorie pour le moment.'}
-              </p>
-            </div>
-          )}
-        </section>
+        {/* Product Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
+          {filteredProducts.map((prod) => (
+            <ProductCard
+              key={prod.id}
+              product={prod}
+              currency={currency}
+              currentLanguage={currentLanguage}
+              onSelectProduct={handleSelectProduct}
+              onQuickAdd={handleQuickAdd}
+              isWishlisted={wishlistIds.includes(prod.id)}
+              onToggleWishlist={handleToggleWishlist}
+            />
+          ))}
+        </div>
 
-        {/* Custom Bespoke & Atelier Craft Banner */}
-        <section className="bg-[#1F1D1A] text-white py-12 sm:py-16 border-t border-b border-[#3B352E]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#332D26] text-[#C9A96E] rounded-full text-xs font-mono uppercase tracking-wider">
-                  <Scissors className="w-3.5 h-3.5" />
-                  <span>{isArabic ? 'خدمة التفصيل والطلبات الخاصة' : 'Atelier Sur-Mesure & Commandes B2B'}</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white">
-                  {isArabic
-                    ? 'هل لديك متجر أو ترغب في مقاسات خاصة؟'
-                    : 'Besoin d’un Taillage Spécifique ou d’une Série en Gros ?'}
-                </h3>
-                <p className="text-sm sm:text-base text-[#B3AAA0] font-sans max-w-2xl leading-relaxed">
-                  {isArabic
-                    ? 'نحن ننتج مباشرة في ورشتنا بالجزائر العاصمة. يمكنك طلب تفصيل خاص بالسنتمتر أو طلب كميات بالجملة مع تطريز وطباعة مخصصة لعلامتك التجارية.'
-                    : 'Nous fabriquons directement dans notre atelier à Alger. Commandez vos pièces avec vos propres mensurations ou lancez votre production de marque en gros avec broderie et étiquetage personnalisés.'}
-                </p>
-              </div>
-
-              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3">
-                <button
-                  onClick={() => setIsB2BOpen(true)}
-                  className="px-6 py-3.5 bg-[#C9A96E] hover:bg-[#B39358] text-[#1F1D1A] rounded font-mono text-xs uppercase tracking-wider font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>{isArabic ? 'طلب عرض أسعار بالجملة' : 'Devis Grossiste B2B'}</span>
-                </button>
-                <button
-                  onClick={() => setIsBespokeStudioOpen(true)}
-                  className="px-6 py-3.5 bg-transparent hover:bg-white/10 text-white border border-[#DDD4C5]/40 rounded font-mono text-xs uppercase tracking-wider font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Scissors className="w-4 h-4 text-[#C9A96E]" />
-                  <span>{isArabic ? 'استوديو التفصيل المخصص' : 'Studio Sur-Mesure'}</span>
-                </button>
-              </div>
-            </div>
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-16 bg-white rounded border border-[#EAE3D5] p-8">
+            <p className="text-[#6E6659] font-mono text-sm">
+              {isArabic ? 'لا توجد منتجات في هذا التصنيف حالياً.' : 'Aucun modèle dans cette catégorie pour le moment.'}
+            </p>
           </div>
-        </section>
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-[#FAF8F5] border-t border-[#E8E1D5] py-10 sm:py-14 text-xs font-mono text-[#6E6659]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-3">
-              <h4 className="font-serif text-base font-bold text-[#1F1D1A]">
-                {storeSettings.storeName || 'DBC CLOTHING WORKSHOP'}
-              </h4>
-              <p className="font-sans text-xs leading-relaxed text-[#544D42]">
-                {storeSettings.tagline || 'Atelier de confection textile haut de gamme en Algérie.'}
-              </p>
-              <p className="text-[11px] text-[#8C6D3B]">
-                {storeSettings.atelierAddress || 'Alger, Algérie'}
-              </p>
-            </div>
+      {/* 4. Footer */}
+      <Footer
+        currentLanguage={currentLanguage}
+        onOpenContact={() => setIsContactOpen(true)}
+        onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenOrderLookup={() => handleOpenOrderLookup()}
+        storeSettings={storeSettings}
+      />
 
-            <div className="space-y-2">
-              <span className="font-bold uppercase tracking-wider text-[#1F1D1A] block">
-                {isArabic ? 'خدماتنا' : 'Prestations'}
-              </span>
-              <ul className="space-y-1.5 text-xs">
-                <li>• Vente au détail (B2C)</li>
-                <li>• Confection en gros (B2B)</li>
-                <li>• Taillage sur-mesure</li>
-                <li>• Livraison 58 Wilayas</li>
-              </ul>
-            </div>
+      {/* ================= MODALS ================= */}
 
-            <div className="space-y-2">
-              <span className="font-bold uppercase tracking-wider text-[#1F1D1A] block">
-                {isArabic ? 'تواصل سريع' : 'Contact & Support'}
-              </span>
-              <ul className="space-y-1.5 text-xs">
-                <li>Tél: {storeSettings.contactPhone}</li>
-                <li>WhatsApp: {storeSettings.whatsappNumber}</li>
-                <li>Email: {storeSettings.contactEmail}</li>
-                <li>Horaires: {storeSettings.atelierHours}</li>
-              </ul>
-            </div>
-
-            <div className="space-y-3">
-              <span className="font-bold uppercase tracking-wider text-[#1F1D1A] block">
-                {isArabic ? 'إدارة الورشة' : 'Accès Restreint'}
-              </span>
-              <p className="text-[11px] leading-relaxed">
-                {isArabic ? 'فضاء خاص بمسؤولي الورشة فقط.' : 'Espace réservé à l’équipe de l’atelier DBC.'}
-              </p>
-              <button
-                onClick={() => {
-                  window.location.hash = 'admin';
-                  setCurrentPath('/admin');
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#F2EDE4] text-[#1F1D1A] border border-[#DDD4C5] rounded text-[11px] font-mono cursor-pointer transition-colors"
-              >
-                <Lock className="w-3 h-3 text-[#8C6D3B]" />
-                <span>{isArabic ? 'دخول المشرف' : 'Administration Atelier'}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-[#E8E1D5] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-            <span>© {new Date().getFullYear()} DBC Clothing Workshop. Tous droits réservés.</span>
-            <span>Algérie • Confection Locale & Haute Qualité</span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Modals */}
       {/* 1. Product Detail Modal */}
       {selectedProduct && (
         <ProductDetailModal
@@ -530,71 +695,100 @@ export const App: React.FC = () => {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         items={cartItems}
+        currency={currency}
         onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
-        onCheckout={() => {
+        onRemoveItem={handleRemoveCartItem}
+        onProceedToCheckout={() => {
           setIsCartOpen(false);
           setIsCheckoutOpen(true);
         }}
-        currency={currency}
+        discountCode={discountCode}
+        onApplyDiscountCode={handleApplyDiscountCode}
+        appliedDiscountPct={appliedDiscountPct}
         currentLanguage={currentLanguage}
       />
 
-      {/* 3. Checkout Modal */}
+      {/* 3. Direct Order / Checkout Modal */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         items={cartItems}
         currency={currency}
+        discountPct={appliedDiscountPct}
+        onOrderSuccess={handleOrderSuccess}
+        onOpenOrderLookup={(ordNum) => handleOpenOrderLookup(ordNum || '')}
         currentLanguage={currentLanguage}
         storeSettings={storeSettings}
-        deliveryCarriers={deliveryCarriers}
-        onOrderSuccess={() => {
-          setCartItems([]);
-          setIsCheckoutOpen(false);
-        }}
       />
 
-      {/* 4. Order Lookup Modal */}
-      <OrderLookupModal
-        isOpen={isOrderLookupOpen}
-        onClose={() => setIsOrderLookupOpen(false)}
-        currentLanguage={currentLanguage}
-        currency={currency}
-      />
-
-      {/* 5. Size Guide Modal */}
-      <SizeGuideModal
-        isOpen={isSizeGuideOpen}
-        onClose={() => setIsSizeGuideOpen(false)}
-        currentLanguage={currentLanguage}
-      />
-
-      {/* 6. Contact Modal */}
+      {/* 4. Workshop Contact & Payment Details Modal */}
       <ContactModal
         isOpen={isContactOpen}
         onClose={() => setIsContactOpen(false)}
-        currentLanguage={currentLanguage}
         storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
       />
 
-      {/* 7. B2B Modal */}
-      <B2BModal
+      {/* 6. B2B Wholesale Inquiries Modal */}
+      <B2BWholesaleModal
         isOpen={isB2BOpen}
         onClose={() => setIsB2BOpen(false)}
-        currentLanguage={currentLanguage}
         storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
       />
 
-      {/* 8. Bespoke Studio Modal */}
-      <BespokeStudio
-        isOpen={isBespokeStudioOpen}
-        onClose={() => setIsBespokeStudioOpen(false)}
-        currentLanguage={currentLanguage}
+      {/* 7. Size Guide Modal */}
+      <SizeGuideModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        onOpenBespoke={() => {
+          setIsSizeGuideOpen(false);
+          setIsB2BOpen(true);
+        }}
+      />
+
+      {/* 8. Wishlist Modal */}
+      <WishlistModal
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        wishlistIds={wishlistIds}
+        products={products}
         currency={currency}
+        onRemoveFromWishlist={handleToggleWishlist}
+        onSelectProduct={handleSelectProduct}
+      />
+
+      {/* 9. Floating WhatsApp Direct Action with Contextual Product Greeting */}
+      <FloatingWhatsAppWidget
+        currentlyViewedProduct={selectedProduct || lastViewedProduct}
+        currency={currency}
+        currentLanguage={currentLanguage}
         storeSettings={storeSettings}
-        onAddToCart={handleAddToCart}
+        onOpenCustomWhatsAppModal={(prod) => setWhatsAppCustomizerProduct(prod)}
+      />
+
+      {/* 10. Standalone WhatsApp Greeting Customizer (triggered from floating button) */}
+      {whatsAppCustomizerProduct && (
+        <ProductWhatsAppModal
+          product={whatsAppCustomizerProduct}
+          isOpen={true}
+          onClose={() => setWhatsAppCustomizerProduct(null)}
+          currency={currency}
+          currentLanguage={currentLanguage}
+          storeSettings={storeSettings}
+        />
+      )}
+
+      {/* 11. Order Lookup & Tracking Across 69 Wilayas Modal */}
+      <OrderLookupModal
+        isOpen={isOrderLookupOpen}
+        onClose={() => setIsOrderLookupOpen(false)}
+        orders={orders}
+        currency={currency}
+        currentLanguage={currentLanguage}
+        storeSettings={storeSettings}
+        initialQuery={orderLookupQuery}
       />
     </div>
   );
-};
+}
