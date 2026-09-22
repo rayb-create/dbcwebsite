@@ -7,19 +7,19 @@ import {
   Sparkles, 
   ShieldCheck, 
   Truck, 
-  MessageCircle,
-  Building2,
+  MessageCircle, 
+  Building2, 
   Layers, 
   Info, 
-  Phone,
-  SlidersHorizontal,
-  Share2,
-  ExternalLink,
-  Trash2,
-  Edit2,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight
+  Phone, 
+  SlidersHorizontal, 
+  Share2, 
+  ExternalLink, 
+  Trash2, 
+  Edit2, 
+  AlertTriangle, 
+  ChevronLeft, 
+  ChevronRight 
 } from 'lucide-react';
 import { Product, Currency, CustomMeasurements, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
