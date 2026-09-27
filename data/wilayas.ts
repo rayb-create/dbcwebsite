@@ -83,10 +83,13 @@ export function getWilayaByCode(code: string, customRates?: Record<string, { hom
   const base = ALGERIAN_WILAYAS.find((w) => w.code === code);
   if (!base) return undefined;
   if (!customRates || !customRates[code]) return base;
+  const custom = customRates[code];
+  const customHome = typeof custom.home === 'number' && !isNaN(custom.home) ? custom.home : Number(custom.home);
+  const customDesk = typeof custom.desk === 'number' && !isNaN(custom.desk) ? custom.desk : Number(custom.desk);
   return {
     ...base,
-    homeDeliveryFeeDzd: typeof customRates[code].home === 'number' ? customRates[code].home : base.homeDeliveryFeeDzd,
-    deskDeliveryFeeDzd: typeof customRates[code].desk === 'number' ? customRates[code].desk : base.deskDeliveryFeeDzd,
+    homeDeliveryFeeDzd: !isNaN(customHome) && isFinite(customHome) && customHome >= 0 ? customHome : base.homeDeliveryFeeDzd,
+    deskDeliveryFeeDzd: !isNaN(customDesk) && isFinite(customDesk) && customDesk >= 0 ? customDesk : base.deskDeliveryFeeDzd,
   };
 }
 
@@ -97,10 +100,16 @@ export function getWilayasWithCustomRates(customRates?: Record<string, { home: n
   return ALGERIAN_WILAYAS.map((w) => {
     const custom = customRates[w.code];
     if (!custom) return w;
+    const customHome = typeof custom.home === 'number' && !isNaN(custom.home) ? custom.home : Number(custom.home);
+    const customDesk = typeof custom.desk === 'number' && !isNaN(custom.desk) ? custom.desk : Number(custom.desk);
     return {
       ...w,
-      homeDeliveryFeeDzd: typeof custom.home === 'number' ? custom.home : w.homeDeliveryFeeDzd,
-      deskDeliveryFeeDzd: typeof custom.desk === 'number' ? custom.desk : w.deskDeliveryFeeDzd,
+      homeDeliveryFeeDzd: !isNaN(customHome) && isFinite(customHome) && customHome >= 0 ? customHome : w.homeDeliveryFeeDzd,
+      deskDeliveryFeeDzd: !isNaN(customDesk) && isFinite(customDesk) && customDesk >= 0 ? customDesk : baseFeeOrFallback(w.homeDeliveryFeeDzd),
     };
   });
+}
+
+function baseFeeOrFallback(val: number): number {
+  return typeof val === 'number' && !isNaN(val) ? val : 400;
 }
