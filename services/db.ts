@@ -529,4 +529,3 @@ export async function initializeWorkshopDatabase(): Promise<void> {
   // Respect user choice for empty database: no automatic seeding of fake products or fake orders.
   return Promise.resolve();
 }
-
