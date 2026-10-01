@@ -15,6 +15,7 @@ import { PRODUCTS } from '../data/products';
 import { DEFAULT_STORE_SETTINGS } from '../data/storeSettings';
 import { INITIAL_ORDERS } from '../data/orders';
 import { compressBase64Image } from '../utils/imageCompressor';
+import { parseNumericPrice } from '../utils/format';
 
 // ============================================================================
 // FIRESTORE ERROR HANDLING (STANDARDIZED ABAC DIAGNOSTICS)
@@ -104,9 +105,13 @@ export function subscribeProducts(
       const productsList: Product[] = [];
       snapshot.forEach((d) => {
         const data = d.data() as Product;
+        const parsedPrice = parseNumericPrice(data.price);
+        const parsedWholesalePrice = parseNumericPrice(data.wholesalePriceDzd) ?? parseNumericPrice((data as any).b2bPrice);
         productsList.push({
           ...data,
           id: d.id,
+          price: parsedPrice !== null ? parsedPrice : data.price,
+          wholesalePriceDzd: parsedWholesalePrice !== null ? parsedWholesalePrice : data.wholesalePriceDzd,
           inStock: data.inStock ?? true,
           stock: data.stock ?? 0,
           isPublished: data.isPublished ?? true,
@@ -320,7 +325,19 @@ export function subscribeOrders(
 
       const ordersList: Order[] = [];
       snapshot.forEach((d) => {
-        ordersList.push(d.data() as Order);
+        const raw = d.data() as any;
+        const subtotal = parseNumericPrice(raw.subtotal) ?? 0;
+        const shipping = parseNumericPrice(raw.shipping) ?? parseNumericPrice(raw.shippingCost) ?? 0;
+        const discount = parseNumericPrice(raw.discount) ?? 0;
+        const total = parseNumericPrice(raw.total) ?? Math.max(0, (subtotal - discount) + shipping);
+        ordersList.push({
+          ...raw,
+          id: d.id,
+          subtotal,
+          shipping,
+          discount,
+          total,
+        });
       });
 
       // Sort newest first
@@ -338,8 +355,21 @@ export function subscribeOrders(
 export async function saveOrderToDb(order: Order): Promise<void> {
   const path = `orders/${order.id}`;
   try {
+    const subtotal = parseNumericPrice(order.subtotal) ?? 0;
+    const shipping = parseNumericPrice(order.shipping) ?? parseNumericPrice((order as any).shippingCost) ?? 0;
+    const discount = parseNumericPrice(order.discount) ?? 0;
+    const total = parseNumericPrice(order.total) ?? Math.max(0, (subtotal - discount) + shipping);
+
     const docRef = doc(db, 'orders', order.id);
-    const sanitizedOrder = sanitizeFirestorePayload(order);
+    const orderPayload = {
+      ...order,
+      subtotal,
+      shipping,
+      shippingCost: shipping,
+      discount,
+      total,
+    };
+    const sanitizedOrder = sanitizeFirestorePayload(orderPayload);
     await setDoc(docRef, sanitizedOrder, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
