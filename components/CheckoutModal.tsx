@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CartItem, Currency, Order, StoreSettings } from '../types';
-import { formatPrice, generateOrderNumber } from '../utils/format';
+import { formatPrice, generateOrderNumber, parseNumericPrice } from '../utils/format';
 import { ALGERIAN_WILAYAS, Wilaya, getWilayaByCode } from '../data/wilayas';
 import { Language, TRANSLATIONS } from '../data/i18n';
 
@@ -66,23 +66,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [copiedRip, setCopiedRip] = useState(false);
+  const [copiedReceipt, setCopiedReceipt] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showTrackingStatus, setShowTrackingStatus] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const currentWilaya: Wilaya = getWilayaByCode(selectedWilayaCode, storeSettings.customWilayaRates) || ALGERIAN_WILAYAS[15]; // 16 - Alger
+  const currentWilaya: Wilaya = 
+    getWilayaByCode(selectedWilayaCode, storeSettings.customWilayaRates, (storeSettings as any).deliveryRates) 
+    || ALGERIAN_WILAYAS.find(w => w.code === selectedWilayaCode) 
+    || ALGERIAN_WILAYAS[15]; // 16 - Alger
 
-  // Calculations in DZD
-  const subtotalDzd = items.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0);
-  const discountAmountDzd = Math.round((subtotalDzd * appliedDiscountPct) / 100);
+  // Calculations in DZD - parses numbers and numeric strings accurately without || 0 hiding missing prices
+  const subtotalDzd = items.reduce((sum, item) => {
+    const rawPrice = 
+      parseNumericPrice(item.pricePerUnit) ??
+      parseNumericPrice((item as any).price) ??
+      parseNumericPrice(item.product?.price) ??
+      parseNumericPrice((item.product as any)?.b2bPrice) ??
+      parseNumericPrice(item.product?.wholesalePriceDzd);
+
+    const itemPrice = rawPrice !== null ? rawPrice : 0;
+    const itemQty = Math.max(1, parseNumericPrice(item.quantity) ?? 1);
+    return sum + (itemPrice * itemQty);
+  }, 0);
+
+  const safeDiscountPct = Math.max(0, Math.min(100, parseNumericPrice(appliedDiscountPct) ?? 0));
+  const discountAmountDzd = Math.round((subtotalDzd * safeDiscountPct) / 100);
   
-  // Delivery fee based on selected Wilaya, custom rates and free shipping threshold
-  const baseShippingCostDzd = deliveryType === 'home' ? currentWilaya.homeDeliveryFeeDzd : currentWilaya.deskDeliveryFeeDzd;
+  // Delivery fee based on selected Wilaya, custom rates and delivery type
+  const homeFee = parseNumericPrice(currentWilaya?.homeDeliveryFeeDzd) 
+    ?? parseNumericPrice((storeSettings as any)?.defaultHomeRate) 
+    ?? parseNumericPrice(storeSettings?.defaultDeliveryFeeDzd) 
+    ?? 600;
+
+  const deskFee = parseNumericPrice(currentWilaya?.deskDeliveryFeeDzd) 
+    ?? parseNumericPrice((storeSettings as any)?.defaultDeskRate) 
+    ?? 400;
+
+  const baseShippingCostDzd = deliveryType === 'home' ? homeFee : deskFee;
+
+  const freeThreshold = parseNumericPrice(storeSettings?.freeShippingThresholdDzd);
   const isFreeShipping = Boolean(
-    storeSettings.freeShippingThresholdDzd &&
-    storeSettings.freeShippingThresholdDzd > 0 &&
-    (subtotalDzd - discountAmountDzd) >= storeSettings.freeShippingThresholdDzd
+    freeThreshold && freeThreshold > 0 &&
+    (subtotalDzd - discountAmountDzd) >= freeThreshold
   );
   const shippingCostDzd = isFreeShipping ? 0 : baseShippingCostDzd;
-  const totalDzd = subtotalDzd - discountAmountDzd + shippingCostDzd;
+  const totalDzd = Math.max(0, (subtotalDzd - discountAmountDzd) + shippingCostDzd);
 
   // Active delivery partner from settings
   const activeCarrier = 
@@ -108,6 +137,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         ? activeCarrier.trackingUrlTemplate.replace('{TRACKING}', encodeURIComponent(trackingNum)) 
         : undefined;
 
+      const itemsSnapshot: CartItem[] = items.map((item) => {
+        const rawPrice = 
+          parseNumericPrice(item.pricePerUnit) ??
+          parseNumericPrice((item as any).price) ??
+          parseNumericPrice(item.product?.price) ??
+          parseNumericPrice((item.product as any)?.b2bPrice) ??
+          parseNumericPrice(item.product?.wholesalePriceDzd);
+        const itemPrice = rawPrice !== null ? rawPrice : 0;
+        const itemQty = Math.max(1, parseNumericPrice(item.quantity) ?? 1);
+        return {
+          ...item,
+          pricePerUnit: itemPrice,
+          quantity: itemQty,
+        };
+      });
+
+      const finalSubtotal = subtotalDzd;
+      const finalShipping = shippingCostDzd;
+      const finalDiscount = discountAmountDzd;
+      const finalTotal = Math.max(0, (finalSubtotal - finalDiscount) + finalShipping);
+
       const newOrder: Order = {
         id: `order-${Date.now()}`,
         orderNumber: orderNum,
@@ -116,12 +166,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           day: 'numeric', 
           year: 'numeric' 
         }),
-        items: [...items],
-        subtotal: subtotalDzd,
-        shipping: shippingCostDzd,
-        discount: discountAmountDzd,
+        items: itemsSnapshot,
+        subtotal: finalSubtotal,
+        shipping: finalShipping,
+        discount: finalDiscount,
         tax: 0,
-        total: totalDzd,
+        total: finalTotal,
         currency,
         customer: {
           fullName,
@@ -145,6 +195,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         trackingNotes: `Colis étiqueté pour ${carrierName}. Destination : ${currentWilaya.nameEn}.`,
       };
 
+      // Compatibility field for database schema
+      (newOrder as any).shippingCost = finalShipping;
+
       setPlacedOrder(newOrder);
       onOrderSuccess(newOrder);
       setIsProcessing(false);
@@ -164,35 +217,96 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const handleOrderViaWhatsApp = () => {
-    const cleanNum = storeSettings.whatsappNumber.replace(/[^0-9]/g, '');
-    const itemsList = items
+    const rawNumber = storeSettings?.whatsappNumber || '213550458812';
+    const cleanNum = rawNumber.replace(/[^0-9]/g, '') || '213550458812';
+    
+    // Read from placedOrder if available, otherwise fallback to current form items
+    const targetOrder = placedOrder;
+    const orderItems = targetOrder ? targetOrder.items : items;
+    const orderTotal = targetOrder ? targetOrder.total : totalDzd;
+    const orderNum = targetOrder?.orderNumber || 'En cours';
+    const trackingNum = targetOrder?.trackingNumber || 'En attente';
+
+    const itemsList = (orderItems || [])
       .map(
         (i) =>
-          `• ${i.product.name} (Taille: ${i.size}, Couleur: ${i.color.name}, Qté: ${i.quantity}) - ${formatPrice(
-            i.pricePerUnit * i.quantity,
+          `• ${i.product?.name || 'Vêtement DBC'} (Taille: ${i.size}, Couleur: ${i.color?.name || 'Standard'}, Qté: ${i.quantity}) - ${formatPrice(
+            (parseNumericPrice(i.pricePerUnit) ?? parseNumericPrice(i.product?.price) ?? 0) * (parseNumericPrice(i.quantity) ?? 1),
             currency,
             isArabic
           )}`
       )
       .join('\n');
 
-    const msg = isArabic
-      ? `مرحباً ورشة DBC 👋\nأود تأكيد طلبية جديدة:\n\n${itemsList}\n\n*المجموع:* ${formatPrice(
-          totalDzd,
-          currency,
-          isArabic
-        )}\n*الاسم:* ${fullName || 'زبون'}\n*الهاتف:* ${phone || '---'}\n*الولاية:* ${currentWilaya.code} - ${currentWilaya.nameAr} (${commune})\n*العنوان:* ${address}\n*طريقة التوصيل:* ${
-          deliveryType === 'home' ? 'توصيل للمنزل' : 'استلام من مكتب التوصيل'
-        }\n*طريقة الدفع:* ${paymentMethod === 'cod' ? 'الدفع عند الاستلام' : 'BaridiMob'}`
-      : `Bonjour DBC Workshop 👋\nJe souhaite passer une commande :\n\n${itemsList}\n\n*Total:* ${formatPrice(
-          totalDzd,
-          currency,
-          isArabic
-        )}\n*Nom:* ${fullName || 'Client'}\n*Tél:* ${phone || '---'}\n*Wilaya:* ${currentWilaya.code} - ${currentWilaya.nameEn} (${commune})\n*Adresse:* ${address}\n*Mode:* ${
-          deliveryType === 'home' ? 'À Domicile' : 'StopDesk'
-        }\n*Paiement:* ${paymentMethod === 'cod' ? 'À la livraison (Cash)' : 'BaridiMob'}`;
+    const wilayaStr = targetOrder 
+      ? `${targetOrder.customer.wilayaCode} - ${targetOrder.customer.wilayaName} (${targetOrder.customer.city})`
+      : `${currentWilaya.code} - ${currentWilaya.nameEn} (${commune})`;
 
-    window.open(`https://wa.me/${cleanNum}?text=${encodeURIComponent(msg)}`, '_blank');
+    const clientName = targetOrder?.customer.fullName || fullName || 'Client';
+    const clientPhone = targetOrder?.customer.phone || phone || '---';
+    const clientAddress = targetOrder?.customer.address || address || '---';
+    const activeDeliveryType = targetOrder?.deliveryType || deliveryType;
+    const activePayMethod = targetOrder?.paymentMethod || paymentMethod;
+
+    const msg = isArabic
+      ? `مرحباً ورشة DBC 👋\nتأكيد طلبية جديدة #${orderNum}:\n\n${itemsList}\n\n*رقم التتبع:* ${trackingNum}\n*المجموع النهائي:* ${formatPrice(
+          orderTotal,
+          currency,
+          isArabic
+        )}\n*الاسم:* ${clientName}\n*الهاتف:* ${clientPhone}\n*الولاية:* ${wilayaStr}\n*العنوان:* ${clientAddress}\n*طريقة التوصيل:* ${
+          activeDeliveryType === 'home' ? 'توصيل للمنزل' : 'استلام من مكتب التوصيل'
+        }\n*طريقة الدفع:* ${activePayMethod === 'cod' ? 'الدفع عند الاستلام' : 'BaridiMob'}`
+      : `Bonjour DBC Workshop 👋\nConfirmation de commande #${orderNum} :\n\n${itemsList}\n\n*N° de Suivi :* ${trackingNum}\n*Total Net:* ${formatPrice(
+          orderTotal,
+          currency,
+          isArabic
+        )}\n*Nom:* ${clientName}\n*Tél:* ${clientPhone}\n*Wilaya:* ${wilayaStr}\n*Adresse:* ${clientAddress}\n*Mode:* ${
+          activeDeliveryType === 'home' ? 'À Domicile' : 'StopDesk'
+        }\n*Paiement:* ${activePayMethod === 'cod' ? 'À la livraison (Cash)' : 'BaridiMob'}`;
+
+    const waUrl = `https://wa.me/${cleanNum}?text=${encodeURIComponent(msg)}`;
+    const a = document.createElement('a');
+    a.href = waUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handlePrintReceipt = () => {
+    setShowReceiptModal(true);
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('Direct print dialog unavailable:', e);
+    }
+  };
+
+  const handleReturnToShop = () => {
+    setStep('details');
+    setPlacedOrder(null);
+    setFormError(null);
+    setShowReceiptModal(false);
+    setShowTrackingStatus(false);
+    onClose();
+  };
+
+  const handleTrackShipment = () => {
+    if (placedOrder && onOpenOrderLookup) {
+      onClose();
+      onOpenOrderLookup(placedOrder.orderNumber);
+    } else {
+      setShowTrackingStatus((prev) => !prev);
+    }
+  };
+
+  const copyReceiptText = () => {
+    if (!placedOrder) return;
+    const receiptText = `=== DBC WORKSHOP ALGÉRIE - REÇU DE COMMANDE ===\nCommande N°: ${placedOrder.orderNumber}\nDate: ${placedOrder.date}\nClient: ${placedOrder.customer.fullName} (${placedOrder.customer.phone})\nDestination: ${placedOrder.customer.wilayaCode} - ${placedOrder.customer.wilayaName}\nMode de livraison: ${placedOrder.deliveryType === 'home' ? 'À Domicile' : 'StopDesk'}\nN° de Suivi: ${placedOrder.trackingNumber} (${placedOrder.carrierName})\n\nArticles:\n${placedOrder.items.map(i => `• ${i.product.name} [${i.size}] × ${i.quantity} = ${formatPrice(Number(i.pricePerUnit) * Number(i.quantity), currency)}`).join('\n')}\n\nSous-total: ${formatPrice(placedOrder.subtotal, currency)}\nFrais de livraison: ${formatPrice(placedOrder.shipping, currency)}\nTOTAL NET: ${formatPrice(placedOrder.total, currency)}\nMode de paiement: ${placedOrder.paymentMethod === 'cod' ? 'Paiement à la livraison' : 'BaridiMob'}\n===============================================`;
+    navigator.clipboard?.writeText(receiptText);
+    setCopiedReceipt(true);
+    setTimeout(() => setCopiedReceipt(false), 2500);
   };
 
   const copyRip = () => {
@@ -212,55 +326,48 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#1F1D1A] text-white border-b border-[#3B352E]">
           <div className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-[#C9A96E]" />
-            <div>
-              <h2 className="font-serif text-lg sm:text-xl font-medium tracking-wide">
-                {step === 'confirmation' ? t.orderSuccessTitle : `${t.siteTitle} • Livraison Algérie`}
-              </h2>
-              <p className="text-[11px] font-mono text-[#B3AAA0]">
-                {t.delivery58Wilayas} • Paiement à la réception ou BaridiMob
-              </p>
-            </div>
+            <span className="font-serif text-lg font-bold tracking-wide">
+              {t.checkoutTitle}
+            </span>
+            <span className="text-[#68625B]">•</span>
+            <span className="text-xs font-mono text-[#DDD4C5]">
+              {t.delivery58Wilayas} • Paiement à la réception ou BaridiMob
+            </span>
           </div>
           <button
-            id="close-checkout-modal-btn"
+            id="checkout-close-modal-btn"
             onClick={onClose}
-            className="p-1.5 text-[#B3AAA0] hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1 text-[#B3AAA0] hover:text-white rounded transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
+        {/* Modal body */}
+        <div className="overflow-y-auto flex-1">
           {step !== 'confirmation' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Delivery Form & Payment (7 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+              {/* Left Column (7 cols): Form steps */}
               <div className="lg:col-span-7 space-y-5">
-                {/* Step tabs */}
-                <div className="flex border-b border-[#DDD4C5] text-xs font-mono">
-                  <button
-                    onClick={() => setStep('details')}
-                    className={`pb-2.5 px-3 uppercase tracking-wider cursor-pointer ${
-                      step === 'details' ? 'font-bold text-[#1F1C19] border-b-2 border-black' : 'text-[#847B6F]'
-                    }`}
-                  >
-                    1. {t.wilayaLabel} & Coordonnées
-                  </button>
-                  <button
-                    onClick={() => setStep('payment')}
-                    className={`pb-2.5 px-3 uppercase tracking-wider cursor-pointer ${
-                      step === 'payment' ? 'font-bold text-[#1F1C19] border-b-2 border-black' : 'text-[#847B6F]'
-                    }`}
-                  >
-                    2. {t.paymentMethod} & Validation
-                  </button>
+                {/* Steps indicator */}
+                <div className="flex items-center gap-2 pb-2 border-b border-[#E2DAD0] text-xs font-mono">
+                  <span className={`px-2 py-0.5 rounded font-bold ${step === 'details' ? 'bg-[#1F1D1A] text-white' : 'bg-[#EAE3D6] text-[#6E6659]'}`}>
+                    1. Coordonnées & Wilaya
+                  </span>
+                  <span className="text-[#BDB4A6]">→</span>
+                  <span className={`px-2 py-0.5 rounded font-bold ${step === 'payment' ? 'bg-[#1F1D1A] text-white' : 'bg-[#EAE3D6] text-[#6E6659]'}`}>
+                    2. Mode de Paiement
+                  </span>
                 </div>
 
                 {step === 'details' && (
-                  <div className="space-y-4 text-xs animate-in fade-in duration-150">
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <h3 className="font-serif text-base font-semibold text-[#1F1C19]">
+                      Informations de livraison en Algérie
+                    </h3>
+
                     {formError && (
-                      <div className="p-3 bg-rose-50 border border-rose-200 rounded text-rose-800 flex items-center gap-2 font-medium text-xs animate-in fade-in duration-150">
+                      <div className="p-3 bg-rose-50 border border-rose-300 rounded text-xs text-rose-800 flex items-center gap-2 animate-in fade-in">
                         <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                         <span>{formError}</span>
                       </div>
@@ -288,7 +395,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         className="w-full px-3 py-2.5 bg-white border border-[#DDD4C5] rounded font-mono text-xs focus:outline-none focus:border-black cursor-pointer"
                       >
                         {ALGERIAN_WILAYAS.map((w) => {
-                          const customW = getWilayaByCode(w.code, storeSettings.customWilayaRates) || w;
+                          const customW = getWilayaByCode(w.code, storeSettings.customWilayaRates, (storeSettings as any).deliveryRates) || w;
                           return (
                             <option key={w.code} value={w.code}>
                               {w.code} - {w.nameEn} ({w.nameAr}) • Domicile: {customW.homeDeliveryFeeDzd} DZD | Bureau: {customW.deskDeliveryFeeDzd} DZD
@@ -404,7 +511,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                                   🎉 LIVRAISON GRATUITE (0 DZD)
                                 </span>
                               ) : (
-                                `Frais : ${formatPrice(currentWilaya.homeDeliveryFeeDzd, currency, isArabic)}`
+                                `Frais : ${formatPrice(homeFee, currency, isArabic)}`
                               )}
                             </span>
                             <span className="text-[10px] text-emerald-700 block">
@@ -437,7 +544,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                                   🎉 LIVRAISON GRATUITE (0 DZD)
                                 </span>
                               ) : (
-                                `Frais : ${formatPrice(currentWilaya.deskDeliveryFeeDzd, currency, isArabic)}`
+                                `Frais : ${formatPrice(deskFee, currency, isArabic)}`
                               )}
                             </span>
                             <span className="text-[10px] text-[#7A7266] block">
@@ -475,77 +582,73 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </h3>
 
                     <div className="space-y-3">
-                      {/* Cash on Delivery (COD) */}
+                      {/* COD */}
                       <label
-                        className={`p-4 border rounded block cursor-pointer transition-colors ${
+                        className={`p-3.5 border rounded-lg flex items-start gap-3 cursor-pointer transition-colors ${
                           paymentMethod === 'cod'
                             ? 'bg-[#F2EDE4] border-black text-[#1F1C19]'
-                            : 'bg-white border-[#DDD4C5]'
+                            : 'bg-white border-[#DDD4C5] text-[#5C554B]'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="payMethod"
-                            checked={paymentMethod === 'cod'}
-                            onChange={() => setPaymentMethod('cod')}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-mono text-xs font-bold">
-                                {t.cashOnDelivery}
-                              </span>
-                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-mono rounded font-bold">
-                                Recommandé en Algérie
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-[#6E6659] mt-0.5">
-                              Payez en espèces à l'agent de livraison lors de la remise en main propre de votre colis.
-                            </p>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          checked={paymentMethod === 'cod'}
+                          onChange={() => setPaymentMethod('cod')}
+                          className="mt-1"
+                        />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold">
+                              {t.cashOnDelivery} (COD)
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[9px] font-mono font-bold">
+                              Populaire & Sécurisé
+                            </span>
                           </div>
+                          <p className="text-[11px] text-[#6E6659]">
+                            Payez en espèces à l'agent de livraison lors de la réception de votre colis.
+                          </p>
                         </div>
                       </label>
 
                       {/* BaridiMob / CCP */}
                       <label
-                        className={`p-4 border rounded block cursor-pointer transition-colors ${
+                        className={`p-3.5 border rounded-lg flex items-start gap-3 cursor-pointer transition-colors ${
                           paymentMethod === 'baridimob'
                             ? 'bg-[#F2EDE4] border-black text-[#1F1C19]'
-                            : 'bg-white border-[#DDD4C5]'
+                            : 'bg-white border-[#DDD4C5] text-[#5C554B]'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="radio"
-                            name="payMethod"
-                            checked={paymentMethod === 'baridimob'}
-                            onChange={() => setPaymentMethod('baridimob')}
-                            className="mt-1"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-mono text-xs font-bold flex items-center gap-1.5">
-                                <CreditCard className="w-4 h-4 text-[#8C6D3B]" />
-                                <span>{t.baridiMob}</span>
-                              </span>
-                              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-mono rounded">
-                                Virement Immédiat
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-[#6E6659]">
-                              Effectuez le virement du montant total de la commande via l'application BaridiMob vers notre RIP :
-                            </p>
-                            <div className="p-2 bg-white border border-[#DDD4C5] rounded flex items-center justify-between font-mono text-xs">
-                              <span className="font-bold text-[#1F1C19]">{storeSettings.baridiMobRip}</span>
-                              <button
-                                type="button"
-                                onClick={copyRip}
-                                className="px-2 py-1 bg-[#F2EDE4] hover:bg-black hover:text-white rounded text-[10px] flex items-center gap-1 cursor-pointer"
-                              >
-                                {copiedRip ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                                <span>{copiedRip ? 'Copié' : 'Copier RIP'}</span>
-                              </button>
-                            </div>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          checked={paymentMethod === 'baridimob'}
+                          onChange={() => setPaymentMethod('baridimob')}
+                          className="mt-1"
+                        />
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold">
+                              {t.baridiMob} / Virement CCP
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-[#E8DFC9] text-[#5C4F35] rounded text-[9px] font-mono">
+                              Virement Direct
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#6E6659]">
+                            Effectuez le virement du montant total de la commande via l'application BaridiMob vers notre RIP :
+                          </p>
+                          <div className="p-2 bg-white border border-[#DDD4C5] rounded flex items-center justify-between font-mono text-xs">
+                            <span className="font-bold text-[#1F1C19]">{storeSettings.baridiMobRip}</span>
+                            <button
+                              type="button"
+                              onClick={copyRip}
+                              className="px-2 py-1 bg-[#F2EDE4] hover:bg-black hover:text-white rounded text-[10px] flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedRip ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                              <span>{copiedRip ? 'Copié' : 'Copier RIP'}</span>
+                            </button>
                           </div>
                         </div>
                       </label>
@@ -627,7 +730,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           Quantité: {item.quantity}
                         </p>
                         <p className="font-mono text-xs font-bold text-[#1F1C19] pt-0.5">
-                          {formatPrice(item.pricePerUnit * item.quantity, currency, isArabic)}
+                          {formatPrice((parseNumericPrice(item.pricePerUnit) ?? parseNumericPrice(item.product?.price) ?? 0) * (parseNumericPrice(item.quantity) ?? 1), currency, isArabic)}
                         </p>
                       </div>
                     </div>
@@ -711,6 +814,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span>{placedOrder.paymentMethod === 'cod' ? 'Paiement à la livraison (Cash)' : 'BaridiMob / CCP'}</span>
                   </div>
 
+                  <div className="flex justify-between border-b border-[#E2DAD0] pb-2">
+                    <span className="text-[#7C756B]">Sous-total articles :</span>
+                    <span>{formatPrice(placedOrder.subtotal, currency, isArabic)}</span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-[#E2DAD0] pb-2">
+                    <span className="text-[#7C756B]">Frais de livraison ({placedOrder.deliveryType === 'home' ? 'Domicile' : 'Bureau'}) :</span>
+                    <span>{formatPrice(placedOrder.shipping, currency, isArabic)}</span>
+                  </div>
+
                   <div className="flex justify-between text-sm font-bold text-[#1F1C19] pt-1">
                     <span>Montant Total :</span>
                     <span>{formatPrice(placedOrder.total, currency, isArabic)}</span>
@@ -718,47 +831,183 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               )}
 
+              {/* Inline Shipment Tracking Status Banner (if activated) */}
+              {showTrackingStatus && placedOrder && (
+                <div className="p-4 bg-amber-50/80 border border-amber-200 rounded text-left space-y-2 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-950">
+                    <span className="flex items-center gap-1.5">
+                      <Truck className="w-4 h-4 text-amber-700" />
+                      <span>{isArabic ? 'حالة التتبع الحالية للشحنة' : 'Statut d’Acheminement DBC'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 bg-amber-200/70 rounded text-[10px] text-amber-900">
+                      {placedOrder.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-900 font-sans leading-relaxed">
+                    {isArabic
+                      ? `طلبيتكم رقم (${placedOrder.orderNumber}) مسجلة بنجاح في ورشة DBC. رقم تتبع الشحنة هو (${placedOrder.trackingNumber}) مع شركة ${placedOrder.carrierName || 'Yalidine Express'}. سيتم تسليم الطرد لوكالة الشحن خلال 24-48 ساعة، وستتلقون اتصالاً هاتفياً قبل التوصيل إلى باب منزلكم.`
+                      : `Votre commande N° ${placedOrder.orderNumber} est validée et en cours de préparation à l’atelier DBC. Numéro de suivi : ${placedOrder.trackingNumber} (${placedOrder.carrierName || 'Yalidine Express'}). Les étapes détaillées de transport s'activeront dès la prise en charge par l'agence de livraison.`}
+                  </p>
+                  <div className="text-[11px] font-mono text-amber-800 flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-amber-200/60">
+                    <span>Transporteur : <strong>{placedOrder.carrierName || 'Yalidine Express'}</strong></span>
+                    <span>Délai estimé : <strong>{placedOrder.estimatedDelivery || '24h - 48h'}</strong></span>
+                    <span>Wilaya : <strong>{placedOrder.customer.wilayaName}</strong></span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                {onOpenOrderLookup && placedOrder && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenOrderLookup(placedOrder.orderNumber);
-                    }}
-                    className="px-5 py-2.5 bg-[#8C6D3B] hover:bg-[#72572D] text-white font-mono text-xs font-bold rounded flex items-center gap-2 cursor-pointer shadow-md transition-colors"
-                  >
-                    <Truck className="w-4 h-4" />
-                    <span>{isArabic ? 'تتبع مسار الشحنة الآن' : 'Suivre l’Acheminement du Colis'}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  id="checkout-track-shipment-btn"
+                  onClick={handleTrackShipment}
+                  className="px-5 py-2.5 bg-[#8C6D3B] hover:bg-[#72572D] text-white font-mono text-xs font-bold rounded flex items-center gap-2 cursor-pointer shadow-md transition-colors"
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>{isArabic ? '🚚 تتبع مسار الشحنة / Track shipment' : '🚚 Suivre le colis / Track shipment'}</span>
+                </button>
 
                 <button
                   type="button"
+                  id="checkout-whatsapp-confirm-btn"
                   onClick={handleOrderViaWhatsApp}
                   className="px-5 py-2.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-mono text-xs font-semibold rounded flex items-center gap-2 cursor-pointer shadow-md"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Envoyer la confirmation sur WhatsApp</span>
+                  <span>💬 Envoyer la confirmation sur WhatsApp</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  id="checkout-print-receipt-btn"
+                  onClick={handlePrintReceipt}
                   className="px-5 py-2.5 bg-white border border-[#DDD4C5] font-mono text-xs rounded hover:bg-[#F2EDE4] flex items-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Imprimer le Reçu</span>
+                  <span>🖨️ Imprimer le reçu</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={onClose}
+                  id="checkout-return-to-shop-btn"
+                  onClick={handleReturnToShop}
                   className="px-5 py-2.5 bg-[#1F1D1A] text-white font-mono text-xs rounded hover:bg-[#3D3730] cursor-pointer"
                 >
                   Retour à la Boutique
                 </button>
               </div>
+
+              {/* Printable Receipt Modal View */}
+              {showReceiptModal && placedOrder && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+                  <div className="bg-white rounded-lg border border-[#DDD4C5] shadow-2xl max-w-lg w-full p-6 text-left space-y-4 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between border-b border-[#EAE3D6] pb-3">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-[#1F1C19]">
+                          DBC WORKSHOP ALGÉRIE
+                        </h4>
+                        <p className="text-[11px] font-mono text-[#7C756B]">
+                          Atelier de Confection Textile • Reçu d'Achat
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowReceiptModal(false)}
+                        className="p-1 text-[#7C756B] hover:text-black rounded"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 font-mono text-xs text-[#2C2825]">
+                      <div className="flex justify-between">
+                        <span className="text-[#7C756B]">Commande :</span>
+                        <span className="font-bold">{placedOrder.orderNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#7C756B]">Date :</span>
+                        <span>{placedOrder.date}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#7C756B]">Client :</span>
+                        <span>{placedOrder.customer.fullName} ({placedOrder.customer.phone})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#7C756B]">Destination :</span>
+                        <span>{placedOrder.customer.wilayaCode} - {placedOrder.customer.wilayaName} ({placedOrder.customer.city})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#7C756B]">Suivi Colis :</span>
+                        <span className="font-bold text-[#8C6D3B]">{placedOrder.trackingNumber}</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-b border-[#EAE3D6] py-3 space-y-2 font-mono text-xs">
+                      <div className="font-bold text-[#1F1C19] text-[11px] uppercase tracking-wider">
+                        Articles commandés :
+                      </div>
+                      {placedOrder.items.map((it, idx) => (
+                        <div key={idx} className="flex justify-between text-[11px]">
+                          <span>
+                            {it.product?.name || 'Vêtement DBC'} ({it.size}) ×{it.quantity}
+                          </span>
+                          <span className="font-bold">
+                            {formatPrice(Number(it.pricePerUnit) * Number(it.quantity), currency, isArabic)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-1.5 font-mono text-xs pt-1">
+                      <div className="flex justify-between text-[#7C756B]">
+                        <span>Sous-total :</span>
+                        <span>{formatPrice(placedOrder.subtotal, currency, isArabic)}</span>
+                      </div>
+                      {placedOrder.discount > 0 && (
+                        <div className="flex justify-between text-emerald-700">
+                          <span>Remise :</span>
+                          <span>-{formatPrice(placedOrder.discount, currency, isArabic)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-[#7C756B]">
+                        <span>Frais de livraison :</span>
+                        <span>{formatPrice(placedOrder.shipping, currency, isArabic)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold text-[#1F1C19] pt-2 border-t border-[#DDD4C5]">
+                        <span>Total Net :</span>
+                        <span>{formatPrice(placedOrder.total, currency, isArabic)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-[#EAE3D6]">
+                      <button
+                        type="button"
+                        onClick={copyReceiptText}
+                        className="px-3 py-1.5 bg-[#FAF8F5] border border-[#DDD4C5] rounded text-xs font-mono hover:bg-[#F2EDE4] flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {copiedReceipt ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedReceipt ? 'Copié !' : 'Copier le Reçu'}</span>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              window.print();
+                            } catch (e) {
+                              console.warn('Print unavailable:', e);
+                            }
+                          }}
+                          className="px-4 py-1.5 bg-[#1F1D1A] text-white rounded text-xs font-mono font-bold hover:bg-[#3D3730] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-[#C9A96E]" />
+                          <span>Imprimer</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
