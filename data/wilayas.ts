@@ -1,3 +1,5 @@
+import { parseNumericPrice } from '../utils/format';
+
 export interface Wilaya {
   code: string;
   nameEn: string;
@@ -79,37 +81,61 @@ export const ALGERIAN_WILAYAS: Wilaya[] = [
   { code: '69', nameEn: 'El Abiodh Sidi Cheikh', nameAr: 'الأبيض سيدي الشيخ', homeDeliveryFeeDzd: 950, deskDeliveryFeeDzd: 700, zone: 'sud' },
 ];
 
-export function getWilayaByCode(code: string, customRates?: Record<string, { home: number; desk: number }>): Wilaya | undefined {
+export function getWilayaByCode(
+  code: string, 
+  customRates?: Record<string, any>, 
+  fallbackRates?: Record<string, any>
+): Wilaya | undefined {
   const base = ALGERIAN_WILAYAS.find((w) => w.code === code);
   if (!base) return undefined;
-  if (!customRates || !customRates[code]) return base;
-  const custom = customRates[code];
-  const customHome = typeof custom.home === 'number' && !isNaN(custom.home) ? custom.home : Number(custom.home);
-  const customDesk = typeof custom.desk === 'number' && !isNaN(custom.desk) ? custom.desk : Number(custom.desk);
+  
+  const custom = (customRates && customRates[code]) 
+    ? customRates[code] 
+    : (fallbackRates && fallbackRates[code] ? fallbackRates[code] : null);
+
+  if (!custom) return base;
+
+  // Support various object shapes or direct number/string
+  const rawHome = typeof custom === 'object'
+    ? (custom.home ?? custom.homeDeliveryFeeDzd ?? custom.homeFee ?? custom.homeRate ?? custom.price)
+    : custom;
+  const rawDesk = typeof custom === 'object'
+    ? (custom.desk ?? custom.deskDeliveryFeeDzd ?? custom.deskFee ?? custom.deskRate)
+    : custom;
+
+  const customHome = parseNumericPrice(rawHome);
+  const customDesk = parseNumericPrice(rawDesk);
+
   return {
     ...base,
-    homeDeliveryFeeDzd: !isNaN(customHome) && isFinite(customHome) && customHome >= 0 ? customHome : base.homeDeliveryFeeDzd,
-    deskDeliveryFeeDzd: !isNaN(customDesk) && isFinite(customDesk) && customDesk >= 0 ? customDesk : base.deskDeliveryFeeDzd,
+    homeDeliveryFeeDzd: customHome !== null && customHome >= 0 ? customHome : base.homeDeliveryFeeDzd,
+    deskDeliveryFeeDzd: customDesk !== null && customDesk >= 0 ? customDesk : base.deskDeliveryFeeDzd,
   };
 }
 
-export function getWilayasWithCustomRates(customRates?: Record<string, { home: number; desk: number }>): Wilaya[] {
-  if (!customRates || Object.keys(customRates).length === 0) {
+export function getWilayasWithCustomRates(
+  customRates?: Record<string, any>,
+  fallbackRates?: Record<string, any>
+): Wilaya[] {
+  const rates = customRates && Object.keys(customRates).length > 0 ? customRates : fallbackRates;
+  if (!rates || Object.keys(rates).length === 0) {
     return ALGERIAN_WILAYAS;
   }
   return ALGERIAN_WILAYAS.map((w) => {
-    const custom = customRates[w.code];
+    const custom = rates[w.code];
     if (!custom) return w;
-    const customHome = typeof custom.home === 'number' && !isNaN(custom.home) ? custom.home : Number(custom.home);
-    const customDesk = typeof custom.desk === 'number' && !isNaN(custom.desk) ? custom.desk : Number(custom.desk);
+    const rawHome = typeof custom === 'object'
+      ? (custom.home ?? custom.homeDeliveryFeeDzd ?? custom.homeFee ?? custom.homeRate ?? custom.price)
+      : custom;
+    const rawDesk = typeof custom === 'object'
+      ? (custom.desk ?? custom.deskDeliveryFeeDzd ?? custom.deskFee ?? custom.deskRate)
+      : custom;
+    const customHome = parseNumericPrice(rawHome);
+    const customDesk = parseNumericPrice(rawDesk);
     return {
       ...w,
-      homeDeliveryFeeDzd: !isNaN(customHome) && isFinite(customHome) && customHome >= 0 ? customHome : w.homeDeliveryFeeDzd,
-      deskDeliveryFeeDzd: !isNaN(customDesk) && isFinite(customDesk) && customDesk >= 0 ? customDesk : baseFeeOrFallback(w.homeDeliveryFeeDzd),
+      homeDeliveryFeeDzd: customHome !== null && customHome >= 0 ? customHome : w.homeDeliveryFeeDzd,
+      deskDeliveryFeeDzd: customDesk !== null && customDesk >= 0 ? customDesk : w.deskDeliveryFeeDzd,
     };
   });
-}
-
-function baseFeeOrFallback(val: number): number {
-  return typeof val === 'number' && !isNaN(val) ? val : 400;
 }
