@@ -113,6 +113,7 @@ export interface Order {
   tax: number;
   total: number;
   currency: Currency;
+  createdAt?: string;
   customer: {
     fullName: string;
     email: string;
