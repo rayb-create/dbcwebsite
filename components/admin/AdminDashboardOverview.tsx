@@ -34,13 +34,17 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
 }) => {
   const { t, isRtl } = useAdminLanguage();
 
+  // Safe array fallbacks
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+
   // Stats
-  const totalRevenue = orders.reduce((sum, ord) => sum + (ord.total || 0), 0);
-  const pendingOrders = orders.filter((o) => o.status.includes('Reçu') || o.status.includes('Préparation')).length;
-  const shippedOrders = orders.filter((o) => o.status.includes('Expédié')).length;
-  const outOfStockProducts = products.filter((p) => p.inStock === false || (p.stock ?? 50) === 0).length;
-  const lowStockProducts = products.filter((p) => (p.inStock ?? true) && (p.stock ?? 50) > 0 && (p.stock ?? 50) <= 5).length;
-  const recentOrders = orders.slice(0, 5);
+  const totalRevenue = safeOrders.reduce((sum, ord) => sum + (Number(ord?.total) || 0), 0);
+  const pendingOrders = safeOrders.filter((o) => (o?.status || '').includes('Reçu') || (o?.status || '').includes('Préparation')).length;
+  const shippedOrders = safeOrders.filter((o) => (o?.status || '').includes('Expédié')).length;
+  const outOfStockProducts = safeProducts.filter((p) => p && (p.inStock === false || (p.stock ?? 50) === 0)).length;
+  const lowStockProducts = safeProducts.filter((p) => p && (p.inStock ?? true) && (p.stock ?? 50) > 0 && (p.stock ?? 50) <= 5).length;
+  const recentOrders = safeOrders.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -92,7 +96,9 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
             {formatPrice(totalRevenue, currency)}
           </div>
           <span className="text-[11px] font-mono text-emerald-700 mt-1 block">
-            {t.dashRevenueSubtitle(orders.length)}
+            {typeof t.dashRevenueSubtitle === 'function' 
+              ? t.dashRevenueSubtitle(safeOrders.length) 
+              : `${safeOrders.length} commandes`}
           </span>
         </div>
 
@@ -108,7 +114,9 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
             {pendingOrders}
           </div>
           <span className="text-[11px] font-mono text-[#8C6D3B] mt-1 block">
-            {t.dashPendingOrdersSubtitle(shippedOrders)}
+            {typeof t.dashPendingOrdersSubtitle === 'function' 
+              ? t.dashPendingOrdersSubtitle(shippedOrders) 
+              : `${shippedOrders} expédiées`}
           </span>
         </div>
 
@@ -121,10 +129,12 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
             </div>
           </div>
           <div className="font-mono text-2xl font-bold text-[#1F1C19] mt-2">
-            {products.length}
+            {safeProducts.length}
           </div>
           <span className="text-[11px] font-mono text-[#7C756B] mt-1 block">
-            {t.dashCatalogItemsSubtitle(products.filter((p) => p.isPublished !== false).length)}
+            {typeof t.dashCatalogItemsSubtitle === 'function' 
+              ? t.dashCatalogItemsSubtitle(safeProducts.filter((p) => p && p.isPublished !== false).length) 
+              : `${safeProducts.length} articles`}
           </span>
         </div>
 
@@ -140,7 +150,9 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
             {outOfStockProducts}
           </div>
           <span className="text-[11px] font-mono text-amber-700 mt-1 block">
-            {t.dashStockAlertsSubtitle(lowStockProducts)}
+            {typeof t.dashStockAlertsSubtitle === 'function' 
+              ? t.dashStockAlertsSubtitle(lowStockProducts) 
+              : `${lowStockProducts} alertes`}
           </span>
         </div>
       </div>
@@ -176,23 +188,23 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
                 <div key={ord.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#1F1C19]">{ord.orderNumber}</span>
-                      <span className="text-[#7C756B]">• {ord.customer.fullName}</span>
+                      <span className="font-bold text-[#1F1C19]">{ord?.orderNumber || 'DBC-DZ'}</span>
+                      <span className="text-[#7C756B]">• {ord?.customer?.fullName || (ord as any)?.customerName || 'Client'}</span>
                       <span className="px-1.5 py-0.5 bg-[#FAF8F5] rounded text-[10px] text-[#8C6D3B] border border-[#DDD4C5]">
-                        {ord.customer.wilayaName} ({ord.customer.wilayaCode})
+                        {ord?.customer?.wilayaName || (ord as any)?.wilayaName || 'Algérie'} ({ord?.customer?.wilayaCode || (ord as any)?.wilayaCode || 'DZ'})
                       </span>
                     </div>
                     <div className="text-[11px] text-[#7C756B] mt-0.5">
-                      {t.dashOrderItemsCount(ord.items.length)} • {ord.deliveryType === 'home' ? t.dashHomeDelivery : t.dashDeskDelivery} • {ord.paymentMethod === 'cod' ? t.dashCodPayment : t.dashBaridiMobPayment}
+                      {t.dashOrderItemsCount(ord?.items?.length || 0)} • {ord?.deliveryType === 'home' ? t.dashHomeDelivery : t.dashDeskDelivery} • {ord?.paymentMethod === 'cod' ? t.dashCodPayment : t.dashBaridiMobPayment}
                     </div>
                   </div>
 
                   <div className={isRtl ? 'text-left shrink-0' : 'text-right shrink-0'}>
                     <div className="font-bold text-[#1F1C19]">
-                      {formatPrice(ord.total, currency)}
+                      {formatPrice(ord?.total ?? 0, currency)}
                     </div>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full mt-0.5 inline-block">
-                      {ord.status.split('/')[0]}
+                      {String(ord?.status || 'Reçu').split('/')[0]}
                     </span>
                   </div>
                 </div>
@@ -217,7 +229,7 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
                   <Package className="w-4 h-4 text-[#8C6D3B]" />
                   <span>{t.dashShortcutProducts}</span>
                 </div>
-                <span className="text-[#7C756B] font-bold">{products.length}</span>
+                <span className="text-[#7C756B] font-bold">{safeProducts.length}</span>
               </button>
 
               <button
