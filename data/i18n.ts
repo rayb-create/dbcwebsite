@@ -65,7 +65,9 @@ export interface Translations {
   orderSuccessMsg: string;
   b2bSectionTitle: string;
   b2bSectionSubtitle: string;
+  b2bSectionDesc?: string;
   b2bInquiryBtn: string;
+  continueShopping?: string;
   adminTitle: string;
   adminAddProduct: string;
   adminEditProduct: string;
