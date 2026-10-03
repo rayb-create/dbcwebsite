@@ -330,18 +330,84 @@ export function subscribeOrders(
         const shipping = parseNumericPrice(raw.shipping) ?? parseNumericPrice(raw.shippingCost) ?? 0;
         const discount = parseNumericPrice(raw.discount) ?? 0;
         const total = parseNumericPrice(raw.total) ?? Math.max(0, (subtotal - discount) + shipping);
+
+        // Normalize customer information whether saved nested or flat (blueprint compatibility)
+        const customer = {
+          fullName: raw.customer?.fullName || raw.customerName || 'Client DBC',
+          phone: raw.customer?.phone || raw.phone || '',
+          email: raw.customer?.email || raw.email || '',
+          address: raw.customer?.address || raw.address || '',
+          city: raw.customer?.city || raw.commune || '',
+          wilayaCode: String(raw.customer?.wilayaCode || raw.wilayaCode || '16'),
+          wilayaName: raw.customer?.wilayaName || raw.wilayaName || 'Alger',
+          notes: raw.customer?.notes || raw.notes || '',
+        };
+
+        // Normalize status to guaranteed valid string
+        let status: Order['status'] = 'Reçu / Confirmed';
+        const rawStatus = String(raw.status || '').toLowerCase();
+        if (rawStatus.includes('livr') || rawStatus.includes('complet') || rawStatus === 'delivered') {
+          status = 'Livré / Completed';
+        } else if (rawStatus.includes('exp') || rawStatus.includes('shipp') || rawStatus === 'shipped') {
+          status = 'Expédié / En Livraison';
+        } else if (rawStatus.includes('prép') || rawStatus.includes('atelier') || rawStatus === 'processing') {
+          status = 'En Préparation / Atelier';
+        } else {
+          status = 'Reçu / Confirmed';
+        }
+
+        // Normalize items array
+        const items = Array.isArray(raw.items) ? raw.items.map((it: any) => ({
+          ...it,
+          quantity: Math.max(1, parseNumericPrice(it?.quantity) ?? 1),
+          pricePerUnit: parseNumericPrice(it?.pricePerUnit) ?? parseNumericPrice(it?.product?.price) ?? 0,
+          size: it?.size || 'Standard',
+          color: it?.color || { name: 'Standard', hex: '#1C1C1C' },
+          product: it?.product || {
+            id: it?.productId || 'garment',
+            name: it?.name || 'Vêtement DBC',
+            price: parseNumericPrice(it?.pricePerUnit) ?? 0,
+            images: [],
+          }
+        })) : [];
+
+        // Safe date string
+        let dateStr = new Date().toLocaleDateString('fr-DZ');
+        try {
+          if (raw.date) {
+            dateStr = String(raw.date);
+          } else if (raw.createdAt) {
+            dateStr = new Date(raw.createdAt).toLocaleDateString('fr-DZ');
+          }
+        } catch {
+          dateStr = new Date().toLocaleDateString('fr-DZ');
+        }
+
         ordersList.push({
           ...raw,
           id: d.id,
+          orderNumber: raw.orderNumber || `DBC-DZ-${d.id.slice(-6).toUpperCase()}`,
+          date: dateStr,
+          customer,
+          status,
+          deliveryType: (raw.deliveryType || raw.deliveryMethod) === 'desk' ? 'desk' : 'home',
+          paymentMethod: raw.paymentMethod === 'baridimob' ? 'baridimob' : 'cod',
+          items,
           subtotal,
           shipping,
           discount,
           total,
+          trackingNumber: raw.trackingNumber || '',
+          carrierName: raw.carrierName || raw.carrier || 'Yalidine Express',
         });
       });
 
-      // Sort newest first
-      ordersList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Sort newest first safely without NaN
+      ordersList.sort((a, b) => {
+        const timeA = new Date(a.date || a.createdAt || 0).getTime() || 0;
+        const timeB = new Date(b.date || b.createdAt || 0).getTime() || 0;
+        return timeB - timeA;
+      });
       onUpdate(ordersList);
     },
     (error) => {
@@ -403,7 +469,11 @@ export function subscribeMedia(
       snapshot.forEach((d) => {
         mediaList.push(d.data() as MediaAsset);
       });
-      mediaList.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      mediaList.sort((a, b) => {
+        const timeA = new Date(a.uploadedAt || 0).getTime() || 0;
+        const timeB = new Date(b.uploadedAt || 0).getTime() || 0;
+        return timeB - timeA;
+      });
       onUpdate(mediaList);
     },
     (error) => {
