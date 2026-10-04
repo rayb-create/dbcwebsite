@@ -195,7 +195,7 @@ export const AdminDashboardOverview: React.FC<AdminDashboardOverviewProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] text-[#7C756B] mt-0.5">
-                      {t.dashOrderItemsCount(ord?.items?.length || 0)} • {ord?.deliveryType === 'home' ? t.dashHomeDelivery : t.dashDeskDelivery} • {ord?.paymentMethod === 'cod' ? t.dashCodPayment : t.dashBaridiMobPayment}
+                      {typeof t.dashOrderItemsCount === 'function' ? t.dashOrderItemsCount(ord?.items?.length || 0) : `${ord?.items?.length || 0} articles`} • {ord?.deliveryType === 'home' ? t.dashHomeDelivery : t.dashDeskDelivery} • {ord?.paymentMethod === 'cod' ? t.dashCodPayment : t.dashBaridiMobPayment}
                     </div>
                   </div>
 
