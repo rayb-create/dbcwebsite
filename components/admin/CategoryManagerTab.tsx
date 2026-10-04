@@ -173,6 +173,7 @@ const CATEGORY_DEFINITIONS: LocalizedCatDef[] = [
 
 export const CategoryManagerTab: React.FC<CategoryManagerTabProps> = ({ products, onSelectCategoryFilter }) => {
   const { adminLang, isRtl, t } = useAdminLanguage();
+  const safeProducts = Array.isArray(products) ? products : [];
 
   return (
     <div className="space-y-6">
@@ -196,7 +197,7 @@ export const CategoryManagerTab: React.FC<CategoryManagerTabProps> = ({ products
           const desc = cat.descriptions[adminLang] || cat.descriptions.fr;
           const target = cat.targetAudiences[adminLang] || cat.targetAudiences.fr;
 
-          const matchingProducts = products.filter((p) => {
+          const matchingProducts = safeProducts.filter((p) => {
             if (cat.id === 'b2b') return p.isB2BAvailable !== false;
             return p.category === cat.id;
           });
