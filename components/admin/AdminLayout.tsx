@@ -31,8 +31,10 @@ import { ContentManagerTab } from './ContentManagerTab';
 import { MediaManagerTab } from './MediaManagerTab';
 import { DeliveryManagerTab } from './DeliveryManagerTab';
 import { Product, Order, StoreSettings, MediaAsset, Currency } from '../../types';
+import { DEFAULT_STORE_SETTINGS } from '../../data/storeSettings';
 import { Language } from '../../data/i18n';
 import { purgeAllDemoDataFromFirestore, saveStoreSettingsToDb } from '../../services/db';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 interface AdminLayoutProps {
   products: Product[];
@@ -45,28 +47,35 @@ interface AdminLayoutProps {
   onDeleteProduct: (productId: string) => void;
   onUpdateOrder: (order: Order) => void;
   onUpdateOrders?: (orders: Order[]) => void;
+  onDeleteOrder?: (orderId: string) => Promise<void> | void;
   onUpdateStoreSettings: (settings: StoreSettings) => void;
   onBackToStore: () => void;
   onPurgeCompleted?: () => void;
 }
 
 const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
-  products,
-  orders,
+  products = [],
+  orders = [],
   storeSettings,
-  media,
-  currency,
-  currentLanguage,
+  media = [],
+  currency = 'DZD',
+  currentLanguage = 'fr',
   onUpdateProduct,
   onDeleteProduct,
   onUpdateOrder,
   onUpdateOrders,
+  onDeleteOrder,
   onUpdateStoreSettings,
   onBackToStore,
   onPurgeCompleted,
 }) => {
   const { currentUser, isAdmin, loading, logout } = useAuth();
   const { t, isRtl } = useAdminLanguage();
+
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeMedia = Array.isArray(media) ? media : [];
+  const safeStoreSettings = storeSettings && typeof storeSettings === 'object' ? storeSettings : DEFAULT_STORE_SETTINGS;
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -80,11 +89,15 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
     setPurgeErrorMessage(null);
     try {
       const res = await purgeAllDemoDataFromFirestore();
-      // Clear localStorage cache keys
-      localStorage.removeItem('dbc_custom_products_v3');
-      localStorage.removeItem('dbc_orders');
-      localStorage.removeItem('dbc_cart');
-      localStorage.removeItem('dbc_wishlist');
+      // Clear localStorage cache keys safely
+      try {
+        localStorage.removeItem('dbc_custom_products_v3');
+        localStorage.removeItem('dbc_orders');
+        localStorage.removeItem('dbc_cart');
+        localStorage.removeItem('dbc_wishlist');
+      } catch (e) {
+        console.warn('[AdminLayout] Storage purge skipped:', e);
+      }
 
       setShowPurgeConfirm(false);
       setPurgeSuccessMessage(t.purgeSuccessToast(res.deletedProducts, res.deletedOrders, res.deletedMedia));
@@ -121,22 +134,22 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard, badge: null },
-    { id: 'products', label: t.navProducts, icon: Package, badge: products.length },
+    { id: 'products', label: t.navProducts, icon: Package, badge: products?.length || 0 },
     { id: 'categories', label: t.navCategories, icon: Layers, badge: null },
     { 
       id: 'inventory', 
       label: t.navInventory, 
       icon: Boxes, 
-      badge: products.filter(p => p.inStock === false || (p.stock ?? 50) === 0).length > 0 ? t.alertBadge : null 
+      badge: (products || []).filter(p => p?.inStock === false || (p?.stock ?? 50) === 0).length > 0 ? t.alertBadge : null 
     },
     { 
       id: 'orders', 
       label: t.navOrders, 
       icon: Truck, 
-      badge: orders.filter(o => o.status.includes('Reçu') || o.status.includes('Confirmed')).length || null 
+      badge: (orders || []).filter(o => (o?.status || '').includes('Reçu') || (o?.status || '').includes('Confirmed')).length || null 
     },
     { id: 'content', label: t.navContent, icon: FileText, badge: null },
-    { id: 'media', label: t.navMedia, icon: ImageIcon, badge: media.length || null },
+    { id: 'media', label: t.navMedia, icon: ImageIcon, badge: media?.length || null },
     { id: 'delivery', label: t.navDelivery, icon: Settings, badge: null },
   ];
 
@@ -199,7 +212,7 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
           <div className="hidden md:flex items-center gap-2 px-2.5 py-1 bg-[#292521] border border-[#3D3730] rounded-lg text-[11px]">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-[#ECE7DF] font-semibold truncate max-w-[120px] lg:max-w-[160px]">
-              {currentUser.email}
+              {currentUser?.email || 'admin@dbc.dz'}
             </span>
           </div>
 
@@ -296,9 +309,9 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
           {activeTab === 'dashboard' && (
             <AdminDashboardOverview
-              products={products}
-              orders={orders}
-              storeSettings={storeSettings}
+              products={safeProducts}
+              orders={safeOrders}
+              storeSettings={safeStoreSettings}
               currency={currency}
               onNavigateTab={(tab) => setActiveTab(tab)}
               onAddNewProduct={() => setActiveTab('products')}
@@ -307,7 +320,7 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
 
           {activeTab === 'products' && (
             <ProductManagerTab
-              products={products}
+              products={safeProducts}
               onUpdateProduct={onUpdateProduct}
               onDeleteProduct={onDeleteProduct}
               currency={currency}
@@ -317,14 +330,14 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
 
           {activeTab === 'categories' && (
             <CategoryManagerTab
-              products={products}
+              products={safeProducts}
               onSelectCategoryFilter={() => setActiveTab('products')}
             />
           )}
 
           {activeTab === 'inventory' && (
             <InventoryTab
-              products={products}
+              products={safeProducts}
               onUpdateProduct={onUpdateProduct}
               currency={currency}
             />
@@ -333,10 +346,11 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
           {activeTab === 'orders' && (
             <div className="bg-white p-6 rounded-xl border border-[#E2DAD0] shadow-2xs">
               <OrderManagerTab
-                orders={orders}
+                orders={safeOrders}
                 onUpdateOrder={onUpdateOrder}
                 onUpdateOrders={onUpdateOrders}
-                storeSettings={storeSettings}
+                onDeleteOrder={onDeleteOrder}
+                storeSettings={safeStoreSettings}
                 currentLanguage={currentLanguage}
                 currency={currency}
               />
@@ -345,20 +359,20 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
 
           {activeTab === 'content' && (
             <ContentManagerTab
-              storeSettings={storeSettings}
+              storeSettings={safeStoreSettings}
               onUpdateStoreSettings={onUpdateStoreSettings}
-              media={media}
+              media={safeMedia}
               onOpenMediaTab={() => setActiveTab('media')}
             />
           )}
 
           {activeTab === 'media' && (
             <MediaManagerTab
-              media={media}
-              storeSettings={storeSettings}
+              media={safeMedia}
+              storeSettings={safeStoreSettings}
               onSetHeroImage={async (url) => {
                 const updated = { 
-                  ...storeSettings, 
+                  ...safeStoreSettings, 
                   heroImage: url,
                   heroImages: url ? [url] : []
                 };
@@ -371,8 +385,8 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
           {activeTab === 'delivery' && (
             <div className="bg-white p-6 rounded-xl border border-[#E2DAD0] shadow-2xs">
               <DeliveryManagerTab
-                storeSettings={storeSettings}
-                onUpdateStoreSettings={(partial) => onUpdateStoreSettings({ ...storeSettings, ...partial })}
+                storeSettings={safeStoreSettings}
+                onUpdateStoreSettings={(partial) => onUpdateStoreSettings({ ...safeStoreSettings, ...partial })}
                 currentLanguage={currentLanguage}
                 currency={currency}
               />
@@ -463,8 +477,10 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
 
 export const AdminLayout: React.FC<AdminLayoutProps> = (props) => {
   return (
-    <AdminLanguageProvider>
-      <AdminLayoutInner {...props} />
-    </AdminLanguageProvider>
+    <ErrorBoundary fallbackTitle="Erreur dans le panneau d'administration">
+      <AdminLanguageProvider>
+        <AdminLayoutInner {...props} />
+      </AdminLanguageProvider>
+    </ErrorBoundary>
   );
 };
