@@ -17,19 +17,27 @@ const AdminLanguageContext = createContext<AdminLanguageContextType | undefined>
 
 export const AdminLanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [adminLang, setAdminLangState] = useState<AdminLanguage>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(ADMIN_LANG_STORAGE_KEY);
-      if (saved === 'ar' || saved === 'fr' || saved === 'en' || saved === 'es') {
-        return saved;
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(ADMIN_LANG_STORAGE_KEY);
+        if (saved === 'ar' || saved === 'fr' || saved === 'en' || saved === 'es') {
+          return saved;
+        }
       }
+    } catch (err) {
+      console.warn('[AdminLanguage] Storage read skipped:', err);
     }
     return 'fr';
   });
 
   const setAdminLang = (lang: AdminLanguage) => {
     setAdminLangState(lang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ADMIN_LANG_STORAGE_KEY, lang);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(ADMIN_LANG_STORAGE_KEY, lang);
+      }
+    } catch (err) {
+      console.warn('[AdminLanguage] Storage write skipped:', err);
     }
   };
 
