@@ -22,6 +22,7 @@ interface InventoryTabProps {
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({ products, onUpdateProduct, currency }) => {
   const { t, isRtl } = useAdminLanguage();
+  const safeProducts = Array.isArray(products) ? products : [];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -71,7 +72,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products, onUpdatePr
     showToast(`${product.name}: ${nextInStock ? t.prodInStock : t.prodOutOfStock}`);
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = safeProducts.filter((p) => {
     if (categoryFilter !== 'all' && p.category !== categoryFilter) return false;
     const stock = typeof p.stock === 'number' ? p.stock : 50;
     const isAvailable = p.inStock !== false && stock > 0;
@@ -91,9 +92,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products, onUpdatePr
     return true;
   });
 
-  const totalStockUnits = products.reduce((acc, p) => acc + (typeof p.stock === 'number' ? p.stock : 50), 0);
-  const outOfStockCount = products.filter((p) => p.inStock === false || (p.stock ?? 50) === 0).length;
-  const lowStockCount = products.filter((p) => (p.inStock ?? true) && (p.stock ?? 50) > 0 && (p.stock ?? 50) <= 5).length;
+  const totalStockUnits = safeProducts.reduce((acc, p) => acc + (typeof p.stock === 'number' ? p.stock : 50), 0);
+  const outOfStockCount = safeProducts.filter((p) => p.inStock === false || (p.stock ?? 50) === 0).length;
+  const lowStockCount = safeProducts.filter((p) => (p.inStock ?? true) && (p.stock ?? 50) > 0 && (p.stock ?? 50) <= 5).length;
 
   return (
     <div className="space-y-6">
@@ -123,7 +124,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products, onUpdatePr
         <div className="bg-white p-4 rounded-lg border border-[#E2DAD0] shadow-2xs">
           <span className="text-[11px] font-mono uppercase text-[#7C756B]">{t.prodTableStock}</span>
           <div className="font-mono text-2xl font-bold text-[#1F1C19] mt-1">{totalStockUnits} {t.invUnits}</div>
-          <span className="text-[10px] text-[#8C6D3B] font-mono mt-0.5 block">{t.catItemsCount(products.length)}</span>
+          <span className="text-[10px] text-[#8C6D3B] font-mono mt-0.5 block">{t.catItemsCount(safeProducts.length)}</span>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-[#E2DAD0] shadow-2xs">
