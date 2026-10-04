@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
   User, 
   onAuthStateChanged, 
@@ -23,7 +23,7 @@ interface AuthContextType {
   clearAuthError: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -31,34 +31,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [adminCount, setAdminCount] = useState<number>(0);
   const [authError, setAuthError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
+
     // Ensure persistent login across browser sessions / page refreshes
     setPersistence(auth, browserLocalPersistence).catch((err) => {
-      console.warn('Could not set auth persistence:', err);
+      console.warn('[Auth] Could not set auth persistence:', err);
     });
 
     // Check count of existing admins to determine if bootstrap setup is available
-    getAdminCount().then((count) => setAdminCount(count)).catch(() => {});
+    getAdminCount()
+      .then((count) => {
+        if (isMounted.current) setAdminCount(count);
+      })
+      .catch(() => {});
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!isMounted.current) return;
       setLoading(true);
+
       if (user) {
         setCurrentUser(user);
         try {
           const authorized = await checkIsAdmin(user.uid, user.email);
-          setIsAdmin(authorized);
-        } catch {
-          setIsAdmin(user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase());
+          if (isMounted.current) {
+            setIsAdmin(authorized);
+          }
+        } catch (err) {
+          console.warn('[Auth] Admin verification error, fallback to owner check:', err);
+          if (isMounted.current) {
+            setIsAdmin(user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase());
+          }
         }
       } else {
         setCurrentUser(null);
         setIsAdmin(false);
       }
-      setLoading(false);
+
+      if (isMounted.current) {
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+    };
   }, []);
 
   const clearAuthError = () => setAuthError(null);
@@ -69,20 +89,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pass);
       const user = userCredential.user;
-      const authorized = await checkIsAdmin(user.uid, user.email);
       
-      if (!authorized && user.email?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+      // Immediately set user to prevent intermediate null state
+      setCurrentUser(user);
+
+      let authorized = false;
+      try {
+        authorized = await checkIsAdmin(user.uid, user.email);
+      } catch (err) {
+        console.warn('[Auth] checkIsAdmin error during signIn, falling back to owner check:', err);
+      }
+      const isOwner = user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+
+      if (!authorized && !isOwner) {
         await signOut(auth);
+        setCurrentUser(null);
+        setIsAdmin(false);
         throw new Error("Accès refusé : Ce compte n'a pas les privilèges d'administrateur.");
       }
+
       setIsAdmin(true);
     } catch (err: any) {
-      console.error('Sign in error:', err);
+      console.error('[Auth] Sign in error:', err);
       let message = 'Échec de connexion. Vérifiez vos identifiants.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (
+        err.code === 'auth/invalid-credential' || 
+        err.code === 'auth/user-not-found' || 
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-email'
+      ) {
         message = 'Email ou mot de passe incorrect.';
       } else if (err.code === 'auth/too-many-requests') {
         message = 'Trop de tentatives infructueuses. Veuillez patienter avant de réessayer.';
+      } else if (err.code === 'auth/network-request-failed') {
+        message = 'Erreur réseau. Vérifiez votre connexion Internet et réessayez.';
       } else if (err.message) {
         message = err.message;
       }
@@ -100,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
       const user = cred.user;
       
+      setCurrentUser(user);
+
       await registerAdminInDb({
         uid: user.uid,
         email: user.email || email.trim(),
@@ -111,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(true);
       setAdminCount((prev) => prev + 1);
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.error('[Auth] Registration error:', err);
       let message = 'Impossible de créer le compte administrateur.';
       if (err.code === 'auth/email-already-in-use') {
         message = 'Cette adresse email est déjà enregistrée. Veuillez vous connecter.';
@@ -129,9 +171,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setAuthError(null);
-    await signOut(auth);
-    setCurrentUser(null);
-    setIsAdmin(false);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('[Auth] Sign out error:', err);
+    } finally {
+      setCurrentUser(null);
+      setIsAdmin(false);
+      setLoading(false);
+    }
   };
 
   return (
