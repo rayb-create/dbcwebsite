@@ -34,7 +34,7 @@ import { Product, Order, StoreSettings, MediaAsset, Currency } from '../../types
 import { DEFAULT_STORE_SETTINGS } from '../../data/storeSettings';
 import { Language } from '../../data/i18n';
 import { purgeAllDemoDataFromFirestore, saveStoreSettingsToDb } from '../../services/db';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary } from '../../ErrorBoundary';
 
 interface AdminLayoutProps {
   products: Product[];
