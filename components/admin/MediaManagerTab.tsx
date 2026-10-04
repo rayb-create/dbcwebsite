@@ -32,6 +32,7 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
   const { currentUser } = useAuth();
   const { t, adminLang, isRtl } = useAdminLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const safeMedia = Array.isArray(media) ? media : [];
 
   const [isUploading, setIsUploading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -60,7 +61,10 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
       // Fallback
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve({ dataUrl: reader.result as string, sizeBytes: file.size });
+        reader.onload = () => {
+          const res = reader.result as string;
+          resolve({ dataUrl: res, sizeBytes: file.size });
+        };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
@@ -75,38 +79,37 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+
         const { dataUrl, sizeBytes } = await processImageFile(file);
-        
         const newAsset: MediaAsset = {
           id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          name: file.name.replace(/\.[^/.]+$/, ''),
           url: dataUrl,
-          mimeType: file.type || 'image/jpeg',
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          category: 'products',
+          createdAt: new Date().toISOString(),
           sizeBytes,
-          uploadedAt: new Date().toISOString(),
+          fileType: file.type || 'image/jpeg',
           uploadedBy: currentUser?.email || 'admin',
-          category: 'product',
         };
 
         await saveMediaToDb(newAsset);
       }
+
       showToast(
         adminLang === 'ar' ? `تم رفع ${files.length} ملف بنجاح` :
         adminLang === 'es' ? `Se han subido ${files.length} archivo(s)` :
         adminLang === 'en' ? `Uploaded ${files.length} file(s) successfully` :
         `${files.length} fichier(s) téléversé(s) avec succès`
       );
-    } catch (err) {
-      console.error('Upload error:', err);
-      showToast(
-        adminLang === 'ar' ? 'حدث خطأ في عملية الرفع' :
-        adminLang === 'es' ? 'Error en la subida' :
-        adminLang === 'en' ? 'Error uploading media' :
-        'Erreur lors du traitement du média'
-      );
+    } catch (err: any) {
+      console.error('[Media] Upload error:', err);
+      showToast(err?.message || t.mediaDeleteError);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -114,56 +117,53 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
     e.preventDefault();
     if (!externalUrl.trim()) return;
 
-    const newAsset: MediaAsset = {
-      id: `media-url-${Date.now()}`,
-      name: externalTitle.trim() || `Image-${Date.now()}`,
-      url: externalUrl.trim(),
-      mimeType: 'image/url',
-      uploadedAt: new Date().toISOString(),
-      uploadedBy: currentUser?.email || 'admin',
-      category: 'general',
-    };
-
     try {
+      const newAsset: MediaAsset = {
+        id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        url: externalUrl.trim(),
+        name: externalTitle.trim() || 'Photo DBC',
+        category: 'banner',
+        createdAt: new Date().toISOString(),
+        sizeBytes: 0,
+        fileType: 'image/url',
+        uploadedBy: currentUser?.email || 'admin',
+      };
+
       await saveMediaToDb(newAsset);
       setExternalUrl('');
       setExternalTitle('');
       setShowAddUrlModal(false);
-      showToast(
-        adminLang === 'ar' ? 'تمت إضافة الرابط بنجاح' :
-        adminLang === 'es' ? 'URL añadida con éxito' :
-        adminLang === 'en' ? 'URL added successfully' :
-        'URL ajoutée avec succès'
-      );
-    } catch (err) {
-      console.error('Error adding external image:', err);
-      showToast(
-        adminLang === 'ar' ? 'حدث خطأ في إضافة الرابط' :
-        adminLang === 'es' ? 'Error al añadir URL' :
-        adminLang === 'en' ? 'Error adding external URL' :
-        'Erreur lors de l’ajout du lien'
-      );
+      showToast(t.mediaCopied);
+    } catch (err: any) {
+      showToast(err?.message || 'Erreur lors de l’ajout du lien.');
     }
   };
 
-  const handleDeleteAsset = async (asset: MediaAsset) => {
+  const handleDeleteConfirm = async () => {
+    if (!assetToDelete) return;
+
     try {
-      await deleteMediaFromDb(asset.id);
+      await deleteMediaFromDb(assetToDelete.id);
+      showToast(t.mediaDeleted);
       setAssetToDelete(null);
-      showToast(
-        adminLang === 'ar' ? 'تم حذف الملف بنجاح' :
-        adminLang === 'es' ? 'Archivo eliminado' :
-        adminLang === 'en' ? 'Asset deleted successfully' :
-        'Fichier supprimé avec succès'
-      );
-    } catch (err) {
-      console.error('Delete media error:', err);
-      showToast(
-        adminLang === 'ar' ? 'حدث خطأ في الحذف' :
-        adminLang === 'es' ? 'Error al eliminar' :
-        adminLang === 'en' ? 'Error deleting media' :
-        'Erreur lors de la suppression'
-      );
+    } catch (err: any) {
+      showToast(err?.message || t.mediaDeleteError);
+    }
+  };
+
+  const handleSetCover = async (asset: MediaAsset) => {
+    if (onSetHeroImage) {
+      try {
+        await onSetHeroImage(asset.url);
+        showToast(
+          adminLang === 'ar' ? 'تم تعيين الصورة كغلاف رئيسي للمتجر بنجاح' :
+          adminLang === 'es' ? 'Imagen establecida como portada principal' :
+          adminLang === 'en' ? 'Image set as main store banner' :
+          'Photo définie comme couverture principale de la boutique'
+        );
+      } catch (err: any) {
+        showToast(err?.message || 'Erreur de mise à jour du bandeau.');
+      }
     }
   };
 
@@ -174,7 +174,7 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
     showToast(t.mediaCopied);
   };
 
-  const filteredMedia = media.filter((m) => {
+  const filteredMedia = safeMedia.filter((m) => {
     if (categoryFilter !== 'all' && m.category !== categoryFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -183,23 +183,9 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
     return true;
   });
 
-  const formatDateLocale = (isoStr: string) => {
-    const localeMap: Record<string, string> = {
-      ar: 'ar-DZ',
-      fr: 'fr-FR',
-      en: 'en-US',
-      es: 'es-ES',
-    };
-    try {
-      return new Date(isoStr).toLocaleDateString(localeMap[adminLang] || 'fr-FR');
-    } catch {
-      return isoStr;
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1F1D1A] text-white px-4 py-2.5 rounded-lg shadow-xl border border-[#C9A96E]/40 text-xs font-mono flex items-center gap-2 animate-in fade-in">
           <Check className="w-4 h-4 text-[#C9A96E]" />
@@ -207,7 +193,7 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
         </div>
       )}
 
-      {/* Header & Actions */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EAE3D5]">
         <div>
           <h2 className="font-serif text-xl font-bold text-[#1F1C19] flex items-center gap-2">
@@ -220,6 +206,7 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* File Upload Button */}
           <input
             type="file"
             ref={fileInputRef}
@@ -231,28 +218,39 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
 
           <button
             type="button"
-            onClick={() => setShowAddUrlModal(true)}
-            className="px-3 py-2 bg-white hover:bg-[#F2EDE4] text-[#1F1C19] border border-[#DDD4C5] rounded-lg text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="px-4 py-2 bg-[#8C6D3B] hover:bg-[#72572D] text-white rounded-lg text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{t.mediaAddUrlBtn}</span>
+            <Upload className="w-3.5 h-3.5" />
+            <span>{isUploading ? t.mediaUploading : t.mediaUploadBtn}</span>
           </button>
 
           <button
             type="button"
-            disabled={isUploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-[#1F1D1A] hover:bg-[#3D3730] text-white rounded-lg text-xs font-mono flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-50"
+            onClick={() => setShowAddUrlModal(true)}
+            className="px-3 py-2 bg-white hover:bg-[#FAF8F5] text-[#1F1C19] border border-[#DDD4C5] rounded-lg text-xs font-mono flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Upload className="w-4 h-4 text-[#C9A96E]" />
-            <span>{isUploading ? t.mediaProcessing : t.mediaUploadBtn}</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t.mediaAddUrlBtn}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Cloud & Resizing Storage Notice */}
+      <div className="p-4 bg-amber-500/10 border border-amber-600/30 rounded-xl flex items-start gap-3 text-xs font-mono text-[#7A5B28]">
+        <Sparkles className="w-4 h-4 text-[#8C6D3B] shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <span className="font-bold">{t.mediaAutoCompressNotice}</span>
+          <p className="text-[11px] text-[#8C6D3B] leading-relaxed">
+            {t.mediaAutoCompressDesc}
+          </p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF8F5] p-3 rounded-lg border border-[#EAE3D5]">
-        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-[#7C756B]" />
           <input
             type="text"
@@ -267,174 +265,158 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
           <span className="text-[#7C756B]">
             {adminLang === 'ar' ? 'إجمالي الملفات' : adminLang === 'es' ? 'Total archivos' : adminLang === 'en' ? 'Total files' : 'Total fichiers'}:
           </span>
-          <span className="font-bold text-[#1F1C19]">{media.length}</span>
+          <span className="font-bold text-[#1F1C19]">{safeMedia.length}</span>
         </div>
       </div>
 
       {/* Media Grid */}
       {filteredMedia.length === 0 ? (
-        <div className="p-12 text-center bg-white rounded-xl border border-dashed border-[#DDD4C5] space-y-3">
+        <div className="bg-white border border-[#E2DAD0] rounded-xl p-12 text-center space-y-3">
           <div className="w-12 h-12 mx-auto rounded-full bg-[#FAF8F5] flex items-center justify-center text-[#8C6D3B]">
             <ImageIcon className="w-6 h-6" />
           </div>
           <h4 className="font-serif text-base font-bold text-[#1F1C19]">
-            {t.mediaNoMediaTitle}
+            {t.mediaNoAssetsFound}
           </h4>
           <p className="text-xs text-[#7C756B] max-w-sm mx-auto font-mono">
-            {t.mediaNoMediaDesc}
+            {t.mediaNoAssetsDesc}
           </p>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-[#8C6D3B] text-white text-xs font-mono rounded-lg hover:bg-[#72572D] transition-colors"
-          >
-            {t.mediaUploadPrompt}
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filteredMedia.map((item) => (
-            <div
-              key={item.id}
-              className="group bg-white border border-[#E2DAD0] rounded-lg overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              {/* Thumbnail */}
-              <div className="relative aspect-square bg-[#191715] overflow-hidden">
-                <img
-                  src={item.url}
-                  alt={item.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
+          {filteredMedia.map((asset) => {
+            const isHeroImage = storeSettings?.heroImage === asset.url;
+            return (
+              <div
+                key={asset.id}
+                className="bg-white border border-[#E2DAD0] rounded-xl overflow-hidden group shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div className="relative aspect-square bg-[#FAF8F5] overflow-hidden">
+                  <img
+                    src={asset.url}
+                    alt={asset.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
 
-                {/* Active Website Cover Badge */}
-                {storeSettings?.heroImage === item.url && (
-                  <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-black/80 backdrop-blur-xs text-[#C9A96E] rounded text-[9px] font-mono font-bold flex items-center gap-1 shadow border border-[#C9A96E]/40">
-                    <Sparkles className="w-2.5 h-2.5 text-[#C9A96E]" />
-                    <span>{adminLang === 'ar' ? 'صورة الواجهة' : 'Couverture'}</span>
+                  {/* Active Hero Banner Badge */}
+                  {isHeroImage && (
+                    <div className="absolute top-2 left-2 z-10 bg-[#1F1D1A] text-[#C9A96E] text-[10px] font-mono px-2 py-0.5 rounded border border-[#C9A96E]/40 font-bold flex items-center gap-1 shadow-md">
+                      <Sparkles className="w-3 h-3 text-[#C9A96E]" />
+                      <span>{t.mediaActiveCoverBadge}</span>
+                    </div>
+                  )}
+
+                  {/* Hover Quick Actions Overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyUrl(asset.url, asset.id)}
+                      className="p-2 bg-white hover:bg-[#FAF8F5] text-[#1F1C19] rounded-lg shadow-md transition-colors cursor-pointer"
+                      title={t.mediaCopyUrl}
+                    >
+                      {copiedId === asset.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                    </button>
+
+                    {onSelectMediaUrl && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectMediaUrl(asset.url)}
+                        className="px-2.5 py-2 bg-[#8C6D3B] hover:bg-[#72572D] text-white rounded-lg text-xs font-mono font-bold shadow-md cursor-pointer"
+                        title={t.mediaSelectForProduct}
+                      >
+                        {t.mediaSelectForProduct}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setAssetToDelete(asset)}
+                      className="p-2 bg-rose-700 hover:bg-rose-800 text-white rounded-lg shadow-md transition-colors cursor-pointer"
+                      title={t.mediaDeleteAsset}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                  <button
-                    type="button"
-                    onClick={() => handleCopyUrl(item.url, item.id)}
-                    className="p-2 bg-white/90 hover:bg-white text-[#191715] rounded-full shadow cursor-pointer transition-colors"
-                    title={t.mediaCopyUrl}
-                  >
-                    {copiedId === item.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAssetToDelete(item)}
-                    className="p-2 bg-rose-600/90 hover:bg-rose-700 text-white rounded-full shadow cursor-pointer transition-colors"
-                    title={adminLang === 'ar' ? 'حذف' : adminLang === 'es' ? 'Eliminar' : adminLang === 'en' ? 'Delete' : 'Supprimer'}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Meta */}
-              <div className="p-2.5 space-y-1">
-                <h5 className="font-mono text-xs font-semibold text-[#1F1C19] truncate" title={item.name}>
-                  {item.name}
-                </h5>
-                <div className="flex items-center justify-between text-[10px] font-mono text-[#7C756B]">
-                  <span>{item.sizeBytes ? `${Math.round(item.sizeBytes / 1024)} KB` : 'Cloud'}</span>
-                  <span>{formatDateLocale(item.uploadedAt)}</span>
                 </div>
 
-                {/* Option to set as website cover */}
-                {onSetHeroImage && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await onSetHeroImage(item.url);
-                      showToast(
-                        adminLang === 'ar'
-                          ? 'تم تعيين هذه الصورة كواجهة رئيسية للموقع بنجاح !'
-                          : 'Photo définie comme couverture du site avec succès !'
-                      );
-                    }}
-                    className={`w-full mt-1.5 py-1 px-2 border rounded text-[10px] font-mono flex items-center justify-center gap-1 transition-colors cursor-pointer ${
-                      storeSettings?.heroImage === item.url
-                        ? 'bg-[#F2EDE4] border-[#C9A96E] text-[#8C6D3B] font-bold'
-                        : 'bg-[#FAF8F5] hover:bg-[#8C6D3B] hover:text-white text-[#1F1C19] border-[#DDD4C5]'
-                    }`}
-                  >
-                    <Sparkles className="w-3 h-3 text-[#C9A96E]" />
-                    <span>
-                      {storeSettings?.heroImage === item.url
-                        ? (adminLang === 'ar' ? '★ صورة الواجهة الحالية' : '★ Couverture active')
-                        : (adminLang === 'ar' ? 'تعيين كواجهة للموقع' : 'Définir comme couverture')}
-                    </span>
-                  </button>
-                )}
+                <div className="p-3 border-t border-[#F0EBE1] space-y-1.5 bg-white">
+                  <div className="font-semibold text-xs font-mono text-[#1F1C19] truncate" title={asset.name}>
+                    {asset.name}
+                  </div>
 
-                {onSelectMediaUrl && (
-                  <button
-                    type="button"
-                    onClick={() => onSelectMediaUrl(item.url)}
-                    className="w-full mt-1 py-1 bg-[#FAF8F5] hover:bg-[#8C6D3B] hover:text-white text-[#1F1C19] border border-[#DDD4C5] rounded text-[10px] font-mono transition-colors"
-                  >
-                    {adminLang === 'ar' ? 'استخدام هذه الصورة' : adminLang === 'es' ? 'Usar esta imagen' : adminLang === 'en' ? 'Use this image' : 'Utiliser cette image'}
-                  </button>
-                )}
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#7C756B]">
+                    <span>{asset.category || 'Atelier'}</span>
+                    <span>{asset.sizeBytes ? `${Math.round(asset.sizeBytes / 1024)} KB` : 'URL Web'}</span>
+                  </div>
+
+                  {/* Quick Action: Set as Hero Banner */}
+                  {onSetHeroImage && !isHeroImage && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetCover(asset)}
+                      className="w-full mt-1 py-1.5 bg-[#FAF8F5] hover:bg-[#8C6D3B] text-[#8C6D3B] hover:text-white border border-[#DDD4C5] rounded text-[10px] font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>{t.mediaSetAsCover}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Add External URL Modal */}
+      {/* Modal: Add External URL */}
       {showAddUrlModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl border border-[#DDD4C5] shadow-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-              {t.mediaAddUrlBtn}
+            <h3 className="font-serif text-lg font-bold text-[#1F1C19]">
+              {t.mediaAddUrlModalTitle}
             </h3>
-            <form onSubmit={handleAddExternalUrl} className="space-y-3">
+
+            <form onSubmit={handleAddExternalUrl} className="space-y-3 font-mono text-xs">
               <div>
-                <label className="block text-xs font-mono text-[#7C756B] uppercase mb-1">
-                  {adminLang === 'ar' ? 'اسم الصورة' : adminLang === 'es' ? 'Nombre de la imagen' : adminLang === 'en' ? 'Image Name' : 'Nom du média'}
+                <label className="block text-[#7C756B] uppercase mb-1">
+                  {t.mediaPhotoNameLabel}
                 </label>
                 <input
                   type="text"
                   value={externalTitle}
                   onChange={(e) => setExternalTitle(e.target.value)}
-                  placeholder="Ex: Hoodie Noir Face Avant"
-                  className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
+                  placeholder="ex: Hoodie Noir Atelier Confection"
+                  className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg focus:outline-none focus:border-[#8C6D3B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-[#7C756B] uppercase mb-1">
-                  {adminLang === 'ar' ? 'رابط الويب (URL)' : adminLang === 'es' ? 'Enlace Web (URL)' : adminLang === 'en' ? 'Web URL' : 'Lien Web (URL)'}
+                <label className="block text-[#7C756B] uppercase mb-1">
+                  {t.mediaExternalUrlLabel}
                 </label>
                 <input
                   type="url"
                   required
                   value={externalUrl}
                   onChange={(e) => setExternalUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg focus:outline-none focus:border-[#8C6D3B]"
                 />
               </div>
 
-              <div className={`flex items-center ${isRtl ? 'justify-start' : 'justify-end'} gap-2 pt-2`}>
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddUrlModal(false)}
-                  className="px-4 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono hover:bg-[#F2EDE4]"
+                  className="flex-1 py-2.5 bg-[#FAF8F5] text-[#1F1C19] border border-[#DDD4C5] rounded-lg cursor-pointer hover:bg-[#F2EDE4]"
                 >
-                  {adminLang === 'ar' ? 'إلغاء' : adminLang === 'es' ? 'Cancelar' : adminLang === 'en' ? 'Cancel' : 'Annuler'}
+                  {t.mediaCancelBtn}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#1F1D1A] text-white rounded-lg text-xs font-mono hover:bg-[#3D3730]"
+                  className="flex-1 py-2.5 bg-[#8C6D3B] text-white rounded-lg cursor-pointer hover:bg-[#72572D] font-bold"
                 >
-                  {adminLang === 'ar' ? 'إضافة' : adminLang === 'es' ? 'Añadir' : adminLang === 'en' ? 'Add' : 'Ajouter'}
+                  {t.mediaSaveLinkBtn}
                 </button>
               </div>
             </form>
@@ -442,33 +424,37 @@ export const MediaManagerTab: React.FC<MediaManagerTabProps> = ({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Modal: Delete Confirmation */}
       {assetToDelete && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#DDD4C5] shadow-2xl max-w-sm w-full p-5 space-y-3">
-            <div className="flex items-center gap-2 text-rose-600">
-              <AlertCircle className="w-5 h-5" />
-              <h4 className="font-serif text-base font-bold text-[#1F1C19]">
-                {t.mediaDeleteConfirmTitle}
-              </h4>
+          <div className="bg-white rounded-xl border border-[#DDD4C5] shadow-2xl max-w-sm w-full p-6 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
             </div>
-            <p className="text-xs text-[#7C756B] font-mono leading-relaxed">
-              {t.mediaDeleteConfirmDesc}
-            </p>
-            <div className={`flex items-center ${isRtl ? 'justify-start' : 'justify-end'} gap-2 pt-2`}>
+
+            <div className="space-y-1">
+              <h3 className="font-serif text-base font-bold text-[#1F1C19]">
+                {t.mediaDeleteConfirmTitle}
+              </h3>
+              <p className="text-xs text-[#7C756B] font-mono">
+                {t.mediaDeleteConfirmDesc}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 text-xs font-mono">
               <button
                 type="button"
                 onClick={() => setAssetToDelete(null)}
-                className="px-3 py-1.5 border border-[#DDD4C5] rounded text-xs font-mono hover:bg-[#F2EDE4]"
+                className="flex-1 py-2 bg-[#FAF8F5] text-[#1F1C19] border border-[#DDD4C5] rounded-lg cursor-pointer hover:bg-[#F2EDE4]"
               >
-                {adminLang === 'ar' ? 'إلغاء' : adminLang === 'es' ? 'Cancelar' : adminLang === 'en' ? 'Cancel' : 'Annuler'}
+                {t.mediaCancelBtn}
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteAsset(assetToDelete)}
-                className="px-4 py-1.5 bg-rose-600 text-white rounded text-xs font-mono hover:bg-rose-700"
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-2 bg-rose-700 text-white rounded-lg cursor-pointer hover:bg-rose-800 font-bold"
               >
-                {adminLang === 'ar' ? 'حذف' : adminLang === 'es' ? 'Eliminar' : adminLang === 'en' ? 'Delete' : 'Supprimer'}
+                {t.mediaDeleteAsset}
               </button>
             </div>
           </div>
