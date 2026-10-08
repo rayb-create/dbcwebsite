@@ -20,7 +20,6 @@ export interface WhatsAppGreetingOptions {
 /**
  * Normalizes an Algerian or international phone number for wa.me links
  * e.g., '0550 45 88 12' -> '213550458812'
- * '+213 550 45 88 12' -> '213550458812'
  */
 export function cleanWhatsAppNumber(phone?: string): string {
   if (!phone) return '213550458812';
@@ -44,6 +43,7 @@ export function generateProductWhatsAppMessage(
   options: WhatsAppGreetingOptions = {}
 ): string {
   const isArabic = options.language === 'ar';
+  const language = options.language || 'fr';
   const currency = options.currency || 'DZD';
   const storeName = storeSettings?.storeName || 'DBC Workshop Algérie';
   const color = options.selectedColor || product.colors[0]?.name || 'Standard';
@@ -127,6 +127,152 @@ export function generateProductWhatsAppMessage(
       msg += `• ملاحظة إضافية: ${options.customNote}\n`;
     }
     msg += `\nيرجى إعلامي بكيفية تأكيد الطلبية وخيارات الدفع المتاحة (عند الاستلام أو بريدي موب). شكراً لكم!`;
+    return msg;
+  }
+
+  // ENGLISH TEMPLATE
+  if (language === 'en') {
+    if (intent === 'wholesale') {
+      let msg = `Hello ${storeName} team 👋\n\n`;
+      msg += `I am contacting you for a *WHOLESALE / B2B* order for this garment:\n`;
+      msg += `🏢 *${product.name}*\n`;
+      msg += `• Ref: DBC-${product.id.toUpperCase()}\n`;
+      msg += `• Wholesale rate: ${wholesalePriceFormatted} / piece\n`;
+      msg += `• Desired quantity: ${qty >= 6 ? `${qty} pieces` : 'From 6 pieces pack'}\n`;
+      msg += `• Color(s): ${color}\n`;
+      msg += `• Fabric: ${product.fabricWeight || 'Heavyweight'} - ${product.fabric}\n`;
+      if (wilayaInfo) {
+        msg += `• Delivery Wilaya: ${wilayaInfo}\n`;
+      }
+      if (options.customNote) {
+        msg += `• Notes: ${options.customNote}\n`;
+      }
+      msg += `\nPlease confirm atelier stock availability and shipping terms. Thank you!`;
+      return msg;
+    }
+
+    if (intent === 'inquiry') {
+      let msg = `Hello ${storeName} 👋\n\n`;
+      msg += `I have an inquiry regarding this product:\n`;
+      msg += `🔍 *${product.name}*\n`;
+      msg += `• Color: ${color}\n`;
+      msg += `• Size: ${size}\n`;
+      msg += `• Unit price: ${unitPriceFormatted}\n`;
+      if (wilayaInfo) {
+        msg += `• Delivery to: ${wilayaInfo}\n`;
+      }
+      if (options.customNote) {
+        msg += `• Question: ${options.customNote}\n`;
+      } else {
+        msg += `• Could you confirm if this size and color are currently in stock for fast dispatch?\n`;
+      }
+      msg += `\nThank you!`;
+      return msg;
+    }
+
+    if (intent === 'custom') {
+      let msg = `Hello ${storeName} 👋\n\n`;
+      msg += `I would like information regarding bespoke tailoring / embroidery on this style:\n`;
+      msg += `✂️ *${product.name}*\n`;
+      msg += `• Desired size: ${size}\n`;
+      msg += `• Color: ${color}\n`;
+      msg += `• Fabric: ${product.fabric}\n`;
+      if (options.customNote) {
+        msg += `• Custom details: ${options.customNote}\n`;
+      }
+      msg += `\nWhat are your atelier lead times and rates for this? Thank you!`;
+      return msg;
+    }
+
+    // Default English Order
+    let msg = `Hello ${storeName} 👋\n\n`;
+    msg += `I would like to order the following garment:\n`;
+    msg += `🛍️ *${product.name}*\n`;
+    msg += `• Size: ${size}\n`;
+    msg += `• Color: ${color}\n`;
+    msg += `• Quantity: ${qty}\n`;
+    msg += `• Price: ${unitPriceFormatted}\n`;
+    msg += `• Fabric: ${product.fabric} (${product.fabricWeight || 'Heavyweight'})\n`;
+    if (wilayaInfo) {
+      msg += `• Delivery Wilaya: ${wilayaInfo} (Home or StopDesk)\n`;
+    }
+    if (options.customNote) {
+      msg += `• Note: ${options.customNote}\n`;
+    }
+    msg += `\nPlease let me know how to confirm shipping and payment (Cash on delivery or BaridiMob). 🇩🇿`;
+    return msg;
+  }
+
+  // SPANISH TEMPLATE
+  if (language === 'es') {
+    if (intent === 'wholesale') {
+      let msg = `Hola equipo de ${storeName} 👋\n\n`;
+      msg += `Me pongo en contacto para una compra al por *MAYOR / B2B* de este modelo:\n`;
+      msg += `🏢 *${product.name}*\n`;
+      msg += `• Referencia: DBC-${product.id.toUpperCase()}\n`;
+      msg += `• Precio mayorista: ${wholesalePriceFormatted} / pieza\n`;
+      msg += `• Cantidad: ${qty >= 6 ? `${qty} piezas` : 'A partir de 6 piezas'}\n`;
+      msg += `• Color(es): ${color}\n`;
+      msg += `• Tejido: ${product.fabricWeight || 'Heavyweight'} - ${product.fabric}\n`;
+      if (wilayaInfo) {
+        msg += `• Wilaya de entrega: ${wilayaInfo}\n`;
+      }
+      if (options.customNote) {
+        msg += `• Detalles: ${options.customNote}\n`;
+      }
+      msg += `\n¿Podrían confirmarme la disponibilidad en taller y el envío? ¡Gracias!`;
+      return msg;
+    }
+
+    if (intent === 'inquiry') {
+      let msg = `Hola ${storeName} 👋\n\n`;
+      msg += `Tengo una consulta sobre este artículo:\n`;
+      msg += `🔍 *${product.name}*\n`;
+      msg += `• Color: ${color}\n`;
+      msg += `• Talla: ${size}\n`;
+      msg += `• Precio: ${unitPriceFormatted}\n`;
+      if (wilayaInfo) {
+        msg += `• Wilaya de entrega: ${wilayaInfo}\n`;
+      }
+      if (options.customNote) {
+        msg += `• Pregunta: ${options.customNote}\n`;
+      } else {
+        msg += `• ¿Podrían confirmarme si este artículo está disponible para envío rápido?\n`;
+      }
+      msg += `\n¡Gracias!`;
+      return msg;
+    }
+
+    if (intent === 'custom') {
+      let msg = `Hola ${storeName} 👋\n\n`;
+      msg += `Deseo consultar sobre confección a medida o bordado personalizado en este modelo:\n`;
+      msg += `✂️ *${product.name}*\n`;
+      msg += `• Talla: ${size}\n`;
+      msg += `• Color: ${color}\n`;
+      msg += `• Tejido: ${product.fabric}\n`;
+      if (options.customNote) {
+        msg += `• Especificaciones: ${options.customNote}\n`;
+      }
+      msg += `\n¿Cuáles son los plazos y tarifas del taller? ¡Muchas gracias!`;
+      return msg;
+    }
+
+    // Default Spanish Order
+    let msg = `Hola ${storeName} 👋\n\n`;
+    msg += `Deseo realizar un pedido para el siguiente producto:\n`;
+    msg += `🛍️ *${product.name}*\n`;
+    msg += `• Talla: ${size}\n`;
+    msg += `• Color: ${color}\n`;
+    msg += `• Cantidad: ${qty}\n`;
+    msg += `• Precio: ${unitPriceFormatted}\n`;
+    msg += `• Tejido: ${product.fabric} (${product.fabricWeight || 'Heavyweight'})\n`;
+    if (wilayaInfo) {
+      msg += `• Envío a: ${wilayaInfo} (Domicilio o StopDesk)\n`;
+    }
+    if (options.customNote) {
+      msg += `• Nota: ${options.customNote}\n`;
+    }
+    msg += `\nPor favor indiquen los pasos para confirmar el envío y pago (Contra entrega o BaridiMob). 🇩🇿`;
     return msg;
   }
 
@@ -224,15 +370,24 @@ export function generateGeneralWhatsAppUrl(
   topic?: string
 ): string {
   const cleanNumber = cleanWhatsAppNumber(storeSettings?.whatsappNumber);
-  const isArabic = language === 'ar';
   const storeName = storeSettings?.storeName || 'DBC Workshop Algérie';
 
-  let message = isArabic
-    ? `السلام عليكم ورشة ${storeName} 👋\nأود الاستفسار عن منتجاتكم وخدمة التوصيل لكافة الولايات.`
-    : `Bonjour l'équipe ${storeName} 👋\nJe souhaite obtenir des informations sur vos confections textiles et les délais de livraison en Algérie.`;
+  let message = '';
+  if (language === 'ar') {
+    message = `السلام عليكم ورشة ${storeName} 👋\nأود الاستفسار عن منتجاتكم وخدمة التوصيل لكافة الولايات.`;
+  } else if (language === 'en') {
+    message = `Hello ${storeName} team 👋\nI would like information about your apparel collection and express delivery across Algeria.`;
+  } else if (language === 'es') {
+    message = `Hola equipo de ${storeName} 👋\nDeseo consultar sobre su colección de ropa y los envíos exprés en Argelia.`;
+  } else {
+    message = `Bonjour l'équipe ${storeName} 👋\nJe souhaite obtenir des informations sur vos confections textiles et les délais de livraison en Algérie.`;
+  }
 
   if (topic) {
-    message += isArabic ? `\nالموضوع: ${topic}` : `\nSujet : ${topic}`;
+    if (language === 'ar') message += `\nالموضوع: ${topic}`;
+    else if (language === 'en') message += `\nSubject: ${topic}`;
+    else if (language === 'es') message += `\nTema: ${topic}`;
+    else message += `\nSujet : ${topic}`;
   }
 
   return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
