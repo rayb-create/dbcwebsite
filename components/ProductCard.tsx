@@ -6,14 +6,14 @@ import {
   Check, 
   MessageCircle, 
   Building2, 
-  Layers,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 import { Product, Currency, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
-import { Language, TRANSLATIONS } from '../data/i18n';
+import { Language, TRANSLATIONS, getCategoryLabel, formatColorName } from '../data/i18n';
 import { generateProductWhatsAppUrl } from '../utils/whatsapp';
+import { getProductSubtitle } from '../data/products';
 
 interface ProductCardProps {
   product: Product;
@@ -75,10 +75,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     const touchEndX = e.changedTouches[0].clientX;
     const diffX = touchStartX - touchEndX;
     if (diffX > 35 && images.length > 1) {
-      // Swiped left -> next picture
       setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     } else if (diffX < -35 && images.length > 1) {
-      // Swiped right -> previous picture
       setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
     }
     setTouchStartX(null);
@@ -136,8 +134,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               type="button"
               id={`product-card-${product.id}-prev-btn`}
               onClick={handlePrevImage}
-              aria-label="Photo précédente"
-              title="Photo précédente"
+              aria-label={isArabic ? 'الصورة السابقة' : currentLanguage === 'es' ? 'Foto anterior' : currentLanguage === 'en' ? 'Previous photo' : 'Photo précédente'}
+              title={isArabic ? 'الصورة السابقة' : currentLanguage === 'es' ? 'Foto anterior' : currentLanguage === 'en' ? 'Previous photo' : 'Photo précédente'}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-md border border-[#E0D7C9] flex items-center justify-center backdrop-blur-xs transition-all duration-200 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer z-20"
             >
               <ChevronLeft className="w-4 h-4 text-[#1F1D1A]" />
@@ -147,8 +145,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               type="button"
               id={`product-card-${product.id}-next-btn`}
               onClick={handleNextImage}
-              aria-label="Photo suivante"
-              title="Photo suivante"
+              aria-label={isArabic ? 'الصورة التالية' : currentLanguage === 'es' ? 'Foto siguiente' : currentLanguage === 'en' ? 'Next photo' : 'Photo suivante'}
+              title={isArabic ? 'الصورة التالية' : currentLanguage === 'es' ? 'Foto siguiente' : currentLanguage === 'en' ? 'Next photo' : 'Photo suivante'}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-md border border-[#E0D7C9] flex items-center justify-center backdrop-blur-xs transition-all duration-200 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer z-20"
             >
               <ChevronRight className="w-4 h-4 text-[#1F1D1A]" />
@@ -172,7 +170,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     e.stopPropagation();
                     setCurrentImageIndex(idx);
                   }}
-                  aria-label={`Afficher la photo ${idx + 1}`}
+                  aria-label={isArabic ? `عرض الصورة ${idx + 1}` : currentLanguage === 'es' ? `Mostrar foto ${idx + 1}` : currentLanguage === 'en' ? `Show photo ${idx + 1}` : `Afficher la photo ${idx + 1}`}
                   className={`transition-all duration-300 rounded-full cursor-pointer ${
                     currentImageIndex === idx 
                       ? 'w-4 h-1.5 bg-white shadow-xs' 
@@ -205,7 +203,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onToggleWishlist(product.id);
           }}
           className="absolute top-3 right-3 p-2 bg-white/85 hover:bg-white text-[#2C2825] backdrop-blur-xs rounded-full transition-colors shadow-xs cursor-pointer z-10"
-          title="Ajouter aux favoris"
+          title={isWishlisted ? t.wishlistTitle : t.wishlistSelectBtn}
         >
           <Heart 
             className={`w-4 h-4 ${isWishlisted ? 'fill-[#8C6D3B] text-[#8C6D3B]' : 'text-[#4A4338]'}`} 
@@ -219,12 +217,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             className="flex-1 py-2 bg-[#1F1D1A]/95 hover:bg-black text-white text-xs font-mono rounded flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5 text-[#C9A96E]" />
-            <span>Voir Détails</span>
+            <span>{t.viewDetails}</span>
           </button>
           <button
             onClick={handleWhatsAppQuickOrder}
             className="p-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded shadow-md transition-colors cursor-pointer"
-            title="Commander sur WhatsApp"
+            title={t.orderViaWhatsApp}
           >
             <MessageCircle className="w-4 h-4" />
           </button>
@@ -236,8 +234,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="space-y-1.5">
           {/* Category & Origin */}
           <div className="flex items-center justify-between text-[11px] font-mono text-[#8C8377] uppercase tracking-wider">
-            <span>{product.category}</span>
-            <span>Algérie</span>
+            <span>{getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}</span>
+            <span>{t.algeriaMade}</span>
           </div>
 
           {/* Product Title */}
@@ -248,10 +246,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.name}
           </h3>
 
-          {/* Subtitle / Arabic translation */}
-          {product.subtitle && (
+          {/* Subtitle / Multilingual translation */}
+          {getProductSubtitle(product, currentLanguage) && (
             <p className="text-[11px] text-[#6E6659] line-clamp-1 font-sans">
-              {product.subtitle}
+              {getProductSubtitle(product, currentLanguage)}
             </p>
           )}
 
@@ -270,11 +268,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     : 'border-black/20 hover:scale-105'
                 }`}
                 style={{ backgroundColor: color.hex }}
-                title={color.name}
+                title={formatColorName(color.name, currentLanguage)}
               />
             ))}
             <span className="text-[10px] font-mono text-[#7C756B] ml-1">
-              {product.colors[selectedColorIndex]?.name}
+              {formatColorName(product.colors[selectedColorIndex]?.name, currentLanguage)}
             </span>
           </div>
         </div>
@@ -295,8 +293,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             {/* B2B Wholesale Indicator */}
             {product.wholesalePriceDzd && (
-              <span className="text-[10px] font-mono text-[#8C6D3B] bg-[#FAF3E8] px-1.5 py-0.5 rounded border border-[#EADCC7]" title="Tarif de gros pour les magasins dès 6 pièces">
-                Gros: {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
+              <span className="text-[10px] font-mono text-[#8C6D3B] bg-[#FAF3E8] px-1.5 py-0.5 rounded border border-[#EADCC7]" title={t.minWholesaleQty}>
+                {t.wholesaleBadge}: {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
               </span>
             )}
           </div>
@@ -318,7 +316,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {justAdded ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>Ajouté !</span>
+                  <span>{t.addedSuccess}</span>
                 </>
               ) : (
                 <>
