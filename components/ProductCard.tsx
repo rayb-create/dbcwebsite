@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Heart, 
   Eye, 
-  Plus, 
-  Check, 
-  MessageCircle, 
+  ShoppingBag, 
+  Truck, 
+  ShieldCheck, 
+  Sparkles, 
   Building2, 
-  ChevronLeft,
-  ChevronRight
+  Layers, 
+  MessageCircle 
 } from 'lucide-react';
 import { Product, Currency, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
@@ -15,7 +16,7 @@ import { Language, TRANSLATIONS } from '../data/i18n';
 import { generateProductWhatsAppUrl } from '../utils/whatsapp';
 import { getProductSubtitle } from '../data/products';
 
-// Helper: safe localized category label with custom category support
+// Safe self-contained helper function for category translations
 export const getCategoryLabel = (
   categoryId: string, 
   lang: Language = 'fr', 
@@ -23,12 +24,12 @@ export const getCategoryLabel = (
 ): string => {
   const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
   switch (categoryId) {
-    case 'all': return t?.navAll || 'Tous';
-    case 'hoodies': return t?.navHoodies || 'Hoodies';
-    case 'joggers': return t?.navJoggers || 'Joggers';
-    case 'tracksuits': return t?.navTracksuits || 'Ensembles';
-    case 'longsleeves': return t?.navLongSleeves || 'Manches Longues';
-    case 'tees': return t?.navTees || 'T-shirts';
+    case 'all': return t?.navAll || 'Toutes les collections';
+    case 'hoodies': return t?.navHoodies || 'Hoodies & Sweats';
+    case 'joggers': return t?.navJoggers || 'Pantalons & Joggers';
+    case 'tracksuits': return t?.navTracksuits || 'Ensembles & Survêtements';
+    case 'longsleeves': return t?.navLongSleeves || 'T-shirts Manches Longues';
+    case 'tees': return t?.navTees || 'T-shirts Oversize';
     case 'outerwear': return t?.navOuterwear || (lang === 'ar' ? 'سترات ومعاطف' : lang === 'es' ? 'Chaquetas y Abrigos' : lang === 'en' ? 'Outerwear' : 'Vestes & Manteaux');
     case 'b2b': return t?.navB2B || 'B2B / Gros';
     default: {
@@ -46,7 +47,7 @@ export const getCategoryLabel = (
   }
 };
 
-// Helper: safe color name formatting
+// Safe self-contained helper function for color translations
 export const formatColorName = (rawColorName: string, lang: Language): string => {
   if (!rawColorName) return '';
   if (lang === 'ar') return rawColorName;
@@ -92,331 +93,275 @@ export const formatColorName = (rawColorName: string, lang: Language): string =>
 interface ProductCardProps {
   product: Product;
   currency: Currency;
+  language: Language;
+  storeSettings: StoreSettings;
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
-  onSelectProduct: (product: Product) => void;
-  onQuickAdd: (product: Product, size: string, colorIndex: number) => void;
-  currentLanguage: Language;
-  storeSettings?: StoreSettings;
+  onOpenQuickView: (product: Product) => void;
+  onAddToCart: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   currency,
+  language,
+  storeSettings,
   isWishlisted,
   onToggleWishlist,
-  onSelectProduct,
-  onQuickAdd,
-  currentLanguage,
-  storeSettings,
+  onOpenQuickView,
+  onAddToCart,
 }) => {
-  const [selectedColorIndex, setSelectedColorIndex] = useState(0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const [quickSizeSelectOpen, setQuickSizeSelectOpen] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const t = TRANSLATIONS[language] || TRANSLATIONS.fr;
 
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [product.id]);
+  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0);
+  const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'M');
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [justAdded, setJustAdded] = useState<boolean>(false);
 
-  const t = TRANSLATIONS[currentLanguage];
-  const isArabic = currentLanguage === 'ar';
+  const currentColor = product.colors?.[selectedColorIndex] || {
+    name: 'Noir Profond',
+    hex: '#111111',
+    image: product.image,
+  };
 
-  const images = Array.isArray(product.images) && product.images.length > 0 
-    ? product.images 
-    : ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80'];
+  const currentDisplayImage =
+    isHovered && currentColor.secondaryImage
+      ? currentColor.secondaryImage
+      : currentColor.image || product.image;
 
-  const displayImage = images[currentImageIndex] || images[0];
+  const isB2B = product.category === 'b2b';
+  const displaySubtitle = getProductSubtitle(product, language);
 
-  const handlePrevImage = (e: React.MouseEvent) => {
+  const getLocalizedName = (): string => {
+    if (language === 'ar' && product.nameAr) return product.nameAr;
+    if (language === 'en' && product.nameEn) return product.nameEn;
+    if (language === 'es' && product.nameEs) return product.nameEs;
+    return product.name;
+  };
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diffX = touchStartX - touchEndX;
-    if (diffX > 35 && images.length > 1) {
-      setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    } else if (diffX < -35 && images.length > 1) {
-      setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    }
-    setTouchStartX(null);
-  };
-
-  const handleQuickAddClick = (size: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onQuickAdd(product, size, selectedColorIndex);
+    onAddToCart(product, selectedSize, currentColor.name, 1);
     setJustAdded(true);
-    setQuickSizeSelectOpen(false);
-    setTimeout(() => setJustAdded(false), 1500);
+    setTimeout(() => setJustAdded(false), 1400);
   };
 
-  const handleWhatsAppQuickOrder = (e: React.MouseEvent) => {
+  const handleWhatsAppOrder = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const selectedColor = product.colors[selectedColorIndex]?.name || 'Standard';
-    const url = generateProductWhatsAppUrl(product, storeSettings, {
-      selectedColor,
-      currency,
-      language: currentLanguage,
-      intent: 'order',
-    });
-    window.open(url, '_blank');
+    const url = generateProductWhatsAppUrl(
+      product,
+      selectedSize,
+      currentColor.name,
+      storeSettings.whatsappNumber
+    );
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div
-      id={`product-card-${product.id}`}
-      className="group flex flex-col bg-white border border-[#E8E1D5] hover:border-[#1F1D1A] transition-all duration-300 rounded overflow-hidden shadow-xs hover:shadow-md"
+      className="group relative bg-[#0D0D0D] border border-white/10 hover:border-white/30 transition-all duration-300 flex flex-col h-full rounded-sm overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setQuickSizeSelectOpen(false);
-      }}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Image Container with Sliding Buttons & Controls */}
+      {/* Visual Image Header */}
       <div 
-        className="relative w-full aspect-[3/4] bg-[#F2EDE4] overflow-hidden cursor-pointer select-none"
-        onClick={() => onSelectProduct(product)}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        className="relative aspect-3/4 w-full bg-[#141414] overflow-hidden cursor-pointer"
+        onClick={() => onOpenQuickView(product)}
       >
         <img
-          key={currentImageIndex}
-          src={displayImage}
-          alt={`${product.name} - ${currentImageIndex + 1}`}
-          className="w-full h-full object-cover object-center transition-all duration-500 ease-out group-hover:scale-105"
+          src={currentDisplayImage}
+          alt={getLocalizedName()}
+          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
         />
 
-        {/* Sliding Buttons (Previous / Next) */}
-        {images.length > 1 && (
-          <>
-            <button
-              type="button"
-              id={`product-card-${product.id}-prev-btn`}
-              onClick={handlePrevImage}
-              aria-label={isArabic ? 'الصورة السابقة' : currentLanguage === 'es' ? 'Foto anterior' : currentLanguage === 'en' ? 'Previous photo' : 'Photo précédente'}
-              title={isArabic ? 'الصورة السابقة' : currentLanguage === 'es' ? 'Foto anterior' : currentLanguage === 'en' ? 'Previous photo' : 'Photo précédente'}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-md border border-[#E0D7C9] flex items-center justify-center backdrop-blur-xs transition-all duration-200 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer z-20"
-            >
-              <ChevronLeft className="w-4 h-4 text-[#1F1D1A]" />
-            </button>
-
-            <button
-              type="button"
-              id={`product-card-${product.id}-next-btn`}
-              onClick={handleNextImage}
-              aria-label={isArabic ? 'الصورة التالية' : currentLanguage === 'es' ? 'Foto siguiente' : currentLanguage === 'en' ? 'Next photo' : 'Photo suivante'}
-              title={isArabic ? 'الصورة التالية' : currentLanguage === 'es' ? 'Foto siguiente' : currentLanguage === 'en' ? 'Next photo' : 'Photo suivante'}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-md border border-[#E0D7C9] flex items-center justify-center backdrop-blur-xs transition-all duration-200 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer z-20"
-            >
-              <ChevronRight className="w-4 h-4 text-[#1F1D1A]" />
-            </button>
-
-            {/* Slide Counter Badge */}
-            <span className="absolute top-3 right-12 px-2 py-0.5 text-[10px] font-mono font-medium tracking-wider bg-black/60 text-white/95 backdrop-blur-xs rounded pointer-events-none z-10 shadow-xs">
-              {currentImageIndex + 1}/{images.length}
+        {/* Badges Overlay */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+          {product.badge && (
+            <span className="bg-white text-black text-[10px] font-mono tracking-wider font-bold px-2 py-0.5 uppercase shadow-sm">
+              {product.badge}
             </span>
-
-            {/* Slide Indicator Dots / Pills */}
-            <div 
-              className="absolute bottom-3 group-hover:bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2 py-1 bg-black/40 backdrop-blur-xs rounded-full pointer-events-auto z-20 transition-all duration-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {images.map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentImageIndex(idx);
-                  }}
-                  aria-label={isArabic ? `عرض الصورة ${idx + 1}` : currentLanguage === 'es' ? `Mostrar foto ${idx + 1}` : currentLanguage === 'en' ? `Show photo ${idx + 1}` : `Afficher la photo ${idx + 1}`}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
-                    currentImageIndex === idx 
-                      ? 'w-4 h-1.5 bg-white shadow-xs' 
-                      : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Badge: Grammage & B2B/B2C */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
-          <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-[#1F1D1A]/90 text-white backdrop-blur-xs rounded">
-            {product.fabricWeight || 'Heavyweight Fleece'}
-          </span>
-          {product.isB2BAvailable && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono tracking-wider bg-white/90 text-[#8C6D3B] backdrop-blur-xs border border-[#DDD4C5] rounded font-bold">
-              <Building2 className="w-2.5 h-2.5" />
-              B2B & B2C
+          )}
+          {isB2B && (
+            <span className="bg-amber-400 text-black text-[10px] font-mono font-bold px-2 py-0.5 uppercase flex items-center gap-1 shadow-sm">
+              <Building2 className="w-3 h-3" />
+              B2B / Gros
+            </span>
+          )}
+          {product.isMadeInAlgeria && (
+            <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[9px] font-mono font-medium px-1.5 py-0.5 backdrop-blur-sm">
+              🇩🇿 Atelier Blida
             </span>
           )}
         </div>
 
-        {/* Wishlist Button */}
-        <button
-          id={`wishlist-btn-${product.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleWishlist(product.id);
-          }}
-          className="absolute top-3 right-3 p-2 bg-white/85 hover:bg-white text-[#2C2825] backdrop-blur-xs rounded-full transition-colors shadow-xs cursor-pointer z-10"
-          title={isWishlisted ? t.wishlistTitle : t.wishlistSelectBtn}
-        >
-          <Heart 
-            className={`w-4 h-4 ${isWishlisted ? 'fill-[#8C6D3B] text-[#8C6D3B]' : 'text-[#4A4338]'}`} 
-          />
-        </button>
+        {/* Action Buttons Top Right */}
+        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-10">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWishlist(product.id);
+            }}
+            aria-label="Ajouter aux favoris"
+            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${
+              isWishlisted
+                ? 'bg-red-500 text-white'
+                : 'bg-black/40 text-white/80 hover:bg-black/70 hover:text-white'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenQuickView(product);
+            }}
+            aria-label="Aperçu rapide"
+            className="p-2 rounded-full bg-black/40 text-white/80 hover:bg-black/70 hover:text-white backdrop-blur-md transition-colors cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-        {/* Quick WhatsApp & Details Overlay on Hover */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-          <button
-            onClick={() => onSelectProduct(product)}
-            className="flex-1 py-2 bg-[#1F1D1A]/95 hover:bg-black text-white text-xs font-mono rounded flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
-          >
-            <Eye className="w-3.5 h-3.5 text-[#C9A96E]" />
-            <span>{t.viewDetails}</span>
-          </button>
-          <button
-            onClick={handleWhatsAppQuickOrder}
-            className="p-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded shadow-md transition-colors cursor-pointer"
-            title={t.orderViaWhatsApp}
-          >
-            <MessageCircle className="w-4 h-4" />
-          </button>
+        {/* Quick View Strip on Hover */}
+        <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden sm:flex items-center justify-center">
+          <span className="text-[11px] font-mono text-white/90 tracking-wider uppercase font-semibold flex items-center gap-1.5">
+            <Eye className="w-3.5 h-3.5" />
+            {t.quickView || 'Aperçu Rapide'}
+          </span>
         </div>
       </div>
 
-      {/* Product Content Details */}
-      <div className="p-4 flex flex-col flex-1 justify-between bg-white">
-        <div className="space-y-1.5">
-          {/* Category & Origin */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-[#8C8377] uppercase tracking-wider">
-            <span>{getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}</span>
-            <span>{t.algeriaMade}</span>
-          </div>
-
-          {/* Product Title */}
-          <h3 
-            onClick={() => onSelectProduct(product)}
-            className="font-serif text-sm sm:text-base font-semibold text-[#1F1C19] line-clamp-1 hover:text-[#8C6D3B] cursor-pointer transition-colors"
-          >
-            {product.name}
-          </h3>
-
-          {/* Subtitle / Multilingual translation */}
-          {getProductSubtitle(product, currentLanguage) && (
-            <p className="text-[11px] text-[#6E6659] line-clamp-1 font-sans">
-              {getProductSubtitle(product, currentLanguage)}
-            </p>
-          )}
-
-          {/* Color Swatches */}
-          <div className="flex items-center gap-1.5 pt-1">
-            {product.colors.map((color, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedColorIndex(idx);
-                }}
-                className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
-                  selectedColorIndex === idx 
-                    ? 'ring-2 ring-[#1F1D1A] ring-offset-1 scale-110' 
-                    : 'border-black/20 hover:scale-105'
-                }`}
-                style={{ backgroundColor: color.hex }}
-                title={formatColorName(color.name, currentLanguage)}
-              />
-            ))}
-            <span className="text-[10px] font-mono text-[#7C756B] ml-1">
-              {formatColorName(product.colors[selectedColorIndex]?.name, currentLanguage)}
-            </span>
-          </div>
-        </div>
-
-        {/* Pricing & Add to Cart Area */}
-        <div className="pt-3 border-t border-[#F0EAE1] mt-3 space-y-2">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <span className="font-mono text-sm font-bold text-[#1F1C19]">
-                {formatPrice(product.price, currency, isArabic)}
-              </span>
-              {product.compareAtPrice && product.compareAtPrice > product.price && (
-                <span className="text-xs font-mono text-[#9E9589] line-through ml-2">
-                  {formatPrice(product.compareAtPrice, currency, isArabic)}
-                </span>
-              )}
-            </div>
-
-            {/* B2B Wholesale Indicator */}
-            {product.wholesalePriceDzd && (
-              <span className="text-[10px] font-mono text-[#8C6D3B] bg-[#FAF3E8] px-1.5 py-0.5 rounded border border-[#EADCC7]" title={t.minWholesaleQty}>
-                {t.wholesaleBadge}: {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
+      {/* Body Details */}
+      <div className="p-4 flex-1 flex flex-col justify-between">
+        <div>
+          {/* Category & Weight Indicator */}
+          <div className="flex items-center justify-between text-[11px] text-white/40 font-mono mb-1">
+            <span>{getCategoryLabel(product.category, language, storeSettings.customCategories)}</span>
+            {product.weight && (
+              <span className="flex items-center gap-1 text-white/50">
+                <Layers className="w-3 h-3" />
+                {product.weight}
               </span>
             )}
           </div>
 
-          {/* Quick Add Sizes or Button */}
-          {!quickSizeSelectOpen ? (
-            <button
-              id={`quick-add-btn-${product.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setQuickSizeSelectOpen(true);
-              }}
-              className={`w-full py-2 px-3 text-xs font-mono tracking-wider uppercase rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                justAdded 
-                  ? 'bg-emerald-700 text-white' 
-                  : 'bg-[#F2EDE4] hover:bg-[#1F1D1A] text-[#1F1C19] hover:text-white border border-[#DDD4C5]'
-              }`}
-            >
-              {justAdded ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{t.addedSuccess}</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t.addToCart}</span>
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="space-y-1 animate-in fade-in duration-150">
-              <span className="text-[10px] font-mono text-[#7C756B] block">
-                {t.selectSize} :
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {(product.sizes || ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
+          {/* Product Name */}
+          <h3
+            onClick={() => onOpenQuickView(product)}
+            className="text-sm font-semibold tracking-wide text-white hover:text-white/80 transition-colors line-clamp-1 cursor-pointer"
+          >
+            {getLocalizedName()}
+          </h3>
+
+          {/* Subtitle / Description */}
+          {displaySubtitle && (
+            <p className="text-xs text-white/50 line-clamp-1 mt-0.5 mb-2 font-light">
+              {displaySubtitle}
+            </p>
+          )}
+
+          {/* Color Switcher */}
+          {product.colors && product.colors.length > 0 && (
+            <div className="mt-2.5 mb-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {product.colors.map((color, idx) => (
                   <button
-                    key={size}
-                    onClick={(e) => handleQuickAddClick(size, e)}
-                    className="flex-1 min-w-[34px] py-1 px-1 bg-white hover:bg-[#1F1D1A] hover:text-white border border-[#DDD4C5] rounded text-[11px] font-mono text-center cursor-pointer transition-colors"
-                  >
-                    {size}
-                  </button>
+                    key={`${color.name}-${idx}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedColorIndex(idx);
+                    }}
+                    title={formatColorName(color.name, language)}
+                    className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
+                      selectedColorIndex === idx
+                        ? 'border-white scale-125 shadow-sm shadow-white/30'
+                        : 'border-white/20 hover:border-white/60'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                  />
                 ))}
               </div>
+              <span className="text-[10px] text-white/40 font-mono block mt-1 line-clamp-1">
+                {formatColorName(currentColor.name, language)}
+              </span>
             </div>
           )}
+
+          {/* Size Pills */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap mb-3">
+              {product.sizes.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSize(size);
+                  }}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono border rounded transition-colors cursor-pointer ${
+                    selectedSize === size
+                      ? 'border-white bg-white text-black font-semibold'
+                      : 'border-white/10 text-white/60 hover:border-white/30'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pricing & Footer Actions */}
+        <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
+          {/* Price Block */}
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-mono font-bold text-white">
+                {formatPrice(product.price, currency)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-xs font-mono text-white/40 line-through">
+                  {formatPrice(product.originalPrice, currency)}
+                </span>
+              )}
+            </div>
+
+            {isB2B && product.minimumOrderQuantity && (
+              <span className="text-[10px] font-mono text-amber-300">
+                Min: {product.minimumOrderQuantity} pcs
+              </span>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <button
+              type="button"
+              onClick={handleQuickAdd}
+              className={`py-2 px-2 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 rounded transition-all cursor-pointer ${
+                justAdded
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white hover:bg-neutral-200 text-black'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>{justAdded ? (t.added || 'Ajouté !') : (t.addToCart || 'Ajouter')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleWhatsAppOrder}
+              aria-label="Commander via WhatsApp"
+              className="py-2 px-2 text-xs font-mono font-semibold bg-[#25D366] hover:bg-[#1EBE5D] text-white flex items-center justify-center gap-1.5 rounded transition-colors cursor-pointer"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="truncate">{t.orderViaWhatsApp || 'WhatsApp'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
