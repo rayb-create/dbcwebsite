@@ -16,22 +16,52 @@ export type ProductCategory =
   | 'longsleeves' 
   | 'tees' 
   | 'outerwear' 
-  | 'tracksuits';
+  | 'tracksuits'
+  | string;
+
+export interface CustomCategory {
+  id: string;
+  name: string;
+  nameAr?: string;
+  nameEn?: string;
+  nameEs?: string;
+  description?: string;
+  targetAudience?: string;
+  createdAt?: string;
+}
 
 export interface Product {
   id: string;
   name: string;
+  nameAr?: string;
+  nameEn?: string;
+  nameEs?: string;
   subtitle: string;
-  category: 'hoodies' | 'joggers' | 'longsleeves' | 'tees' | 'outerwear' | 'tracksuits';
-  price: number; // in DZD (or converted)
+  subtitleAr?: string;
+  subtitleEn?: string;
+  subtitleEs?: string;
+  category: string;
+  price: number; // in DZD
   compareAtPrice?: number;
   wholesalePriceDzd?: number; // B2B wholesale price
   minWholesaleQty?: number;
   description: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
+  descriptionEs?: string;
   story: string;
   fabric: string;
+  fabricAr?: string;
+  fabricEn?: string;
+  fabricEs?: string;
   fabricWeight: string; // e.g. "Heavyweight Fleece / Molleton Épais"
+  fabricWeightAr?: string;
+  fabricWeightEn?: string;
+  fabricWeightEs?: string;
   millOrigin: string; // e.g. "DBC Workshop Confection - Alger"
+  millOriginAr?: string;
+  millOriginEn?: string;
+  millOriginEs?: string;
   images: string[];
   sizes: string[]; // e.g. ['S', 'M', 'L', 'XL', 'XXL']
   colors: ProductColor[];
@@ -139,8 +169,8 @@ export interface DeliveryCompany {
   id: string;
   name: string;
   phone: string;
-  trackingUrlTemplate: string; // e.g. "https://yalidine.com/suivi/?tracking={TRACKING}"
-  trackingPrefix: string; // e.g. "DZ-YAL-"
+  trackingUrlTemplate: string;
+  trackingPrefix: string;
   supportsStopDesk: boolean;
   isActive: boolean;
   notes?: string;
@@ -151,24 +181,40 @@ export interface Review {
   productId: string;
   author: string;
   location: string;
+  locationAr?: string;
   rating: number;
   date: string;
+  dateAr?: string;
+  dateEn?: string;
+  dateEs?: string;
   title: string;
+  titleAr?: string;
+  titleEn?: string;
+  titleEs?: string;
   comment: string;
+  commentAr?: string;
+  commentEn?: string;
+  commentEs?: string;
   verifiedWorkshopPurchase: boolean;
   garmentSpec: string;
+  garmentSpecAr?: string;
+  garmentSpecEn?: string;
+  garmentSpecEs?: string;
 }
 
 export type Currency = 'DZD' | 'USD' | 'EUR' | 'GBP';
 
 export interface CurrencyRate {
   symbol: string;
-  rate: number; // relative to DZD (base currency)
+  rate: number;
 }
 
 export interface StoreSettings {
   storeName: string;
   tagline: string;
+  taglineAr?: string;
+  taglineEn?: string;
+  taglineEs?: string;
   phone: string;
   whatsappNumber: string;
   email: string;
@@ -183,11 +229,20 @@ export interface StoreSettings {
   mapsUrl?: string;
   heroImage?: string;
   heroImages?: string[];
-  heroFocalPosition?: string; // e.g. 'center', 'top', 'bottom', 'center top', 'left', 'right'
+  heroFocalPosition?: string;
   heroOverlayStrength?: 'subtle' | 'medium' | 'dark';
   heroTitle?: string;
+  heroTitleAr?: string;
+  heroTitleEn?: string;
+  heroTitleEs?: string;
   heroSubtitle?: string;
+  heroSubtitleAr?: string;
+  heroSubtitleEn?: string;
+  heroSubtitleEs?: string;
   heroCtaText?: string;
+  heroCtaTextAr?: string;
+  heroCtaTextEn?: string;
+  heroCtaTextEs?: string;
   // Site-wide SEO Metadata
   seoTitle?: string;
   seoDescription?: string;
@@ -201,4 +256,5 @@ export interface StoreSettings {
   customWilayaRates?: Record<string, { home: number; desk: number }>;
   freeShippingThresholdDzd?: number;
   defaultDeliveryDelay?: string;
+  customCategories?: CustomCategory[];
 }
