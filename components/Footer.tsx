@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import { 
   Truck, 
-  ShieldCheck, 
   Mail, 
-  ArrowRight, 
-  Check, 
-  Heart, 
   Building2, 
-  Phone, 
-  MessageCircle, 
   CreditCard, 
   Lock,
   Instagram,
   Facebook,
   MapPin,
-  ExternalLink
+  MessageCircle
 } from 'lucide-react';
 import { StoreSettings } from '../types';
 import { Language, TRANSLATIONS } from '../data/i18n';
@@ -55,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({
     setEmail('');
   };
 
-  // Social accounts detection - ONLY show configured links from Manager Panel
+  // Social accounts detection - ONLY show configured links
   const socialLinks: { id: string; name: string; url: string; icon: React.ReactNode; color: string }[] = [];
 
   if (storeSettings.instagram && storeSettings.instagram.trim().length > 0) {
@@ -143,7 +137,7 @@ export const Footer: React.FC<FooterProps> = ({
               {storeSettings.phone && <div>{t.footerPhoneLabel} {storeSettings.phone}</div>}
             </div>
 
-            {/* Social Media Channels (Brand column) */}
+            {/* Social Media Channels */}
             {socialLinks.length > 0 && (
               <div className="pt-2">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#7C756B] block mb-2">
@@ -214,6 +208,16 @@ export const Footer: React.FC<FooterProps> = ({
                   {t.navTees}
                 </button>
               </li>
+              {storeSettings?.customCategories?.map((cat) => (
+                <li key={cat.id}>
+                  <button
+                    onClick={() => onSelectCategory(cat.id)}
+                    className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                  >
+                    {isArabic ? (cat.nameAr || cat.name) : currentLanguage === 'es' ? (cat.nameEs || cat.name) : currentLanguage === 'en' ? (cat.nameEn || cat.name) : cat.name}
+                  </button>
+                </li>
+              ))}
               <li>
                 <button 
                   onClick={onOpenB2B} 
@@ -312,7 +316,6 @@ export const Footer: React.FC<FooterProps> = ({
           <p>© {new Date().getFullYear()} {storeSettings.storeName || 'DBC WORKSHOP ALGÉRIE'} • {t.footerAllRightsReserved}</p>
           
           <div className="flex flex-wrap items-center gap-4">
-            {/* Social media icons also cleanly embedded in the bottom banner */}
             {socialLinks.length > 0 && (
               <div className="flex items-center gap-2 border-r rtl:border-r-0 rtl:border-l border-[#36322E] pr-3 rtl:pr-0 rtl:pl-3">
                 {socialLinks.map((item) => (
@@ -321,7 +324,7 @@ export const Footer: React.FC<FooterProps> = ({
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`text-[#A8A196] hover:text-white transition-colors p-1`}
+                    className="text-[#A8A196] hover:text-white transition-colors p-1"
                     title={item.name}
                     aria-label={item.name}
                   >
