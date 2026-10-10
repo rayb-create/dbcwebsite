@@ -3,7 +3,7 @@ import { DEFAULT_DELIVERY_COMPANIES } from './deliveryCompanies';
 
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   storeName: 'DBC WORKSHOP ALGÉRIE',
-  tagline: 'Atelier de Confection • Vente B2B & B2C Algérie',
+  tagline: 'Atelier de Confection Textile • Algérie',
   phone: '0550 45 88 12',
   whatsappNumber: '+213550458812',
   email: 'dbcworkshop.co@gmail.com',
@@ -22,8 +22,8 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   heroTitle: '',
   heroSubtitle: '',
   heroCtaText: '',
-  seoTitle: 'DBC Workshop Algérie | Atelier de Confection Textile & Vêtements Haut de Gamme',
-  seoDescription: 'Atelier de confection textile en Algérie spécialisé dans les hoodies lourds, joggings, t-shirts épais et confection sur-mesure. Vente en gros B2B & détail B2C avec livraison dans les 69 wilayas.',
+  seoTitle: 'DBC Workshop Algérie | Atelier de Confection Textile & Streetwear Algérien',
+  seoDescription: 'Atelier de confection textile en Algérie spécialisé dans les hoodies lourds, joggings, t-shirts épais et confection de qualité supérieure dans les 69 wilayas.',
   seoKeywords: 'confection textile algérie, atelier vêtements alger, grossiste hoodie algérie, survêtement sur mesure, b2b textile algerie, livraison 69 wilayas, vêtements gros alger, streetwear algérie, atelier dbc',
   seoAuthor: 'DBC Workshop Algérie',
   ogImage: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
