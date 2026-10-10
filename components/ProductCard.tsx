@@ -11,9 +11,83 @@ import {
 } from 'lucide-react';
 import { Product, Currency, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
-import { Language, TRANSLATIONS, getCategoryLabel, formatColorName } from '../data/i18n';
+import { Language, TRANSLATIONS } from '../data/i18n';
 import { generateProductWhatsAppUrl } from '../utils/whatsapp';
 import { getProductSubtitle } from '../data/products';
+
+// Helper: safe localized category label with custom category support
+export const getCategoryLabel = (
+  categoryId: string, 
+  lang: Language = 'fr', 
+  customCategories?: { id: string; name: string; nameAr?: string; nameEn?: string; nameEs?: string }[]
+): string => {
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
+  switch (categoryId) {
+    case 'all': return t?.navAll || 'Tous';
+    case 'hoodies': return t?.navHoodies || 'Hoodies';
+    case 'joggers': return t?.navJoggers || 'Joggers';
+    case 'tracksuits': return t?.navTracksuits || 'Ensembles';
+    case 'longsleeves': return t?.navLongSleeves || 'Manches Longues';
+    case 'tees': return t?.navTees || 'T-shirts';
+    case 'outerwear': return t?.navOuterwear || (lang === 'ar' ? 'سترات ومعاطف' : lang === 'es' ? 'Chaquetas y Abrigos' : lang === 'en' ? 'Outerwear' : 'Vestes & Manteaux');
+    case 'b2b': return t?.navB2B || 'B2B / Gros';
+    default: {
+      if (customCategories && customCategories.length > 0) {
+        const found = customCategories.find(c => c.id === categoryId);
+        if (found) {
+          if (lang === 'ar' && found.nameAr) return found.nameAr;
+          if (lang === 'en' && found.nameEn) return found.nameEn;
+          if (lang === 'es' && found.nameEs) return found.nameEs;
+          return found.name;
+        }
+      }
+      return categoryId;
+    }
+  }
+};
+
+// Helper: safe color name formatting
+export const formatColorName = (rawColorName: string, lang: Language): string => {
+  if (!rawColorName) return '';
+  if (lang === 'ar') return rawColorName;
+  if (lang === 'es') {
+    const map: Record<string, string> = {
+      'Noir Profond / Black': 'Negro Profundo / Black',
+      'Noir / Black': 'Negro / Black',
+      'Noir Intégral / All Black': 'Negro Total / All Black',
+      'Noir Intense / Jet Black': 'Negro Intenso',
+      'Noir Carbone / Carbon Black': 'Negro Carbón',
+      'Noir Charbon / Coal Black': 'Negro Carbón',
+      'Noir Mat / Matte Black': 'Negro Mate',
+      'Noir': 'Negro',
+      'Gris Chiné / Heather Grey': 'Gris Jaspeado / Heather Grey',
+      'Gris Souris / Ash Grey': 'Gris Ceniza',
+      'Gris Ardoise / Slate Grey': 'Gris Pizarra',
+      'Gris Anthracite / Charcoal': 'Gris Antracita',
+      'Gris Chiné': 'Gris Jaspeado',
+      'Gris': 'Gris',
+      'Beige Sable / Sand': 'Beige Arena / Sand',
+      'Beige Sable / Sand Dune': 'Beige Arena',
+      'Beige': 'Beige',
+      'Blanc Pur / Clean White': 'Blanco Puro',
+      'Blanc Cassé / Off-White': 'Blanco Roto / Off-White',
+      'Blanc': 'Blanco',
+      'Vert Forêt / Forest Green': 'Verde Bosque',
+      'Kaki Olive / Olive Khaki': 'Verde Oliva',
+      'Kaki Militaire / Military Khaki': 'Verde Militar',
+      'Kaki Fumé / Smoked Olive': 'Verde Oliva Ahumado',
+      'Marron Moka / Mocha': 'Marrón Moka',
+      'Moka Chaud / Warm Mocha': 'Marrón Moka Cálido',
+      'Brun Tabac / Tobacco Brown': 'Marrón Tabaco',
+      'Bleu Nuit / Deep Navy': 'Azul Marino Noche',
+      'Bleu Marine / Navy': 'Azul Marino',
+      'Bleu Pétrole / Petrol Blue': 'Azul Petróleo',
+      'Bleu Marine Sombre / Dark Navy': 'Azul Marino Oscuro',
+    };
+    return map[rawColorName] || rawColorName;
+  }
+  return rawColorName;
+};
 
 interface ProductCardProps {
   product: Product;
