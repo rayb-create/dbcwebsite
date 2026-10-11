@@ -47,69 +47,34 @@ export const getCategoryLabel = (
   }
 };
 
-// Helper: safe color name formatting
-export const formatColorName = (rawColorName: string, lang: Language): string => {
-  if (!rawColorName) return '';
-  if (lang === 'ar') return rawColorName;
-  if (lang === 'es') {
-    const map: Record<string, string> = {
-      'Noir Profond / Black': 'Negro Profundo / Black',
-      'Noir / Black': 'Negro / Black',
-      'Noir Intégral / All Black': 'Negro Total / All Black',
-      'Noir Intense / Jet Black': 'Negro Intenso',
-      'Noir Carbone / Carbon Black': 'Negro Carbón',
-      'Noir Charbon / Coal Black': 'Negro Carbón',
-      'Noir Mat / Matte Black': 'Negro Mate',
-      'Noir': 'Negro',
-      'Gris Chiné / Heather Grey': 'Gris Jaspeado / Heather Grey',
-      'Gris Souris / Ash Grey': 'Gris Ceniza',
-      'Gris Ardoise / Slate Grey': 'Gris Pizarra',
-      'Gris Anthracite / Charcoal': 'Gris Antracita',
-      'Gris Chiné': 'Gris Jaspeado',
-      'Gris': 'Gris',
-      'Beige Sable / Sand': 'Beige Arena / Sand',
-      'Beige Sable / Sand Dune': 'Beige Arena',
-      'Beige': 'Beige',
-      'Blanc Pur / Clean White': 'Blanco Puro',
-      'Blanc Cassé / Off-White': 'Blanco Roto / Off-White',
-      'Blanc': 'Blanco',
-      'Vert Forêt / Forest Green': 'Verde Bosque',
-      'Kaki Olive / Olive Khaki': 'Verde Oliva',
-      'Kaki Militaire / Military Khaki': 'Verde Militar',
-      'Kaki Fumé / Smoked Olive': 'Verde Oliva Ahumado',
-      'Marron Moka / Mocha': 'Marrón Moka',
-      'Moka Chaud / Warm Mocha': 'Marrón Moka Cálido',
-      'Brun Tabac / Tobacco Brown': 'Marrón Tabaco',
-      'Bleu Nuit / Deep Navy': 'Azul Marino Noche',
-      'Bleu Marine / Navy': 'Azul Marino',
-      'Bleu Pétrole / Petrol Blue': 'Azul Petróleo',
-      'Bleu Marine Sombre / Dark Navy': 'Azul Marino Oscuro',
-    };
-    return map[rawColorName] || rawColorName;
-  }
-  return rawColorName;
+export const formatColorName = (rawName?: string, lang: Language = 'fr'): string => {
+  if (!rawName) return '';
+  const parts = rawName.split('/').map(s => s.trim());
+  if (parts.length <= 1) return rawName;
+  if (lang === 'en') return parts[1] || parts[0];
+  return parts[0];
 };
 
 interface ProductCardProps {
   product: Product;
   currency: Currency;
-  isWishlisted: boolean;
-  onToggleWishlist: (productId: string) => void;
-  onSelectProduct: (product: Product) => void;
-  onQuickAdd: (product: Product, size: string, colorIndex: number) => void;
   currentLanguage: Language;
   storeSettings?: StoreSettings;
+  isFavorite: boolean;
+  onToggleFavorite: (productId: string) => void;
+  onSelectProduct: (product: Product) => void;
+  onQuickAdd: (product: Product, size: string, colorIndex: number) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   currency,
-  isWishlisted,
-  onToggleWishlist,
-  onSelectProduct,
-  onQuickAdd,
   currentLanguage,
   storeSettings,
+  isFavorite,
+  onToggleFavorite,
+  onSelectProduct,
+  onQuickAdd,
 }) => {
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -118,18 +83,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [justAdded, setJustAdded] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [product.id]);
-
-  const t = TRANSLATIONS[currentLanguage];
+  const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.fr;
   const isArabic = currentLanguage === 'ar';
 
-  const images = Array.isArray(product.images) && product.images.length > 0 
+  const images = (product.images && product.images.length > 0) 
     ? product.images 
     : ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80'];
 
   const displayImage = images[currentImageIndex] || images[0];
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [product.id]);
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -148,15 +113,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX === null) return;
     const touchEndX = e.changedTouches[0].clientX;
-    const diffX = touchStartX - touchEndX;
-    if (diffX > 35 && images.length > 1) {
-      // Swiped left -> next picture
-      setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    } else if (diffX < -35 && images.length > 1) {
-      // Swiped right -> previous picture
-      setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      } else {
+        setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      }
     }
     setTouchStartX(null);
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleFavorite(product.id);
   };
 
   const handleQuickAddClick = (size: string, e: React.MouseEvent) => {
@@ -248,10 +219,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     setCurrentImageIndex(idx);
                   }}
                   aria-label={isArabic ? `عرض الصورة ${idx + 1}` : currentLanguage === 'es' ? `Mostrar foto ${idx + 1}` : currentLanguage === 'en' ? `Show photo ${idx + 1}` : `Afficher la photo ${idx + 1}`}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  className={`transition-all duration-200 rounded-full ${
                     currentImageIndex === idx 
-                      ? 'w-4 h-1.5 bg-white shadow-xs' 
-                      : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
+                      ? 'w-4 h-1.5 bg-white' 
+                      : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/80'
                   }`}
                 />
               ))}
@@ -259,44 +230,56 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </>
         )}
 
-        {/* Badge: Grammage & B2B/B2C */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
-          <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-[#1F1D1A]/90 text-white backdrop-blur-xs rounded">
-            {product.fabricWeight || 'Heavyweight Fleece'}
-          </span>
+        {/* Badges: New, Made in Algeria, B2B wholesale */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10 pointer-events-none">
+          {product.isNew && (
+            <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-[#1F1D1A] text-white rounded">
+              {t.badgeNew}
+            </span>
+          )}
+          {product.compareAtPrice && product.compareAtPrice > product.price && (
+            <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-[#8C2A2A] text-white rounded">
+              -{Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%
+            </span>
+          )}
           {product.isB2BAvailable && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono tracking-wider bg-white/90 text-[#8C6D3B] backdrop-blur-xs border border-[#DDD4C5] rounded font-bold">
-              <Building2 className="w-2.5 h-2.5" />
-              B2B & B2C
+            <span className="px-2 py-0.5 text-[10px] font-mono tracking-wider bg-[#4A3728] text-[#F3EFE6] rounded flex items-center gap-1 shadow-xs">
+              <Building2 className="w-3 h-3" />
+              <span>B2B {t.wholesale}</span>
             </span>
           )}
         </div>
 
-        {/* Wishlist Button */}
+        {/* Favorite Button */}
         <button
-          id={`wishlist-btn-${product.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleWishlist(product.id);
-          }}
-          className="absolute top-3 right-3 p-2 bg-white/85 hover:bg-white text-[#2C2825] backdrop-blur-xs rounded-full transition-colors shadow-xs cursor-pointer z-10"
-          title={isWishlisted ? t.wishlistTitle : t.wishlistSelectBtn}
+          type="button"
+          onClick={handleFavoriteClick}
+          aria-label={isFavorite ? t.removeFromFavorites : t.addToFavorites}
+          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-xs transition-all z-20 cursor-pointer ${
+            isFavorite 
+              ? 'bg-red-50 text-red-600 shadow-sm' 
+              : 'bg-white/80 text-[#595247] hover:text-[#1F1D1A] hover:bg-white'
+          }`}
         >
-          <Heart 
-            className={`w-4 h-4 ${isWishlisted ? 'fill-[#8C6D3B] text-[#8C6D3B]' : 'text-[#4A4338]'}`} 
-          />
+          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-red-600' : ''}`} />
         </button>
 
-        {/* Quick WhatsApp & Details Overlay on Hover */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+        {/* Action Overlay Bar */}
+        <div className="absolute inset-x-3 bottom-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30">
           <button
-            onClick={() => onSelectProduct(product)}
-            className="flex-1 py-2 bg-[#1F1D1A]/95 hover:bg-black text-white text-xs font-mono rounded flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectProduct(product);
+            }}
+            className="flex-1 py-2 px-3 bg-[#1F1D1A] hover:bg-black text-white text-xs font-mono uppercase tracking-wider rounded shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Eye className="w-3.5 h-3.5 text-[#C9A96E]" />
+            <Eye className="w-3.5 h-3.5" />
             <span>{t.viewDetails}</span>
           </button>
+
           <button
+            type="button"
             onClick={handleWhatsAppQuickOrder}
             className="p-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded shadow-md transition-colors cursor-pointer"
             title={t.orderViaWhatsApp}
@@ -358,68 +341,82 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="pt-3 border-t border-[#F0EAE1] mt-3 space-y-2">
           <div className="flex items-baseline justify-between">
             <div>
-              <span className="font-mono text-sm font-bold text-[#1F1C19]">
-                {formatPrice(product.price, currency, isArabic)}
+              <span className="font-serif font-bold text-base text-[#1F1D1A]">
+                {formatPrice(product.price, currency)}
               </span>
               {product.compareAtPrice && product.compareAtPrice > product.price && (
-                <span className="text-xs font-mono text-[#9E9589] line-through ml-2">
-                  {formatPrice(product.compareAtPrice, currency, isArabic)}
+                <span className="ml-2 text-xs text-[#8C8377] line-through font-mono">
+                  {formatPrice(product.compareAtPrice, currency)}
                 </span>
               )}
             </div>
 
-            {/* B2B Wholesale Indicator */}
             {product.wholesalePriceDzd && (
-              <span className="text-[10px] font-mono text-[#8C6D3B] bg-[#FAF3E8] px-1.5 py-0.5 rounded border border-[#EADCC7]" title={t.minWholesaleQty}>
-                {t.wholesaleBadge}: {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
-              </span>
+              <div className="text-[10px] font-mono text-[#4A3728] text-right" title="Tarif grossiste à partir de 6 pièces">
+                <span className="block font-semibold">Gros: {formatPrice(product.wholesalePriceDzd, currency)}</span>
+                <span className="text-[9px] text-[#8C8377]">dès {product.minWholesaleQty || 6} pcs</span>
+              </div>
             )}
           </div>
 
-          {/* Quick Add Sizes or Button */}
-          {!quickSizeSelectOpen ? (
-            <button
-              id={`quick-add-btn-${product.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setQuickSizeSelectOpen(true);
-              }}
-              className={`w-full py-2 px-3 text-xs font-mono tracking-wider uppercase rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                justAdded 
-                  ? 'bg-emerald-700 text-white' 
-                  : 'bg-[#F2EDE4] hover:bg-[#1F1D1A] text-[#1F1C19] hover:text-white border border-[#DDD4C5]'
-              }`}
-            >
-              {justAdded ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{t.addedSuccess}</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t.addToCart}</span>
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="space-y-1 animate-in fade-in duration-150">
-              <span className="text-[10px] font-mono text-[#7C756B] block">
-                {t.selectSize} :
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {(product.sizes || ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
+          {/* Quick Add Button / Dropdown Trigger */}
+          <div className="relative pt-1">
+            {quickSizeSelectOpen ? (
+              <div className="bg-[#FAF7F2] p-2 rounded border border-[#E0D7C9] animate-in fade-in duration-150">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-mono text-[#5C5549] uppercase tracking-wider">{t.selectSize}</span>
                   <button
-                    key={size}
-                    onClick={(e) => handleQuickAddClick(size, e)}
-                    className="flex-1 min-w-[34px] py-1 px-1 bg-white hover:bg-[#1F1D1A] hover:text-white border border-[#DDD4C5] rounded text-[11px] font-mono text-center cursor-pointer transition-colors"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setQuickSizeSelectOpen(false);
+                    }}
+                    className="text-[10px] text-[#8C8377] hover:text-black cursor-pointer font-mono"
                   >
-                    {size}
+                    ✕
                   </button>
-                ))}
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {product.sizes.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={(e) => handleQuickAddClick(size, e)}
+                      className="py-1 px-1.5 text-xs font-mono bg-white hover:bg-[#1F1D1A] hover:text-white border border-[#DDD5C7] rounded text-center transition-colors cursor-pointer"
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuickSizeSelectOpen(true);
+                }}
+                disabled={justAdded}
+                className={`w-full py-1.5 px-3 rounded text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  justAdded
+                    ? 'bg-[#1EBE5D] text-white'
+                    : 'bg-[#F2EDE4] hover:bg-[#1F1D1A] text-[#1F1D1A] hover:text-white border border-[#E0D7C9]'
+                }`}
+              >
+                {justAdded ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t.addedToCart}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t.quickAdd}</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
