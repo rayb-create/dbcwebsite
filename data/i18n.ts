@@ -3,6 +3,7 @@ export type Language = 'ar' | 'en' | 'fr' | 'es';
 export interface Translations {
   siteTitle: string;
   tagline: string;
+  subTagline: string;
   b2bB2cBadge: string;
   topbarDelivery: string;
   topbarContact: string;
@@ -11,6 +12,8 @@ export interface Translations {
   navJoggers: string;
   navLongSleeves: string;
   navTees: string;
+  navTracksuits: string;
+  navOuterwear: string;
   navB2B: string;
   navAdmin: string;
   navContact: string;
@@ -39,6 +42,7 @@ export interface Translations {
   b2bWholesalePrice: string;
   minWholesaleQty: string;
   addToCart: string;
+  addedSuccess: string;
   selectSize: string;
   selectColor: string;
   orderViaWhatsApp: string;
@@ -53,6 +57,7 @@ export interface Translations {
   fullNameLabel: string;
   phoneLabel: string;
   addressLabel: string;
+  emailOptionalLabel: string;
   deliveryMethod: string;
   homeDelivery: string;
   deskDelivery: string;
@@ -79,13 +84,102 @@ export interface Translations {
   navOrderLookup: string;
   orderLookupTitle: string;
   orderLookupPlaceholder: string;
+
+  // Additional comprehensive UI translations
+  viewDetails: string;
+  wholesaleBadge: string;
+  algeriaMade: string;
+  sizeGuideTitle: string;
+  sizeGuideSubtitle: string;
+  fabricLabel: string;
+  tailoringLabel: string;
+  quantityLabel: string;
+  totalLabel: string;
+  techSheetTab: string;
+  b2bRatesTab: string;
+  reviewsTab: string;
+  noReviewsYet: string;
+  customWhatsappBtn: string;
+  customWhatsappTitle: string;
+  customWhatsappSub: string;
+  applyPromoBtn: string;
+  promoCodePlaceholder: string;
+  promoInvalidMsg: string;
+  deleteItemTitle: string;
+  shippingLabel: string;
+  freeShippingTag: string;
+  netTotalToPay: string;
+  qualityPromiseTitle: string;
+  qualityPromisePoint1: string;
+  qualityPromisePoint2: string;
+  qualityPromisePoint3: string;
+  orderNumberLabel: string;
+  destinationLabel: string;
+  recipientLabel: string;
+  trackShipmentBtn: string;
+  printReceiptBtn: string;
+  returnToShopBtn: string;
+  receiptTitle: string;
+  receiptSubtitle: string;
+
+  // Footer translations
+  footerAboutText: string;
+  footerShowroomLabel: string;
+  footerCityLabel: string;
+  footerDirectEmail: string;
+  footerPhoneLabel: string;
+  footerCollectionTitle: string;
+  footerServicesTitle: string;
+  footerClientCareTitle: string;
+  footerHomeDeskDelivery: string;
+  footerCodText: string;
+  footerBaridiMobText: string;
+  footerSizeGuideLink: string;
+  footerContactAtelier: string;
+  footerWhatsappCareText: string;
+  footerAllRightsReserved: string;
+  footerAlgerianCraft: string;
+  footerWilayasExpress: string;
+  footerManagerAccess: string;
+
+  // B2B & Contact Modal translations
+  b2bModalSubtitle: string;
+  b2bAdvantage1Title: string;
+  b2bAdvantage1Desc: string;
+  b2bAdvantage2Title: string;
+  b2bAdvantage2Desc: string;
+  b2bAdvantage3Title: string;
+  b2bAdvantage3Desc: string;
+  b2bStoreNameLabel: string;
+  b2bManagerNameLabel: string;
+  b2bTargetQuantityLabel: string;
+  b2bProductInterestLabel: string;
+  b2bSendInquiryBtn: string;
+  contactDirectWhatsappTitle: string;
+  contactDirectWhatsappDesc: string;
+  contactCopyRip: string;
+  contactCopied: string;
+  contactCcpLabel: string;
+
+  // Sizing & Wishlist
+  sizeGuideInches: string;
+  sizeGuideCm: string;
+  sizeGuideAdvisorTitle: string;
+  sizeGuideChestLabel: string;
+  sizeGuideWaistLabel: string;
+  sizeGuideRecommended: string;
+  wishlistTitle: string;
+  wishlistEmptyTitle: string;
+  wishlistEmptyDesc: string;
+  wishlistSelectBtn: string;
 }
 
 export const TRANSLATIONS: Record<Language, Translations> = {
   ar: {
     siteTitle: 'ورشة DBC | دي بي سي وورك شوب',
-    tagline: 'تصنيع وتوزيع أرقى الملابس بالجملة والتجزئة (B2B & B2C)',
-    b2bB2cBadge: 'بيع بالجملة والتجزئة (B2B & B2C) • التوصيل لـ 69 ولاية',
+    tagline: 'تصنيع وتوزيع أرقى الملابس • ورشة الجزائر',
+    subTagline: 'ورشة خياطة وتصنيع • الجزائر',
+    b2bB2cBadge: 'ورشة دي بي سي للألبسة • صناعة جزائرية (69 ولاية)',
     topbarDelivery: '🚚 توصيل متوفر لجميع الـ 69 ولاية • الدفع عند الاستلام متوفر',
     topbarContact: '📞 خدمة العملاء والطلبيات عبر واتساب',
     navAll: 'كل المنتجات',
@@ -93,6 +187,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     navJoggers: 'سراويل جوجينج (Joggers)',
     navLongSleeves: 'أكمام طويلة (Long Sleeves)',
     navTees: 'تيشيرتات (Tees)',
+    navTracksuits: 'أطقم كاملة (Tracksuits)',
+    navOuterwear: 'سترات ومعاطف (Outerwear)',
     navB2B: 'طلبات الجملة (B2B)',
     navAdmin: 'إدارة الورشة',
     navContact: 'تواصل معنا',
@@ -124,6 +220,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     b2bWholesalePrice: 'سعر الجملة (B2B)',
     minWholesaleQty: 'يبدأ سعر الجملة من 6 قطع',
     addToCart: 'إضافة إلى السلة',
+    addedSuccess: 'تمت الإضافة بنجاح!',
     selectSize: 'اختر المقاس',
     selectColor: 'اختر اللون',
     orderViaWhatsApp: 'طلب سريع عبر واتساب',
@@ -138,6 +235,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     fullNameLabel: 'الاسم واللقب بالكامل',
     phoneLabel: 'رقم الهاتف (ضروري لتأكيد التوصيل)',
     addressLabel: 'العنوان بالتفصيل',
+    emailOptionalLabel: 'البريد الإلكتروني (اختياري)',
     deliveryMethod: 'طريقة التوصيل',
     homeDelivery: 'توصيل للمنزل (StopDesk / Domicile)',
     deskDelivery: 'استلام من المكتب (StopDesk)',
@@ -151,6 +249,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     b2bSectionTitle: 'مخصص للمحلات والتجار (خدمة B2B بالجملة)',
     b2bSectionSubtitle: 'هل تمتلك متجراً أو علامة تجارية؟ نوفر تصنيع وتوريد كميات كبيرة بأسعار مصنع تنافسية مع إمكانية طباعة أو تطريز شعارك.',
     b2bInquiryBtn: 'طلب تسعيرة جملة للمحلات',
+    continueShopping: 'مواصلة التسوق',
     adminTitle: 'لوحة تحكم صاحب الورشة',
     adminAddProduct: 'إضافة منتج جديد',
     adminEditProduct: 'تعديل المنتجات والأسعار',
@@ -159,194 +258,464 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     adminDelete: 'حذف المنتج',
     close: 'إغلاق',
     currencyDzd: 'د.ج',
+
+    viewDetails: 'عرض التفاصيل',
+    wholesaleBadge: 'جملة',
+    algeriaMade: 'صنع في الجزائر 🇩🇿',
+    sizeGuideTitle: 'دليل المقاسات في الورشة',
+    sizeGuideSubtitle: 'المقاسات الحقيقية للملابس كما يتم تفصيلها في ورشة DBC',
+    fabricLabel: 'نوع القماش والنسيج :',
+    tailoringLabel: 'مكان التصنيع والحياكة :',
+    quantityLabel: 'الكمية :',
+    totalLabel: 'المجموع :',
+    techSheetTab: 'البطاقة التقنية',
+    b2bRatesTab: 'أسعار الجملة B2B',
+    reviewsTab: 'التقييمات',
+    noReviewsYet: 'لا توجد تقييمات مسجلة بعد لهذا الموديل.',
+    customWhatsappBtn: 'طلب عبر واتساب',
+    customWhatsappTitle: 'رسالة واتساب جاهزة ومخصصة',
+    customWhatsappSub: 'مجهزة تلقائياً بالموديل، المقاس، اللون، والولاية',
+    applyPromoBtn: 'تطبيق',
+    promoCodePlaceholder: 'كود التخفيض (مثال: DBC2026)',
+    promoInvalidMsg: 'كود غير صالح. جرب DBC2026 للحصول على تخفيض 10%',
+    deleteItemTitle: 'حذف من السلة',
+    shippingLabel: 'مصاريف التوصيل',
+    freeShippingTag: '🎉 توصيل مجاني (0 د.ج)',
+    netTotalToPay: 'المبلغ الإجمالي للدفع',
+    qualityPromiseTitle: 'ضمانات الجودة من ورشة DBC',
+    qualityPromisePoint1: '• فحص دقيق لكل قطعة قبل التغليف والشحن',
+    qualityPromisePoint2: '• إمكانية استبدال المقاس في غضون 48 ساعة',
+    qualityPromisePoint3: '• اتصال هاتفي للتأكيد المسبق قبل مغادرة الطرد',
+    orderNumberLabel: 'رقم الطلب :',
+    destinationLabel: 'الولاية ومدينة التوصيل :',
+    recipientLabel: 'المستلم :',
+    trackShipmentBtn: '🚚 تتبع مسار الشحنة في الجزائر',
+    printReceiptBtn: '🖨️ طباعة وصل الطلب',
+    returnToShopBtn: 'العودة للكتالوج الرئيسي',
+    receiptTitle: 'ورشة DBC للنسيج والملابس الجزائر',
+    receiptSubtitle: 'وصل استلام طلبية وتأكيد حجز',
+
+    footerAboutText: 'تصميم وحياكة أرقى الملابس في الجزائر: هوديز ثقيلة، سراويل جوجينج مريحة، وأقمصة أكمام طويلة وأطقم متكاملة للأفراد ومحلات إعادة البيع.',
+    footerShowroomLabel: 'الورشة ومقر العرض :',
+    footerCityLabel: 'المدينة :',
+    footerDirectEmail: 'البريد المباشر :',
+    footerPhoneLabel: 'الهاتف :',
+    footerCollectionTitle: 'تشكيلة ورشة DBC',
+    footerServicesTitle: 'الخدمات والتوصيل',
+    footerClientCareTitle: 'الطلبات وخدمة الزبائن',
+    footerHomeDeskDelivery: 'توصيل للمنزل أو استلام من المكتب',
+    footerCodText: 'الدفع نقداً عند استلام الطرد',
+    footerBaridiMobText: 'تحويل بنكي بريدي موب / CCP',
+    footerSizeGuideLink: 'دليل المقاسات والتفصيل',
+    footerContactAtelier: 'الاتصال المباشر بالورشة',
+    footerWhatsappCareText: 'اطلب مباشرة عبر واتساب مع خدمة تأكيد فورية للمقاسات والألوان.',
+    footerAllRightsReserved: 'جميع الحقوق محفوظة.',
+    footerAlgerianCraft: '🇩🇿 صُمم وخيط بأيادٍ جزائرية',
+    footerWilayasExpress: 'توصيل لـ 69 ولاية',
+    footerManagerAccess: 'إدارة الورشة',
+
+    b2bModalSubtitle: 'بيع بالجملة لمحلات الملابس والموزعين في كامل أنحاء الجزائر',
+    b2bAdvantage1Title: 'أسعار مصنع مباشرة',
+    b2bAdvantage1Desc: 'أسعار جملة تنافسية تنطبق ابتداءً من 6 قطع لكل موديل.',
+    b2bAdvantage2Title: 'إمكانية تنويع المقاسات والألوان',
+    b2bAdvantage2Desc: 'اختر مزيج المقاسات (S حتى 3XL) والألوان المتناسبة مع جمهورك.',
+    b2bAdvantage3Title: 'توصيل تجاري لـ 69 ولاية',
+    b2bAdvantage3Desc: 'شحن سريع ومؤمن لكافة محلات الملابس في كامل التراب الوطني.',
+    b2bStoreNameLabel: 'اسم المحل أو العلامة التجارية *',
+    b2bManagerNameLabel: 'اسم المسؤول / التاجر *',
+    b2bTargetQuantityLabel: 'الكمية التقريبية المطلوبة',
+    b2bProductInterestLabel: 'نوع الملابس المطلوبة',
+    b2bSendInquiryBtn: 'إرسال طلب التسعيرة عبر واتساب',
+    contactDirectWhatsappTitle: 'طلبيات مباشرة وخدمة الزبائن عبر واتساب',
+    contactDirectWhatsappDesc: 'فريق الورشة يجيبكم يومياً لتأكيد المقاسات وتنسيق الشحن.',
+    contactCopyRip: 'نسخ رقم RIP',
+    contactCopied: 'تم النسخ!',
+    contactCcpLabel: 'حساب البريد CCP :',
+
+    sizeGuideInches: 'بوصة (Inches)',
+    sizeGuideCm: 'سنتيمتر (cm)',
+    sizeGuideAdvisorTitle: 'مستشار المقاس الذكي',
+    sizeGuideChestLabel: 'محيط الصدر :',
+    sizeGuideWaistLabel: 'محيط الخصر :',
+    sizeGuideRecommended: 'المقاس الموصى به لقصاتنا الحرفية :',
+    wishlistTitle: 'الملابس المحفوظة للمفضلة',
+    wishlistEmptyTitle: 'لا توجد قطع محفوظة حالياً',
+    wishlistEmptyDesc: 'اضغط على أيقونة القلب على أي قطعة لإضافتها هنا ومراجعتها لاحقاً.',
+    wishlistSelectBtn: 'عرض / تفصيل'
   },
+
   en: {
-    siteTitle: 'DBC WORKSHOP',
-    tagline: 'Premium Apparel Atelier & Manufacturing (B2B & B2C)',
-    b2bB2cBadge: 'Wholesale & Retail (B2B & B2C) • 69 Wilayas Nationwide Delivery',
-    topbarDelivery: '🚚 Nationwide Delivery Across All 69 Algerian Wilayas • Cash On Delivery Available',
-    topbarContact: '📞 Direct WhatsApp Support & Bulk Orders',
-    navAll: 'All Products',
+    siteTitle: 'DBC Workshop | Clothing Manufacturing Algeria',
+    tagline: 'Artisanal Textile Atelier & Premium Streetwear',
+    subTagline: 'Apparel Atelier & Craft • Algeria',
+    b2bB2cBadge: 'DBC Textile Workshop • Handcrafted in Algeria (69 Wilayas)',
+    topbarDelivery: '🚚 Delivery available to all 69 Wilayas • Cash on Delivery accepted',
+    topbarContact: '📞 Customer service & direct orders via WhatsApp',
+    navAll: 'All Garments',
     navHoodies: 'Hoodies',
     navJoggers: 'Joggers',
     navLongSleeves: 'Long Sleeves',
-    navTees: 'Tees',
+    navTees: 'T-Shirts',
+    navTracksuits: 'Tracksuits',
+    navOuterwear: 'Jackets & Outerwear',
     navB2B: 'Wholesale (B2B)',
-    navAdmin: 'Workshop Manager',
+    navAdmin: 'Manager Panel',
     navContact: 'Contact Us',
     navOrderLookup: 'Track Order',
-    orderLookupTitle: 'Order Lookup & Delivery across 69 Wilayas',
-    orderLookupPlaceholder: 'Enter Order ID (e.g. DBC-2026-8492) or Phone number...',
-    searchPlaceholder: 'Search hoodies, joggers, colors, sizes...',
-    heroTitle: 'Premium Quality Apparel Engineered for Style & Durability',
-    heroSubtitle: 'Quality apparel crafted with precision in Algeria: hoodies, sweatpants, joggers, and long-sleeve tees. Serving individual retail clients (B2C) and boutique wholesale buyers (B2B) across all 69 wilayas.',
+    orderLookupTitle: 'Order Tracking & 69 Wilayas Shipping',
+    orderLookupPlaceholder: 'Enter order number (e.g. DBC-2026-8492) or phone...',
+    searchPlaceholder: 'Search hoodies, joggers, long-sleeve tees...',
+    heroTitle: 'Artisanal Craftsmanship & Heavyweight Streetwear',
+    heroSubtitle: 'Handcrafted premium clothing from our DBC atelier in Algiers: heavyweight hoodies, fleece joggers, thermal long-sleeve waffle tops and tailored tees. Available for individual retail and boutique wholesale across all 69 Wilayas.',
     heroExploreBtn: 'Explore Collection',
-    heroB2BBtn: 'Wholesale B2B Inquiry',
-    heroContactBtn: 'Order on WhatsApp',
+    heroB2BBtn: 'Wholesale Inquiries (B2B)',
+    heroContactBtn: 'Direct WhatsApp Contact',
     metricB2B: 'B2B & B2C',
-    metricB2BSub: 'Retail & bulk store supply',
+    metricB2BSub: 'Retail & Wholesale',
     metricWilayas: '69 Wilayas',
-    metricWilayasSub: 'Door-to-door delivery',
-    metricQuality: 'Premium Fabrics',
-    metricQualitySub: 'Dense, soft brushed cotton',
+    metricWilayasSub: 'Express Doorstep Delivery',
+    metricQuality: 'Heavyweight Fabrics',
+    metricQualitySub: 'Premium French Terry Fleece',
     catalogTitle: 'Workshop Collection',
-    catalogSubtitle: 'Precision-tailored hoodies, ergonomic joggers, and essential casualwear.',
+    catalogSubtitle: 'Crafted with premium cotton, tailored proportions, and resilient stitching',
     winterCollectionHeader: 'DBC Workshop Collection',
-    filterAll: 'All Items',
+    filterAll: 'All',
     sortBy: 'Sort by',
     sortFeatured: 'Featured',
     sortPriceAsc: 'Price: Low to High',
     sortPriceDesc: 'Price: High to Low',
-    sortNewest: 'New Releases',
+    sortNewest: 'New Arrivals',
     b2cPrice: 'Retail Price',
     b2bWholesalePrice: 'Wholesale Price (B2B)',
-    minWholesaleQty: 'Wholesale rate applies from 6+ units',
-    addToCart: 'Add to Bag',
+    minWholesaleQty: 'Wholesale rate available from 6 units',
+    addToCart: 'Add to Cart',
+    addedSuccess: 'Added to Cart!',
     selectSize: 'Select Size',
     selectColor: 'Select Color',
-    orderViaWhatsApp: 'Quick Order via WhatsApp',
-    cartTitle: 'Your Workshop Bag',
-    cartEmpty: 'Your bag is currently empty',
+    orderViaWhatsApp: 'Fast Order via WhatsApp',
+    cartTitle: 'Shopping Cart',
+    cartEmpty: 'Your cart is currently empty',
     cartSubtotal: 'Subtotal',
     checkoutBtn: 'Proceed to Checkout',
-    delivery58Wilayas: 'Fast shipping to all 69 Algerian Wilayas',
-    wilayaLabel: 'Wilaya (69 Wilayas)',
-    selectWilaya: 'Select your wilaya from the list...',
-    cityCommuneLabel: 'City / Commune',
+    delivery58Wilayas: 'Fast shipping across all 69 Wilayas of Algeria',
+    wilayaLabel: 'Province / Wilaya (69 Wilayas)',
+    selectWilaya: 'Select your wilaya...',
+    cityCommuneLabel: 'City / Municipality',
     fullNameLabel: 'Full Name',
-    phoneLabel: 'Phone Number (Required for delivery)',
-    addressLabel: 'Detailed Street Address',
+    phoneLabel: 'Phone Number (Required for courier)',
+    addressLabel: 'Street Address',
+    emailOptionalLabel: 'Email Address (Optional)',
     deliveryMethod: 'Delivery Method',
-    homeDelivery: 'Home Delivery (Door to Door)',
-    deskDelivery: 'Desk / StopDesk Pickup',
+    homeDelivery: 'Home Delivery (Doorstep)',
+    deskDelivery: 'Pick-up at Office (StopDesk)',
     paymentMethod: 'Payment Method',
-    cashOnDelivery: 'Cash on Delivery (Main à main)',
-    baridiMob: 'BaridiMob / CCP Bank Transfer',
+    cashOnDelivery: 'Cash on Delivery (COD)',
+    baridiMob: 'BaridiMob / CCP Transfer',
     orderSummary: 'Order Summary',
-    confirmOrderBtn: 'Confirm Algerian Order',
-    orderSuccessTitle: 'Order Received Successfully!',
-    orderSuccessMsg: 'Thank you for choosing DBC Workshop. Our delivery courier will call you before dispatching to your Wilaya.',
-    b2bSectionTitle: 'For Boutiques & Retailers (B2B Wholesale)',
-    b2bSectionSubtitle: 'Own a clothing store or brand? We supply bulk apparel orders at factory-direct pricing with optional custom labeling and embroidery.',
+    confirmOrderBtn: 'Confirm Order Now',
+    orderSuccessTitle: 'Order Successfully Placed!',
+    orderSuccessMsg: 'Thank you for choosing DBC Workshop. Our delivery team will call you to confirm dispatch to your wilaya.',
+    b2bSectionTitle: 'Wholesale Solutions for Boutiques (B2B)',
+    b2bSectionSubtitle: 'Do you own a retail store or clothing brand? We provide factory-direct wholesale apparel with optional custom embroidery and labeling.',
     b2bInquiryBtn: 'Request Wholesale Price List',
-    adminTitle: 'Workshop Owner Manager Panel',
+    continueShopping: 'Continue Shopping',
+    adminTitle: 'Atelier Management Portal',
     adminAddProduct: 'Add New Product',
     adminEditProduct: 'Edit Products & Prices',
-    adminContactSettings: 'Contact & Store Settings',
+    adminContactSettings: 'Contact Settings',
     adminSave: 'Save Changes',
     adminDelete: 'Delete Product',
     close: 'Close',
     currencyDzd: 'DZD',
+
+    viewDetails: 'View Details',
+    wholesaleBadge: 'Wholesale',
+    algeriaMade: 'Crafted in Algeria 🇩🇿',
+    sizeGuideTitle: 'Workshop Tailoring & Fit Guide',
+    sizeGuideSubtitle: 'Garment measurements drafted on our workshop cutting tables',
+    fabricLabel: 'Material & Fabric:',
+    tailoringLabel: 'Craftsmanship & Origin:',
+    quantityLabel: 'Quantity:',
+    totalLabel: 'Total:',
+    techSheetTab: 'Specifications',
+    b2bRatesTab: 'B2B Wholesale',
+    reviewsTab: 'Reviews',
+    noReviewsYet: 'No customer reviews recorded yet for this piece.',
+    customWhatsappBtn: 'Order on WhatsApp',
+    customWhatsappTitle: 'Custom WhatsApp Order Link',
+    customWhatsappSub: 'Pre-filled with product name, size, color, and destination wilaya',
+    applyPromoBtn: 'Apply',
+    promoCodePlaceholder: 'Promo Code (e.g. DBC2026)',
+    promoInvalidMsg: 'Invalid code. Try DBC2026 for 10% off',
+    deleteItemTitle: 'Remove item',
+    shippingLabel: 'Delivery Fee',
+    freeShippingTag: '🎉 FREE SHIPPING (0 DZD)',
+    netTotalToPay: 'Total Net to Pay',
+    qualityPromiseTitle: 'DBC Workshop Quality Commitments',
+    qualityPromisePoint1: '• Meticulously inspected before packing',
+    qualityPromisePoint2: '• Size exchange supported within 48h',
+    qualityPromisePoint3: '• Phone call confirmation before dispatch',
+    orderNumberLabel: 'Order Number:',
+    destinationLabel: 'Destination:',
+    recipientLabel: 'Recipient:',
+    trackShipmentBtn: '🚚 Track Shipment in Algeria',
+    printReceiptBtn: '🖨️ Print Receipt',
+    returnToShopBtn: 'Return to Shop',
+    receiptTitle: 'DBC CLOTHING WORKSHOP ALGERIA',
+    receiptSubtitle: 'Purchase Confirmation Receipt',
+
+    footerAboutText: 'Design and manufacturing of premium garments in Algeria: heavyweight fleece hoodies, tailored joggers, waffle long sleeves, and full tracksuits for individuals and clothing boutiques.',
+    footerShowroomLabel: 'Atelier & Showroom:',
+    footerCityLabel: 'City:',
+    footerDirectEmail: 'Direct Email:',
+    footerPhoneLabel: 'Phone:',
+    footerCollectionTitle: 'DBC Workshop Collection',
+    footerServicesTitle: 'Logistics & Shipping',
+    footerClientCareTitle: 'Customer Care & Orders',
+    footerHomeDeskDelivery: 'Doorstep or StopDesk agency pickup',
+    footerCodText: 'Cash on Delivery payment',
+    footerBaridiMobText: 'BaridiMob / CCP bank transfer',
+    footerSizeGuideLink: 'Size & Fit Guide',
+    footerContactAtelier: 'Contact the Atelier',
+    footerWhatsappCareText: 'Order directly on WhatsApp with instant confirmation of sizes, colors, and parcel dispatch.',
+    footerAllRightsReserved: 'All rights reserved.',
+    footerAlgerianCraft: '🇩🇿 Designed & Crafted in Algeria',
+    footerWilayasExpress: '69 Wilayas Express',
+    footerManagerAccess: 'Atelier Access',
+
+    b2bModalSubtitle: 'Direct factory supply for clothing stores and apparel boutiques across Algeria',
+    b2bAdvantage1Title: 'Direct Factory Pricing',
+    b2bAdvantage1Desc: 'Tiered wholesale discounts starting at 6 pieces per style.',
+    b2bAdvantage2Title: 'Mix Sizes & Colors',
+    b2bAdvantage2Desc: 'Mix sizes from S to 3XL and all available colorways.',
+    b2bAdvantage3Title: 'Nationwide Delivery',
+    b2bAdvantage3Desc: 'Secured logistics covering all 69 Wilayas with reliable carriers.',
+    b2bStoreNameLabel: 'Store or Brand Name *',
+    b2bManagerNameLabel: 'Contact Person *',
+    b2bTargetQuantityLabel: 'Target Quantity',
+    b2bProductInterestLabel: 'Apparel Categories of Interest',
+    b2bSendInquiryBtn: 'Send Wholesale Inquiry via WhatsApp',
+    contactDirectWhatsappTitle: 'Direct WhatsApp Customer Service & Orders',
+    contactDirectWhatsappDesc: 'Our workshop team is available daily to confirm sizes and shipping logistics.',
+    contactCopyRip: 'Copy RIP',
+    contactCopied: 'Copied!',
+    contactCcpLabel: 'CCP Account:',
+
+    sizeGuideInches: 'Inches (in)',
+    sizeGuideCm: 'Centimeters (cm)',
+    sizeGuideAdvisorTitle: 'Interactive Fit Advisor',
+    sizeGuideChestLabel: 'Chest Circumference:',
+    sizeGuideWaistLabel: 'Waist Circumference:',
+    sizeGuideRecommended: 'Recommended Size for Our Cuts:',
+    wishlistTitle: 'Saved Workshop Pieces',
+    wishlistEmptyTitle: 'No saved garments yet',
+    wishlistEmptyDesc: 'Click the heart icon on any garment in our workshop collection to save it for later review.',
+    wishlistSelectBtn: 'Select / View'
   },
+
   fr: {
-    siteTitle: 'DBC WORKSHOP ALGÉRIE',
-    tagline: 'Confection & Vente Vêtements Gros et Détail (B2B & B2C)',
-    b2bB2cBadge: 'Vente en Gros & Détail (B2B & B2C) • Livraison 69 Wilayas',
-    topbarDelivery: '🚚 Livraison disponible dans les 69 Wilayas • Paiement à la livraison',
-    topbarContact: '📞 Service client & commandes directes via WhatsApp',
-    navAll: 'Tous les produits',
-    navHoodies: 'Hoodies',
+    siteTitle: 'DBC Workshop | Atelier de Confection Textile Algérie',
+    tagline: 'Atelier de Confection Textile • Algérie',
+    subTagline: 'Atelier de Confection • Algérie',
+    b2bB2cBadge: 'Atelier Textile DBC • Confection Algérienne (69 Wilayas)',
+    topbarDelivery: '🚚 Livraison disponible dans les 69 Wilayas • Paiement à la livraison accepté',
+    topbarContact: '📞 Service client et commandes directes par WhatsApp',
+    navAll: 'Toute la Collection',
+    navHoodies: 'Hoodies Molleton',
     navJoggers: 'Pantalons Jogging',
     navLongSleeves: 'Manches Longues',
-    navTees: 'T-shirts',
+    navTees: 'T-shirts Épais',
+    navTracksuits: 'Tracksuits Complets',
+    navOuterwear: 'Vestes & Outerwear',
     navB2B: 'Vente en Gros (B2B)',
-    navAdmin: 'Gestion Atelier',
+    navAdmin: 'Espace Gérant',
     navContact: 'Contactez-nous',
-    navOrderLookup: 'Suivi Colis',
+    navOrderLookup: 'Suivi de Commande',
     orderLookupTitle: 'Suivi de Commande & Livraison 69 Wilayas',
-    orderLookupPlaceholder: 'Entrez votre N° de commande (ex: DBC-2026-8492) ou N° de téléphone...',
-    searchPlaceholder: 'Rechercher hoodies, joggings, couleurs, tailles...',
-    heroTitle: 'Vêtements de confection soignée conçus pour durer',
-    heroSubtitle: 'Vêtements de confection artisanale en Algérie : Hoodies confortables, joggings en coton et t-shirts manches longues. Vente au détail pour particuliers et en gros pour magasins à travers les 69 wilayas.',
-    heroExploreBtn: 'Voir la Collection',
-    heroB2BBtn: 'Demande Gros (B2B)',
-    heroContactBtn: 'Commander sur WhatsApp',
+    orderLookupPlaceholder: 'Numéro de commande (ex: DBC-2026-8492) ou téléphone...',
+    searchPlaceholder: 'Rechercher hoodies, joggings, t-shirts...',
+    heroTitle: 'Confection Textile Haut de Gamme & Streetwear Algérien',
+    heroSubtitle: 'Conception et fabrication artisanale dans notre atelier DBC en Algérie : hoodies lourds, pantalons de jogging molletonnés, t-shirts manches longues thermiques et tee-shirts épais. Vente au détail pour particuliers et en gros pour magasins à travers les 69 Wilayas.',
+    heroExploreBtn: 'Découvrir la Collection',
+    heroB2BBtn: 'Espace Vente en Gros (B2B)',
+    heroContactBtn: 'Contact Direct par WhatsApp',
     metricB2B: 'B2B & B2C',
-    metricB2BSub: 'Détail et gros pour boutiques',
+    metricB2BSub: 'Détail & Gros Magasins',
     metricWilayas: '69 Wilayas',
-    metricWilayasSub: 'Livraison à domicile rapide',
-    metricQuality: 'Tissus de Qualité',
-    metricQualitySub: 'Coton brossé doux et résistant',
-    catalogTitle: 'Collection Atelier',
-    catalogSubtitle: 'Pièces élégantes et confortables taillées dans des cotons de haute confection.',
+    metricWilayasSub: 'Livraison Rapide à Domicile',
+    metricQuality: 'Molleton Lourd',
+    metricQualitySub: 'Coton Épais et Confortable',
+    catalogTitle: 'Collection de l’Atelier',
+    catalogSubtitle: 'Fabriqué avec soin, finitions soignées et matières sélectionnées',
     winterCollectionHeader: 'Collection DBC Workshop',
     filterAll: 'Tous',
     sortBy: 'Trier par',
-    sortFeatured: 'En Vedette',
+    sortFeatured: 'Mis en avant',
     sortPriceAsc: 'Prix : Croissant',
     sortPriceDesc: 'Prix : Décroissant',
     sortNewest: 'Nouveautés',
     b2cPrice: 'Prix Détail',
     b2bWholesalePrice: 'Prix de Gros (B2B)',
-    minWholesaleQty: 'Tarif de gros applicable dès 6 pièces',
+    minWholesaleQty: 'Tarif de gros dès 6 pièces',
     addToCart: 'Ajouter au Panier',
-    selectSize: 'Choisir la taille',
-    selectColor: 'Choisir la couleur',
-    orderViaWhatsApp: 'Commande rapide via WhatsApp',
+    addedSuccess: 'Ajouté au panier !',
+    selectSize: 'Sélectionner la Taille',
+    selectColor: 'Sélectionner la Couleur',
+    orderViaWhatsApp: 'Commande Express sur WhatsApp',
     cartTitle: 'Mon Panier',
-    cartEmpty: 'Votre panier est vide',
+    cartEmpty: 'Votre panier est actuellement vide',
     cartSubtotal: 'Sous-total',
     checkoutBtn: 'Passer la Commande',
-    delivery58Wilayas: 'Livraison express vers les 69 Wilayas d’Algérie',
-    wilayaLabel: 'Wilaya (69 Wilayas)',
+    delivery58Wilayas: 'Expédition rapide vers toutes les 69 wilayas d’Algérie',
+    wilayaLabel: 'Province / Wilaya (69 Wilayas)',
     selectWilaya: 'Sélectionnez votre wilaya...',
     cityCommuneLabel: 'Commune / Ville',
     fullNameLabel: 'Nom & Prénom',
-    phoneLabel: 'Numéro de Téléphone (Requis pour confirmation)',
-    addressLabel: 'Adresse complète',
-    deliveryMethod: 'Mode de livraison',
+    phoneLabel: 'Numéro de Téléphone (Requis pour la livraison)',
+    addressLabel: 'Adresse de livraison',
+    emailOptionalLabel: 'Adresse Email (Optionnel)',
+    deliveryMethod: 'Mode de Livraison',
     homeDelivery: 'Livraison à Domicile',
-    deskDelivery: 'Récupération au Bureau (StopDesk)',
-    paymentMethod: 'Mode de paiement',
-    cashOnDelivery: 'Paiement à la livraison (Main à main)',
+    deskDelivery: 'Retrait en Agence (StopDesk)',
+    paymentMethod: 'Mode de Paiement',
+    cashOnDelivery: 'Paiement à la Livraison (Espèces)',
     baridiMob: 'Virement BaridiMob / CCP',
-    orderSummary: 'Récapitulatif de la commande',
-    confirmOrderBtn: 'Confirmer la commande en Algérie',
-    orderSuccessTitle: 'Commande reçue avec succès !',
-    orderSuccessMsg: 'Merci de votre confiance en DBC Workshop. Notre livreur vous appellera avant l’expédition vers votre wilaya.',
-    b2bSectionTitle: 'Espace Boutiques & Revendeurs (Vente B2B en Gros)',
-    b2bSectionSubtitle: 'Vous gérez une boutique ou une marque ? Nous fournissons des séries de vêtements complètes à prix d’atelier direct.',
-    b2bInquiryBtn: 'Demander le catalogue de gros',
-    adminTitle: 'Panneau d’Administration Atelier',
-    adminAddProduct: 'Ajouter un nouveau produit',
-    adminEditProduct: 'Modifier les produits et prix',
-    adminContactSettings: 'Coordonnées & Paramètres du magasin',
-    adminSave: 'Enregistrer les modifications',
-    adminDelete: 'Supprimer le produit',
+    orderSummary: 'Récapitulatif de Commande',
+    confirmOrderBtn: 'Confirmer la Commande',
+    orderSuccessTitle: 'Commande Confirmée avec Succès !',
+    orderSuccessMsg: 'Merci de votre confiance en DBC Workshop. Notre équipe logistique vous appellera avant la livraison.',
+    b2bSectionTitle: 'Offre Spéciale Magasins & Boutiques (B2B)',
+    b2bSectionSubtitle: 'Vous possédez un magasin de vêtements ou une marque ? Nous proposons la confection en gros avec tarifs directs d’usine et personnalisation.',
+    b2bInquiryBtn: 'Demander le Catalogue de Gros',
+    continueShopping: 'Continuer mes achats',
+    adminTitle: 'Tableau de Bord Atelier',
+    adminAddProduct: 'Ajouter un Produit',
+    adminEditProduct: 'Modifier Produits & Prix',
+    adminContactSettings: 'Paramètres & Contacts',
+    adminSave: 'Enregistrer',
+    adminDelete: 'Supprimer',
     close: 'Fermer',
     currencyDzd: 'DZD',
+
+    viewDetails: 'Voir Détails',
+    wholesaleBadge: 'Gros',
+    algeriaMade: 'Confectionné en Algérie 🇩🇿',
+    sizeGuideTitle: 'Guide des Tailles de l’Atelier',
+    sizeGuideSubtitle: 'Dimensions exactes des vêtements d’après nos tables de coupe',
+    fabricLabel: 'Matière & Tissu :',
+    tailoringLabel: 'Confection & Origine :',
+    quantityLabel: 'Quantité :',
+    totalLabel: 'Total :',
+    techSheetTab: 'Fiche Technique',
+    b2bRatesTab: 'Tarifs Gros B2B',
+    reviewsTab: 'Avis Clients',
+    noReviewsYet: 'Aucun avis enregistré pour l’instant pour ce modèle.',
+    customWhatsappBtn: 'Commander via WhatsApp',
+    customWhatsappTitle: 'Lien WhatsApp personnalisé',
+    customWhatsappSub: 'Modèle auto-rempli avec taille, couleur, réf et wilaya',
+    applyPromoBtn: 'Appliquer',
+    promoCodePlaceholder: 'Code Promo (ex : DBC2026)',
+    promoInvalidMsg: 'Code invalide. Essayez DBC2026 pour -10%',
+    deleteItemTitle: 'Supprimer du panier',
+    shippingLabel: 'Frais de livraison',
+    freeShippingTag: '🎉 LIVRAISON GRATUITE (0 DZD)',
+    netTotalToPay: 'Total Net à Payer',
+    qualityPromiseTitle: 'Engagements Qualité DBC Workshop',
+    qualityPromisePoint1: '• Produits minutieusement vérifiés avant envoi',
+    qualityPromisePoint2: '• Échange de taille possible sous 48h',
+    qualityPromisePoint3: '• Confirmation téléphonique avant expédition',
+    orderNumberLabel: 'Numéro de commande :',
+    destinationLabel: 'Destination de livraison :',
+    recipientLabel: 'Destinataire :',
+    trackShipmentBtn: '🚚 Suivre le colis en Algérie',
+    printReceiptBtn: '🖨️ Imprimer le reçu',
+    returnToShopBtn: 'Retour à la boutique',
+    receiptTitle: 'DBC WORKSHOP ALGÉRIE',
+    receiptSubtitle: 'Reçu d’Achat et Confirmation',
+
+    footerAboutText: 'Conception et confection de vêtements de qualité en Algérie : Hoodies épais, pantalons de jogging confortables, t-shirts manches longues et ensembles complets pour particuliers et magasins revendeurs.',
+    footerShowroomLabel: 'Atelier & Showroom :',
+    footerCityLabel: 'Ville :',
+    footerDirectEmail: 'Email direct :',
+    footerPhoneLabel: 'Téléphone :',
+    footerCollectionTitle: 'Collection DBC Workshop',
+    footerServicesTitle: 'Service & Livraison',
+    footerClientCareTitle: 'Commandes & Service Client',
+    footerHomeDeskDelivery: 'À domicile ou retrait StopDesk',
+    footerCodText: 'Paiement en espèces à la livraison',
+    footerBaridiMobText: 'Virement BaridiMob / CCP',
+    footerSizeGuideLink: 'Guide des Tailles',
+    footerContactAtelier: 'Contacter l’Atelier',
+    footerWhatsappCareText: 'Passez vos commandes directement par WhatsApp avec confirmation immédiate des tailles et couleurs.',
+    footerAllRightsReserved: 'Tous droits réservés.',
+    footerAlgerianCraft: '🇩🇿 Conçu & Confectionné en Algérie',
+    footerWilayasExpress: '69 Wilayas Express',
+    footerManagerAccess: 'Accès Atelier',
+
+    b2bModalSubtitle: 'Vente en gros pour magasins de vêtements & revendeurs à travers l’Algérie',
+    b2bAdvantage1Title: 'Prix Usine Directs',
+    b2bAdvantage1Desc: 'Tarifs de gros dégressifs applicables à partir de 6 pièces par modèle.',
+    b2bAdvantage2Title: 'Mix Tailles & Couleurs',
+    b2bAdvantage2Desc: 'Possibilité de panacher les tailles (du S au 3XL) et coloris disponibles.',
+    b2bAdvantage3Title: 'Livraison 69 Wilayas',
+    b2bAdvantage3Desc: 'Acheminement sécurisé vers toutes les boutiques du territoire national.',
+    b2bStoreNameLabel: 'Nom du Magasin ou Marque *',
+    b2bManagerNameLabel: 'Nom du Responsable *',
+    b2bTargetQuantityLabel: 'Quantité estimée',
+    b2bProductInterestLabel: 'Articles recherchés',
+    b2bSendInquiryBtn: 'Envoyer la demande de devis sur WhatsApp',
+    contactDirectWhatsappTitle: 'Commandes Directes & Service Client WhatsApp',
+    contactDirectWhatsappDesc: 'L’équipe de l’atelier vous répond tous les jours pour vous conseiller et organiser vos livraisons.',
+    contactCopyRip: 'Copier RIP',
+    contactCopied: 'Copié !',
+    contactCcpLabel: 'Compte CCP :',
+
+    sizeGuideInches: 'Pouces (in)',
+    sizeGuideCm: 'Centimètres (cm)',
+    sizeGuideAdvisorTitle: 'Conseiller de Coupe Interactif',
+    sizeGuideChestLabel: 'Tour de poitrine :',
+    sizeGuideWaistLabel: 'Tour de taille :',
+    sizeGuideRecommended: 'Taille recommandée d’après nos coupes :',
+    wishlistTitle: 'Articles Sauvegardés',
+    wishlistEmptyTitle: 'Aucun article sauvegardé pour le moment',
+    wishlistEmptyDesc: 'Cliquez sur l’icône cœur de n’importe quel article pour le garder en favori et y revenir plus tard.',
+    wishlistSelectBtn: 'Voir l’article'
   },
+
   es: {
-    siteTitle: 'DBC WORKSHOP ARGELIA',
-    tagline: 'Confección y Venta de Ropa B2B y B2C',
-    b2bB2cBadge: 'Venta Mayorista y Minorista (B2B & B2C) • Envíos a 69 Provincias',
-    topbarDelivery: '🚚 Envíos a las 69 Provincias de Argelia • Pago contra entrega',
-    topbarContact: '📞 Atención al cliente y pedidos directos por WhatsApp',
-    navAll: 'Todos los productos',
+    siteTitle: 'DBC Workshop | Taller de Confección Textil Argelia',
+    tagline: 'Taller de Confección Textil • Argelia',
+    subTagline: 'Taller de Confección • Argelia',
+    b2bB2cBadge: 'Taller Textil DBC • Confección en Argelia (69 Wilayas)',
+    topbarDelivery: '🚚 Envíos a todas las 69 wilayas • Pago contra entrega disponible',
+    topbarContact: '📞 Atención al cliente y pedidos por WhatsApp',
+    navAll: 'Toda la Colección',
     navHoodies: 'Sudaderas (Hoodies)',
-    navJoggers: 'Pantalones Joggers',
+    navJoggers: 'Pantalones Jogger',
     navLongSleeves: 'Manga Larga',
-    navTees: 'Camisetas',
-    navB2B: 'Venta por Mayor (B2B)',
-    navAdmin: 'Gestión de Taller',
+    navTees: 'Camisetas Gruesas',
+    navTracksuits: 'Conjuntos Completos',
+    navOuterwear: 'Chaquetas & Abrigos',
+    navB2B: 'Venta al Por Mayor (B2B)',
+    navAdmin: 'Panel de Gestión',
     navContact: 'Contacto',
-    navOrderLookup: 'Seguimiento',
-    orderLookupTitle: 'Seguimiento de Pedido en 69 Wilayas',
-    orderLookupPlaceholder: 'Introduzca el N° de pedido (ej: DBC-2026-8492) o teléfono...',
-    searchPlaceholder: 'Buscar sudaderas, joggings, colores, tallas...',
-    heroTitle: 'Prendas de confección cuidada diseñadas para durar',
-    heroSubtitle: 'Prendas de confección en Argelia: Sudaderas, joggers de algodón y camisetas. Venta minorista (B2C) y mayorista (B2B) en las 69 provincias.',
-    heroExploreBtn: 'Explorar Colección',
-    heroB2BBtn: 'Consulta Mayorista (B2B)',
-    heroContactBtn: 'Pedir por WhatsApp',
+    navOrderLookup: 'Seguimiento de Pedido',
+    orderLookupTitle: 'Seguimiento de Envíos en las 69 Wilayas',
+    orderLookupPlaceholder: 'Número de pedido (ej: DBC-2026-8492) o teléfono...',
+    searchPlaceholder: 'Buscar sudaderas, joggings, camisetas...',
+    heroTitle: 'Confección Textil de Alta Calidad & Streetwear Argelino',
+    heroSubtitle: 'Prendas confeccionadas a mano en nuestro taller DBC en Argelia: sudaderas de felpa gruesa, pantalones de chándal, camisetas térmicas de manga larga y prendas personalizadas. Venta al por menor para clientes y al por mayor para tiendas en las 69 wilayas.',
+    heroExploreBtn: 'Ver Colección',
+    heroB2BBtn: 'Tarifas Mayoristas (B2B)',
+    heroContactBtn: 'Contacto por WhatsApp',
     metricB2B: 'B2B & B2C',
-    metricB2BSub: 'Venta al por mayor y menor',
-    metricWilayas: '69 Provincias',
-    metricWilayasSub: 'Entrega rápida a domicilio',
-    metricQuality: 'Tejidos de Calidad',
-    metricQualitySub: 'Algodón suave y resistente',
-    catalogTitle: 'Colección de Taller',
-    catalogSubtitle: 'Prendas cómodas y versátiles diseñadas en algodón para uso diario.',
+    metricB2BSub: 'Minorista y Mayorista',
+    metricWilayas: '69 Wilayas',
+    metricWilayasSub: 'Envío Rápido a Domicilio',
+    metricQuality: 'Algodón Pesado',
+    metricQualitySub: 'Tejido Suave y Cómodo',
+    catalogTitle: 'Colección del Taller',
+    catalogSubtitle: 'Prendas resistentes confeccionadas con materias primas seleccionadas',
     winterCollectionHeader: 'Colección DBC Workshop',
     filterAll: 'Todos',
     sortBy: 'Ordenar por',
@@ -358,6 +727,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     b2bWholesalePrice: 'Precio Mayorista (B2B)',
     minWholesaleQty: 'Tarifa mayorista a partir de 6 unidades',
     addToCart: 'Añadir a la Cesta',
+    addedSuccess: '¡Añadido a la cesta!',
     selectSize: 'Seleccionar Talla',
     selectColor: 'Seleccionar Color',
     orderViaWhatsApp: 'Pedido Rápido por WhatsApp',
@@ -372,6 +742,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     fullNameLabel: 'Nombre Completo',
     phoneLabel: 'Número de Teléfono (Necesario para entrega)',
     addressLabel: 'Dirección completa',
+    emailOptionalLabel: 'Correo Electrónico (Opcional)',
     deliveryMethod: 'Método de Envío',
     homeDelivery: 'Entrega a Domicilio',
     deskDelivery: 'Recogida en Oficina (StopDesk)',
@@ -385,6 +756,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     b2bSectionTitle: 'Para Tiendas y Distribuidores (Venta Mayorista B2B)',
     b2bSectionSubtitle: '¿Tienes una tienda o marca? Ofrecemos confección de ropa al por mayor con precios directos de fábrica.',
     b2bInquiryBtn: 'Solicitar Lista de Precios Mayorista',
+    continueShopping: 'Continuar comprando',
     adminTitle: 'Panel de Administración del Taller',
     adminAddProduct: 'Añadir Nuevo Producto',
     adminEditProduct: 'Editar Productos y Precios',
@@ -393,5 +765,161 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     adminDelete: 'Eliminar Producto',
     close: 'Cerrar',
     currencyDzd: 'DZD',
-  },
+
+    viewDetails: 'Ver Detalles',
+    wholesaleBadge: 'Mayorista',
+    algeriaMade: 'Confeccionado en Argelia 🇩🇿',
+    sizeGuideTitle: 'Guía de Tallas del Taller',
+    sizeGuideSubtitle: 'Medidas exactas tomadas en nuestras mesas de corte',
+    fabricLabel: 'Material y Tejido:',
+    tailoringLabel: 'Confección y Origen:',
+    quantityLabel: 'Cantidad:',
+    totalLabel: 'Total:',
+    techSheetTab: 'Ficha Técnica',
+    b2bRatesTab: 'Tarifas B2B',
+    reviewsTab: 'Opiniones',
+    noReviewsYet: 'Aún no hay opiniones registradas para este modelo.',
+    customWhatsappBtn: 'Pedir por WhatsApp',
+    customWhatsappTitle: 'Enlace WhatsApp personalizado',
+    customWhatsappSub: 'Relleno automático con talla, color, referencia y wilaya',
+    applyPromoBtn: 'Aplicar',
+    promoCodePlaceholder: 'Código Promocional (ej: DBC2026)',
+    promoInvalidMsg: 'Código no válido. Prueba DBC2026 para 10% de descuento',
+    deleteItemTitle: 'Eliminar de la cesta',
+    shippingLabel: 'Gastos de envío',
+    freeShippingTag: '🎉 ENVÍO GRATUITO (0 DZD)',
+    netTotalToPay: 'Total Neto a Pagar',
+    qualityPromiseTitle: 'Compromisos de Calidad DBC Workshop',
+    qualityPromisePoint1: '• Prendas verificadas minuciosamente antes del envío',
+    qualityPromisePoint2: '• Cambio de talla disponible en 48h',
+    qualityPromisePoint3: '• Confirmación telefónica antes de la expedición',
+    orderNumberLabel: 'Número de pedido:',
+    destinationLabel: 'Destino de entrega:',
+    recipientLabel: 'Destinatario:',
+    trackShipmentBtn: '🚚 Seguir el paquete en Argelia',
+    printReceiptBtn: '🖨️ Imprimir recibo',
+    returnToShopBtn: 'Volver a la tienda',
+    receiptTitle: 'DBC WORKSHOP ARGELIA',
+    receiptSubtitle: 'Recibo de Compra y Confirmación',
+
+    footerAboutText: 'Diseño y confección de ropa de calidad en Argelia: sudaderas de felpa gruesa, pantalones de chándal cómodos, camisetas térmicas de manga larga y conjuntos completos para clientes y tiendas.',
+    footerShowroomLabel: 'Taller & Showroom:',
+    footerCityLabel: 'Ciudad:',
+    footerDirectEmail: 'Email directo:',
+    footerPhoneLabel: 'Teléfono:',
+    footerCollectionTitle: 'Colección DBC Workshop',
+    footerServicesTitle: 'Servicio y Logística',
+    footerClientCareTitle: 'Atención al Cliente y Pedidos',
+    footerHomeDeskDelivery: 'A domicilio o recogida en StopDesk',
+    footerCodText: 'Pago en efectivo contra entrega',
+    footerBaridiMobText: 'Transferencia BaridiMob / CCP',
+    footerSizeGuideLink: 'Guía de Tallas',
+    footerContactAtelier: 'Contactar al Taller',
+    footerWhatsappCareText: 'Haz tus pedidos directamente por WhatsApp con confirmación instantánea de tallas y colores.',
+    footerAllRightsReserved: 'Todos los derechos reservados.',
+    footerAlgerianCraft: '🇩🇿 Diseñado y Confeccionado en Argelia',
+    footerWilayasExpress: '69 Wilayas Express',
+    footerManagerAccess: 'Acceso Taller',
+
+    b2bModalSubtitle: 'Venta al por mayor para tiendas de ropa y distribuidores en toda Argelia',
+    b2bAdvantage1Title: 'Precios Directos de Fábrica',
+    b2bAdvantage1Desc: 'Descuentos progresivos al por mayor aplicables a partir de 6 piezas por modelo.',
+    b2bAdvantage2Title: 'Combinar Tallas y Colores',
+    b2bAdvantage2Desc: 'Posibilidad de combinar tallas (de la S a la 3XL) y colores disponibles.',
+    b2bAdvantage3Title: 'Envíos a 69 Wilayas',
+    b2bAdvantage3Desc: 'Transporte seguro y directo a todas las tiendas del territorio nacional.',
+    b2bStoreNameLabel: 'Nombre de la Tienda o Marca *',
+    b2bManagerNameLabel: 'Persona de Contacto *',
+    b2bTargetQuantityLabel: 'Cantidad estimada',
+    b2bProductInterestLabel: 'Prendas de interés',
+    b2bSendInquiryBtn: 'Enviar solicitud por WhatsApp',
+    contactDirectWhatsappTitle: 'Pedidos Directos y Atención por WhatsApp',
+    contactDirectWhatsappDesc: 'El equipo del taller está disponible todos los días para asesorarle y coordinar sus envíos.',
+    contactCopyRip: 'Copiar RIP',
+    contactCopied: '¡Copiado!',
+    contactCcpLabel: 'Cuenta CCP:',
+
+    sizeGuideInches: 'Pulgadas (in)',
+    sizeGuideCm: 'Centímetros (cm)',
+    sizeGuideAdvisorTitle: 'Asesor de Tallas Interactivo',
+    sizeGuideChestLabel: 'Contorno de pecho:',
+    sizeGuideWaistLabel: 'Contorno de cintura:',
+    sizeGuideRecommended: 'Talla recomendada según nuestros patrones:',
+    wishlistTitle: 'Prendas Guardadas',
+    wishlistEmptyTitle: 'No hay prendas guardadas por el momento',
+    wishlistEmptyDesc: 'Haz clic en el icono del corazón en cualquier prenda para guardarla y revisarla más tarde.',
+    wishlistSelectBtn: 'Ver prenda'
+  }
+};
+
+export const getCategoryLabel = (
+  categoryId: string, 
+  lang: Language = 'fr', 
+  customCategories?: { id: string; name: string; nameAr?: string; nameEn?: string; nameEs?: string }[]
+): string => {
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
+  switch (categoryId) {
+    case 'all': return t.navAll;
+    case 'hoodies': return t.navHoodies;
+    case 'joggers': return t.navJoggers;
+    case 'tracksuits': return t.navTracksuits;
+    case 'longsleeves': return t.navLongSleeves;
+    case 'tees': return t.navTees;
+    case 'outerwear': return t.navOuterwear || (lang === 'ar' ? 'سترات ومعاطف' : lang === 'es' ? 'Chaquetas y Abrigos' : lang === 'en' ? 'Outerwear' : 'Vestes & Manteaux');
+    case 'b2b': return t.navB2B;
+    default: {
+      if (customCategories && customCategories.length > 0) {
+        const found = customCategories.find(c => c.id === categoryId);
+        if (found) {
+          if (lang === 'ar' && found.nameAr) return found.nameAr;
+          if (lang === 'en' && found.nameEn) return found.nameEn;
+          if (lang === 'es' && found.nameEs) return found.nameEs;
+          return found.name;
+        }
+      }
+      return categoryId;
+    }
+  }
+};
+
+export const formatColorName = (rawColorName: string, lang: Language): string => {
+  if (!rawColorName) return '';
+  if (lang === 'ar') return rawColorName;
+  if (lang === 'es') {
+    const map: Record<string, string> = {
+      'Noir Profond / Black': 'Negro Profundo / Black',
+      'Noir / Black': 'Negro / Black',
+      'Noir Intégral / All Black': 'Negro Total / All Black',
+      'Noir Intense / Jet Black': 'Negro Intenso',
+      'Noir Carbone / Carbon Black': 'Negro Carbón',
+      'Noir Charbon / Coal Black': 'Negro Carbón',
+      'Noir Mat / Matte Black': 'Negro Mate',
+      'Noir': 'Negro',
+      'Gris Chiné / Heather Grey': 'Gris Jaspeado / Heather Grey',
+      'Gris Souris / Ash Grey': 'Gris Ceniza',
+      'Gris Ardoise / Slate Grey': 'Gris Pizarra',
+      'Gris Anthracite / Charcoal': 'Gris Antracita',
+      'Gris Chiné': 'Gris Jaspeado',
+      'Gris': 'Gris',
+      'Beige Sable / Sand': 'Beige Arena / Sand',
+      'Beige Sable / Sand Dune': 'Beige Arena',
+      'Beige': 'Beige',
+      'Blanc Pur / Clean White': 'Blanco Puro',
+      'Blanc Cassé / Off-White': 'Blanco Roto / Off-White',
+      'Blanc': 'Blanco',
+      'Vert Forêt / Forest Green': 'Verde Bosque',
+      'Kaki Olive / Olive Khaki': 'Verde Oliva',
+      'Kaki Militaire / Military Khaki': 'Verde Militar',
+      'Kaki Fumé / Smoked Olive': 'Verde Oliva Ahumado',
+      'Marron Moka / Mocha': 'Marrón Moka',
+      'Moka Chaud / Warm Mocha': 'Marrón Moka Cálido',
+      'Brun Tabac / Tobacco Brown': 'Marrón Tabaco',
+      'Bleu Nuit / Deep Navy': 'Azul Marino Noche',
+      'Bleu Marine / Navy': 'Azul Marino',
+      'Bleu Pétrole / Petrol Blue': 'Azul Petróleo',
+      'Bleu Marine Sombre / Dark Navy': 'Azul Marino Oscuro',
+    };
+    return map[rawColorName] || rawColorName;
+  }
+  return rawColorName;
 };
