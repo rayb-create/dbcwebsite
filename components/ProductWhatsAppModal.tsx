@@ -121,7 +121,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             </div>
             <div>
               <h3 className="font-serif text-sm sm:text-base font-semibold text-white leading-tight">
-                {isArabic ? 'رابط رسالة واتساب مخصص للمنتج' : 'Lien WhatsApp Pré-rempli avec le Produit'}
+                {isArabic ? 'رابط رسالة واتساب مخصص للمنتج' : currentLanguage === 'en' ? 'Pre-Filled WhatsApp Product Link' : currentLanguage === 'es' ? 'Enlace de WhatsApp Personalizado' : 'Lien WhatsApp Pré-rempli avec le Produit'}
               </h3>
               <p className="text-[11px] font-mono text-[#C9A96E] leading-none mt-0.5">
                 WhatsApp Direct : +{whatsappPhone}
@@ -159,9 +159,9 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
                 {product.name}
               </h4>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs font-mono text-[#5C554B] mt-1">
-                <span>{isArabic ? 'المقاس:' : 'Taille :'} <strong className="text-[#1F1C19]">{activeSize}</strong></span>
+                <span>{isArabic ? 'المقاس:' : currentLanguage === 'en' ? 'Size:' : currentLanguage === 'es' ? 'Talla:' : 'Taille :'} <strong className="text-[#1F1C19]">{activeSize}</strong></span>
                 <span>•</span>
-                <span>{isArabic ? 'اللون:' : 'Couleur :'} <strong className="text-[#1F1C19]">{activeColor}</strong></span>
+                <span>{isArabic ? 'اللون:' : currentLanguage === 'en' ? 'Color:' : currentLanguage === 'es' ? 'Color:' : 'Couleur :'} <strong className="text-[#1F1C19]">{activeColor}</strong></span>
                 <span>•</span>
                 <span className="font-bold text-[#8C6D3B]">
                   {formatPrice(product.price, currency, isArabic)}
@@ -173,7 +173,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
           {/* Step 1: Purpose of Greeting / Intent */}
           <div className="space-y-2">
             <label className="block text-xs font-mono font-semibold uppercase text-[#1F1C19]">
-              {isArabic ? '1. حدد موضوع الرسالة التلقائية :' : '1. Objet de la prise de contact WhatsApp :'}
+              {isArabic ? '1. حدد موضوع الرسالة التلقائية :' : currentLanguage === 'en' ? '1. Select purpose of inquiry :' : currentLanguage === 'es' ? '1. Asunto del mensaje de WhatsApp :' : '1. Objet de la prise de contact WhatsApp :'}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
@@ -187,10 +187,10 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <ShoppingBag className="w-3.5 h-3.5 text-[#C9A96E]" />
-                  <span>{isArabic ? 'طلب مباشر' : 'Commande'}</span>
+                  <span>{isArabic ? 'طلب مباشر' : currentLanguage === 'en' ? 'Order' : currentLanguage === 'es' ? 'Pedido' : 'Commande'}</span>
                 </div>
                 <span className={`text-[10px] font-sans mt-1 leading-tight ${intent === 'order' ? 'text-[#DCD4C7]' : 'text-[#7C756B]'}`}>
-                  {isArabic ? 'تأكيد شراء قطعة' : 'Achat direct au détail'}
+                  {isArabic ? 'تأكيد شراء قطعة' : currentLanguage === 'en' ? 'Direct retail purchase' : currentLanguage === 'es' ? 'Compra minorista directa' : 'Achat direct au détail'}
                 </span>
               </button>
 
@@ -205,10 +205,10 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <Building2 className="w-3.5 h-3.5 text-[#C9A96E]" />
-                  <span>{isArabic ? 'سعر الجملة B2B' : 'Tarif Gros B2B'}</span>
+                  <span>{isArabic ? 'سعر الجملة B2B' : currentLanguage === 'en' ? 'B2B Wholesale' : currentLanguage === 'es' ? 'Tarifa B2B' : 'Tarif Gros B2B'}</span>
                 </div>
                 <span className={`text-[10px] font-sans mt-1 leading-tight ${intent === 'wholesale' ? 'text-[#DCD4C7]' : 'text-[#7C756B]'}`}>
-                  {isArabic ? 'متاجر وموزعين (6+)' : 'Boutiques & revendeurs'}
+                  {isArabic ? 'متاجر وموزعين (6+)' : currentLanguage === 'en' ? 'Shops & resellers (6+)' : currentLanguage === 'es' ? 'Tiendas y revendedores' : 'Boutiques & revendeurs'}
                 </span>
               </button>
 
@@ -223,10 +223,10 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <HelpCircle className="w-3.5 h-3.5 text-[#C9A96E]" />
-                  <span>{isArabic ? 'استفسار توفر' : 'Disponibilité'}</span>
+                  <span>{isArabic ? 'استفسار توفر' : currentLanguage === 'en' ? 'Availability' : currentLanguage === 'es' ? 'Disponibilidad' : 'Disponibilité'}</span>
                 </div>
                 <span className={`text-[10px] font-sans mt-1 leading-tight ${intent === 'inquiry' ? 'text-[#DCD4C7]' : 'text-[#7C756B]'}`}>
-                  {isArabic ? 'سؤال عن المقاس والمخزون' : 'Vérifier le stock atelier'}
+                  {isArabic ? 'سؤال عن المقاس والمخزون' : currentLanguage === 'en' ? 'Check stock & sizing' : currentLanguage === 'es' ? 'Consultar stock' : 'Vérifier le stock atelier'}
                 </span>
               </button>
 
@@ -241,10 +241,10 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <Scissors className="w-3.5 h-3.5 text-[#C9A96E]" />
-                  <span>{isArabic ? 'تفصيل وتطريز' : 'Sur-Mesure'}</span>
+                  <span>{isArabic ? 'تفصيل وتطريز' : currentLanguage === 'en' ? 'Bespoke' : currentLanguage === 'es' ? 'A Medida' : 'Sur-Mesure'}</span>
                 </div>
                 <span className={`text-[10px] font-sans mt-1 leading-tight ${intent === 'custom' ? 'text-[#DCD4C7]' : 'text-[#7C756B]'}`}>
-                  {isArabic ? 'تطريز مخصص أو قياس' : 'Broderie & étiquettes'}
+                  {isArabic ? 'تطريز مخصص أو قياس' : currentLanguage === 'en' ? 'Custom embroidery/fit' : currentLanguage === 'es' ? 'Bordado personalizado' : 'Broderie & étiquettes'}
                 </span>
               </button>
             </div>
@@ -256,7 +256,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             {/* Wilaya selector (6 cols) */}
             <div className="sm:col-span-6 space-y-1">
               <label className="block text-[11px] font-mono font-semibold uppercase text-[#1F1C19]">
-                📍 {isArabic ? 'ولاية التوصيل في الجزائر :' : 'Wilaya de Livraison (69 wilayas) :'}
+                📍 {isArabic ? 'ولاية التوصيل في الجزائر :' : currentLanguage === 'en' ? 'Delivery Wilaya (69 Wilayas) :' : currentLanguage === 'es' ? 'Wilaya de Envío (69 Wilayas) :' : 'Wilaya de Livraison (69 wilayas) :'}
               </label>
               <select
                 value={selectedWilayaCode}
@@ -274,7 +274,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             {/* Quantity Selector (3 cols) */}
             <div className="sm:col-span-3 space-y-1">
               <label className="block text-[11px] font-mono font-semibold uppercase text-[#1F1C19]">
-                🔢 {isArabic ? 'الكمية :' : 'Quantité :'}
+                🔢 {isArabic ? 'الكمية :' : currentLanguage === 'en' ? 'Quantity :' : currentLanguage === 'es' ? 'Cantidad :' : 'Quantité :'}
               </label>
               <div className="flex items-center border border-[#DDD4C5] rounded bg-[#FAF8F5] overflow-hidden">
                 <button
@@ -304,7 +304,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             {/* Optional note (12 cols) */}
             <div className="sm:col-span-12 space-y-1 pt-1">
               <label className="block text-[11px] font-mono font-semibold uppercase text-[#1F1C19]">
-                💬 {isArabic ? 'ملاحظة خاصة أو سؤال إضافي (اختياري) :' : 'Question ou note supplémentaire (optionnel) :'}
+                💬 {isArabic ? 'ملاحظة خاصة أو سؤال إضافي (اختياري) :' : currentLanguage === 'en' ? 'Additional note or question (optional) :' : currentLanguage === 'es' ? 'Nota o pregunta adicional (opcional) :' : 'Question ou note supplémentaire (optionnel) :'}
               </label>
               <input
                 type="text"
@@ -313,6 +313,10 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
                 placeholder={
                   isArabic 
                     ? 'مثال: هل يتوفر مقاس XL باللون الأسود؟ / هل يمكن إضافة لوغو المطرز؟' 
+                    : currentLanguage === 'en'
+                    ? 'E.g., Is size XL available in black? Is StopDesk delivery possible?'
+                    : currentLanguage === 'es'
+                    ? 'Ej: ¿Tienen talla XL en negro? ¿Hacen envíos a StopDesk?'
                     : 'Ex: Avez-vous du XL en stock ? Est-ce que la livraison se fait en StopDesk ?'
                 }
                 className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#DDD4C5] rounded font-sans text-xs focus:bg-white focus:outline-none focus:border-black"
@@ -325,7 +329,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-semibold uppercase text-[#1F1C19] flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse"></span>
-                {isArabic ? 'معاينة الرسالة التلقائية التي ستصل إلى الورشة :' : 'Aperçu du modèle généré automatiquement :'}
+                {isArabic ? 'معاينة الرسالة التلقائية التي ستصل إلى الورشة :' : currentLanguage === 'en' ? 'Automated WhatsApp message preview :' : currentLanguage === 'es' ? 'Vista previa del mensaje generado :' : 'Aperçu du modèle généré automatiquement :'}
               </span>
               <span className="text-[10px] font-mono text-[#7C756B]">
                 WhatsApp Format
@@ -357,7 +361,7 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
             >
               <MessageCircle className="w-4 h-4 fill-current" />
               <span>
-                {isArabic ? 'فتح المحادثة على واتساب مباشرة ⚡' : 'Ouvrir WhatsApp avec ce message ⚡'}
+                {isArabic ? 'فتح المحادثة على واتساب مباشرة ⚡' : currentLanguage === 'en' ? 'Open WhatsApp Chat Directly ⚡' : currentLanguage === 'es' ? 'Abrir Chat de WhatsApp Directamente ⚡' : 'Ouvrir WhatsApp avec ce message ⚡'}
               </span>
               <ExternalLink className="w-3.5 h-3.5 opacity-80" />
             </button>
@@ -373,12 +377,12 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
                 {copiedLink ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-700 font-bold">{isArabic ? 'تم نسخ الرابط!' : 'Lien copié !'}</span>
+                    <span className="text-emerald-700 font-bold">{isArabic ? 'تم نسخ الرابط!' : currentLanguage === 'en' ? 'Link copied!' : currentLanguage === 'es' ? '¡Enlace copiado!' : 'Lien copié !'}</span>
                   </>
                 ) : (
                   <>
                     <Share2 className="w-3.5 h-3.5 text-[#8C6D3B]" />
-                    <span>{isArabic ? 'نسخ رابط واتساب' : 'Copier le lien direct'}</span>
+                    <span>{isArabic ? 'نسخ رابط واتساب' : currentLanguage === 'en' ? 'Copy WhatsApp Link' : currentLanguage === 'es' ? 'Copiar Enlace' : 'Copier le lien direct'}</span>
                   </>
                 )}
               </button>
@@ -392,12 +396,12 @@ export const ProductWhatsAppModal: React.FC<ProductWhatsAppModalProps> = ({
                 {copiedText ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-700 font-bold">{isArabic ? 'تم نسخ النص!' : 'Texte copié !'}</span>
+                    <span className="text-emerald-700 font-bold">{isArabic ? 'تم نسخ النص!' : currentLanguage === 'en' ? 'Text copied!' : currentLanguage === 'es' ? '¡Texto copiado!' : 'Texte copié !'}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5 text-[#8C6D3B]" />
-                    <span>{isArabic ? 'نسخ نص الرسالة' : 'Copier le message'}</span>
+                    <span>{isArabic ? 'نسخ نص الرسالة' : currentLanguage === 'en' ? 'Copy Message' : currentLanguage === 'es' ? 'Copiar Mensaje' : 'Copier le message'}</span>
                   </>
                 )}
               </button>

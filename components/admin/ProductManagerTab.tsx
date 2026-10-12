@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { Product, ProductColor, Currency } from '../../types';
+import { Product, ProductColor, Currency, StoreSettings } from '../../types';
 import { formatPrice } from '../../utils/format';
 import { saveProductToDb, deleteProductFromDb } from '../../services/db';
 import { useAdminLanguage } from '../../context/AdminLanguageContext';
@@ -28,6 +28,7 @@ interface ProductManagerTabProps {
   onDeleteProduct: (productId: string) => void;
   currency: Currency;
   onOpenMediaTab?: () => void;
+  storeSettings?: StoreSettings;
 }
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
@@ -48,9 +49,11 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
   onDeleteProduct,
   currency,
   onOpenMediaTab,
+  storeSettings,
 }) => {
   const { t, isRtl, adminLang } = useAdminLanguage();
   const isArabic = adminLang === 'ar';
+  const safeProducts = Array.isArray(products) ? products : [];
 
   // Navigation / View State: 'list' | 'create' | 'edit'
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit'>('list');
@@ -67,13 +70,16 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
 
   // Form Fields for active editing / create
   const [formName, setFormName] = useState('');
+  const [formNameEs, setFormNameEs] = useState('');
   const [formSubtitle, setFormSubtitle] = useState('');
-  const [formCategory, setFormCategory] = useState<'hoodies' | 'joggers' | 'longsleeves' | 'tees' | 'tracksuits' | 'outerwear'>('hoodies');
+  const [formSubtitleEs, setFormSubtitleEs] = useState('');
+  const [formCategory, setFormCategory] = useState<string>('hoodies');
   const [formPrice, setFormPrice] = useState<number>(6500);
   const [formWholesalePrice, setFormWholesalePrice] = useState<number>(4500);
   const [formFabric, setFormFabric] = useState('100% Coton Molleton Lourd');
   const [formFabricWeight, setFormFabricWeight] = useState('420 GSM Molleton Gratté');
   const [formDescription, setFormDescription] = useState('');
+  const [formDescriptionEs, setFormDescriptionEs] = useState('');
   const [formImages, setFormImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [formSizes, setFormSizes] = useState<string[]>(['S', 'M', 'L', 'XL', 'XXL']);
@@ -101,13 +107,16 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
   const startCreate = () => {
     setActiveEditingProduct(null);
     setFormName('');
+    setFormNameEs('');
     setFormSubtitle('');
+    setFormSubtitleEs('');
     setFormCategory('hoodies');
     setFormPrice(6500);
     setFormWholesalePrice(4500);
     setFormFabric('100% Coton Molleton Premium');
     setFormFabricWeight('420 GSM Molleton Gratté');
     setFormDescription('Confectionné dans notre atelier DBC en Algérie. Finitions renforcées et coupe contemporaine.');
+    setFormDescriptionEs('Confeccionado en nuestro taller DBC en Argelia. Acabados reforzados y corte contemporáneo.');
     setFormImages([PRESET_SAMPLE_IMAGES[0].url]);
     setFormSizes(['S', 'M', 'L', 'XL', 'XXL']);
     setFormColors([
@@ -125,13 +134,16 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
   const startEdit = (product: Product) => {
     setActiveEditingProduct(product);
     setFormName(product.name);
+    setFormNameEs(product.nameEs || '');
     setFormSubtitle(product.subtitle || '');
+    setFormSubtitleEs(product.subtitleEs || '');
     setFormCategory(product.category);
     setFormPrice(product.price);
     setFormWholesalePrice(product.wholesalePriceDzd || Math.round(product.price * 0.7));
     setFormFabric(product.fabric);
     setFormFabricWeight(product.fabricWeight || '380-450 GSM');
     setFormDescription(product.description);
+    setFormDescriptionEs(product.descriptionEs || '');
     setFormImages(product.images && product.images.length > 0 ? [...product.images] : [PRESET_SAMPLE_IMAGES[0].url]);
     setFormSizes(product.sizes && product.sizes.length > 0 ? [...product.sizes] : ['M', 'L', 'XL']);
     setFormColors(product.colors && product.colors.length > 0 ? [...product.colors] : [{ name: 'Noir', hex: '#1C1C1C' }]);
@@ -223,18 +235,22 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
       const finalImages = formImages.length > 0 ? formImages : [PRESET_SAMPLE_IMAGES[0].url];
 
       const productPayload: Product = {
+        ...(activeEditingProduct || {}),
         id,
         name: formName.trim(),
+        nameEs: formNameEs.trim() || activeEditingProduct?.nameEs || formName.trim(),
         subtitle: formSubtitle.trim(),
+        subtitleEs: formSubtitleEs.trim() || activeEditingProduct?.subtitleEs || formSubtitle.trim(),
         category: formCategory,
         price: Number(formPrice) || 6000,
         wholesalePriceDzd: Number(formWholesalePrice) || 4500,
         minWholesaleQty: 6,
         description: formDescription.trim(),
+        descriptionEs: formDescriptionEs.trim() || activeEditingProduct?.descriptionEs || formDescription.trim(),
         story: activeEditingProduct?.story || 'Confectionné par l’atelier DBC en Algérie.',
         fabric: formFabric.trim() || '100% Coton Premium',
         fabricWeight: formFabricWeight.trim() || '420 GSM Molleton',
-        millOrigin: 'Atelier DBC Confection — Algérie',
+        millOrigin: activeEditingProduct?.millOrigin || 'Atelier DBC Confection — Algérie',
         images: finalImages,
         sizes: formSizes.length > 0 ? formSizes : ['M', 'L', 'XL'],
         colors: formColors.length > 0 ? formColors : [{ name: 'Noir', hex: '#1C1C1C' }],
@@ -244,7 +260,7 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
         ],
         allowsMadeToMeasure: true,
         batchNumber: activeEditingProduct?.batchNumber || `DZ-${Date.now().toString().slice(-4)}`,
-        readyInDays: '24-48h',
+        readyInDays: activeEditingProduct?.readyInDays || '24-48h',
         careInstructions: activeEditingProduct?.careInstructions || ['Lavage à 30°C', 'Séchage à l’air libre'],
         inStock: formInStock,
         stock: Math.max(0, Number(formStock) || 0),
@@ -300,7 +316,7 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
     showToast(t.prodToastSaved);
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = safeProducts.filter((p) => {
     if (categoryFilter !== 'all' && p.category !== categoryFilter) return false;
     if (publishFilter === 'published' && p.isPublished === false) return false;
     if (publishFilter === 'unpublished' && p.isPublished !== false) return false;
@@ -405,15 +421,20 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
                 </label>
                 <select
                   value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
+                  onChange={(e) => setFormCategory(e.target.value)}
                   className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black bg-white"
                 >
-                  <option value="hoodies">Hoodies</option>
-                  <option value="joggers">Joggers</option>
-                  <option value="tracksuits">Tracksuits</option>
-                  <option value="longsleeves">Longsleeves</option>
-                  <option value="tees">T-shirts</option>
-                  <option value="outerwear">Outerwear</option>
+                  <option value="hoodies">{isArabic ? 'هوديز' : 'Hoodies'}</option>
+                  <option value="joggers">{isArabic ? 'بناطيل جوغر' : 'Joggers'}</option>
+                  <option value="tracksuits">{isArabic ? 'أطقم وبدلات' : 'Tracksuits'}</option>
+                  <option value="longsleeves">{isArabic ? 'أكمام طويلة' : 'Longsleeves'}</option>
+                  <option value="tees">{isArabic ? 'تيشيرتات' : 'T-shirts'}</option>
+                  <option value="outerwear">{isArabic ? 'سترات ومعاطف' : 'Outerwear'}</option>
+                  {storeSettings?.customCategories?.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {isArabic ? (cat.nameAr || cat.name) : adminLang === 'es' ? (cat.nameEs || cat.name) : cat.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -780,7 +801,7 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
                 <span>{t.prodManagerTitle}</span>
               </h2>
               <p className="text-xs text-[#7C756B] font-mono mt-0.5">
-                {t.prodManagerSubtitle} ({products.length})
+                {t.prodManagerSubtitle} ({safeProducts.length})
               </p>
             </div>
 
@@ -820,6 +841,11 @@ export const ProductManagerTab: React.FC<ProductManagerTabProps> = ({
                 <option value="longsleeves">Longsleeves</option>
                 <option value="tees">T-shirts</option>
                 <option value="outerwear">Outerwear</option>
+                {storeSettings?.customCategories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {isArabic ? (cat.nameAr || cat.name) : adminLang === 'es' ? (cat.nameEs || cat.name) : cat.name}
+                  </option>
+                ))}
               </select>
 
               <select

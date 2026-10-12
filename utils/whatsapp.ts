@@ -20,6 +20,7 @@ export interface WhatsAppGreetingOptions {
 /**
  * Normalizes an Algerian or international phone number for wa.me links
  * e.g., '0550 45 88 12' -> '213550458812'
+ * '+213 550 45 88 12' -> '213550458812'
  */
 export function cleanWhatsAppNumber(phone?: string): string {
   if (!phone) return '213550458812';

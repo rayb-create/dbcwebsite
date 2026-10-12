@@ -130,28 +130,28 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-900 border border-amber-300 rounded-full font-mono text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            {isArabic ? 'الشحنة في طريقها إليك (قيد التوصيل)' : 'En Transit & Livraison'}
+            {isArabic ? 'الشحنة في طريقها إليك (قيد التوصيل)' : (currentLanguage === 'en' ? 'In Transit & Out for Delivery' : currentLanguage === 'es' ? 'En Tránsito y Entrega' : 'En Transit & Livraison')}
           </span>
         );
       case 'En Préparation / Atelier':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-900 border border-blue-300 rounded-full font-mono text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-blue-500" />
-            {isArabic ? 'قيد التجهيز في ورشة الجزائر' : 'En Confection & Préparation'}
+            {isArabic ? 'قيد التجهيز في ورشة الجزائر' : (currentLanguage === 'en' ? 'Crafting & Atelier Preparation' : currentLanguage === 'es' ? 'En Confección y Preparación' : 'En Confection & Préparation')}
           </span>
         );
       case 'Livré / Completed':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-900 border border-emerald-300 rounded-full font-mono text-xs font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            {isArabic ? 'تم التسليم بنجاح' : 'Colis Livré'}
+            {isArabic ? 'تم التسليم بنجاح' : (currentLanguage === 'en' ? 'Package Delivered' : currentLanguage === 'es' ? 'Paquete Entregado' : 'Colis Livré')}
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#F2EDE4] text-[#4A4338] border border-[#DDD4C5] rounded-full font-mono text-xs font-semibold">
             <Clock className="w-3.5 h-3.5 text-[#8C6D3B]" />
-            {isArabic ? 'الطلب مسجل ومؤكد' : 'Commande Confirmée'}
+            {isArabic ? 'الطلب مسجل ومؤكد' : (currentLanguage === 'en' ? 'Order Confirmed' : currentLanguage === 'es' ? 'Pedido Confirmado' : 'Commande Confirmée')}
           </span>
         );
     }
@@ -177,7 +177,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-serif text-lg font-bold text-white tracking-tight">
-                  {isArabic ? 'تتبع طلبيات ورشة DBC' : 'Suivi de Commande & Colis'}
+                  {isArabic ? 'تتبع طلبيات ورشة DBC' : (currentLanguage === 'en' ? 'Order Tracking & Parcels' : currentLanguage === 'es' ? 'Seguimiento de Pedido' : 'Suivi de Commande & Colis')}
                 </h2>
                 <span className="px-2 py-0.5 bg-[#C9A96E] text-[#1F1D1A] text-[10px] font-mono font-bold rounded-sm uppercase tracking-wider">
                   69 Wilayas
@@ -186,7 +186,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
               <p className="text-xs text-[#A8A196] font-mono">
                 {isArabic 
                   ? 'تتبع حالة الشحنة وخطوات التوصيل في كامل الولايات الجزائرية' 
-                  : 'Vérifiez en temps réel l’acheminement de votre colis à travers l’Algérie'}
+                  : (currentLanguage === 'en' ? 'Real-time shipment tracking across all Algerian wilayas' : currentLanguage === 'es' ? 'Seguimiento en tiempo real de su envío en Argelia' : 'Vérifiez en temps réel l’acheminement de votre colis à travers l’Algérie')}
               </p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
               }`}
             >
               <Package className="w-3.5 h-3.5" />
-              <span>{isArabic ? 'تتبع طلبيتي' : 'Suivre une commande'}</span>
+              <span>{isArabic ? 'تتبع طلبيتي' : (currentLanguage === 'en' ? 'Track My Order' : currentLanguage === 'es' ? 'Seguir Mi Pedido' : 'Suivre une commande')}</span>
             </button>
 
             <button
@@ -224,7 +224,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
               }`}
             >
               <MapPin className="w-3.5 h-3.5 text-[#8C6D3B]" />
-              <span>{isArabic ? 'دليل وتعريفات الـ 69 ولاية' : 'Délais & Tarifs des 69 Wilayas'}</span>
+              <span>{isArabic ? 'دليل وتعريفات الـ 69 ولاية' : (currentLanguage === 'en' ? '69 Wilayas Delivery Rates' : currentLanguage === 'es' ? 'Tarifas de las 69 Wilayas' : 'Délais & Tarifs des 69 Wilayas')}</span>
             </button>
           </div>
 

@@ -4,6 +4,7 @@ import {
   Trash2, 
   ShoppingBag, 
   ArrowRight, 
+  Sparkles, 
   Check, 
   Truck,
   MessageCircle
@@ -40,6 +41,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   discountCode,
   onApplyDiscountCode,
   appliedDiscountPct,
+  orderNotes,
+  onOrderNotesChange,
   currentLanguage,
   storeSettings,
 }) => {
@@ -147,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </button>
         </div>
 
-        {/* 58/69 Wilayas Notice Bar */}
+        {/* 58 Wilayas Notice Bar */}
         <div className="px-5 py-2.5 bg-[#EAE3D6] border-b border-[#DDD4C5] text-xs font-mono flex items-center gap-2 text-[#4A4338]">
           <Truck className="w-4 h-4 text-[#8C6D3B] flex-shrink-0" />
           <span>{t.delivery58Wilayas}</span>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Heart, ShoppingBag, Trash2, Scissors } from 'lucide-react';
+import { X, Heart, ShoppingBag, Trash2 } from 'lucide-react';
 import { Product, Currency } from '../types';
 import { formatPrice } from '../utils/format';
+import { Language, TRANSLATIONS } from '../data/i18n';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface WishlistModalProps {
   currency: Currency;
   onRemoveFromWishlist: (id: string) => void;
   onSelectProduct: (product: Product) => void;
+  currentLanguage?: Language;
 }
 
 export const WishlistModal: React.FC<WishlistModalProps> = ({
@@ -21,13 +23,16 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   currency,
   onRemoveFromWishlist,
   onSelectProduct,
+  currentLanguage = 'fr',
 }) => {
   if (!isOpen) return null;
 
+  const t = TRANSLATIONS[currentLanguage];
+  const isArabic = currentLanguage === 'ar';
   const savedProducts = products.filter((p) => wishlistIds.includes(p.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/65 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/65 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200" dir={isArabic ? 'rtl' : 'ltr'}>
       <div 
         className="relative w-full max-w-2xl bg-[#FAF8F5] border border-[#D5CABB] rounded shadow-2xl overflow-hidden my-6 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -37,7 +42,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-[#C9A96E] fill-[#C9A96E]" />
             <h2 className="font-serif text-lg font-medium tracking-wide">
-              Saved Workshop Pieces ({savedProducts.length})
+              {t.wishlistTitle} ({savedProducts.length})
             </h2>
           </div>
           <button
@@ -53,9 +58,9 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
           {savedProducts.length === 0 ? (
             <div className="py-12 text-center text-[#7D7569] space-y-2">
               <Heart className="w-8 h-8 text-[#CCC3B6] mx-auto" />
-              <p className="font-serif text-base text-[#2C2825]">No saved garments yet</p>
+              <p className="font-serif text-base text-[#2C2825]">{t.wishlistEmptyTitle}</p>
               <p className="text-xs max-w-xs mx-auto">
-                Click the heart icon on any garment in our workshop collection to save it for later review or custom sizing.
+                {t.wishlistEmptyDesc}
               </p>
             </div>
           ) : (
@@ -83,7 +88,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                       </h4>
                       <p className="text-[#6D6559] text-[11px] line-clamp-1">{prod.fabric}</p>
                       <span className="font-mono text-xs font-semibold text-[#1F1C19] mt-0.5 block">
-                        {formatPrice(prod.price, currency)}
+                        {formatPrice(prod.price, currency, isArabic)}
                       </span>
                     </div>
                   </div>
@@ -96,12 +101,12 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                       }}
                       className="px-3 py-1.5 bg-[#23201D] text-white text-[11px] font-mono uppercase tracking-wider rounded hover:bg-[#3D3730] transition-colors cursor-pointer"
                     >
-                      Tailor / Add
+                      {t.wishlistSelectBtn}
                     </button>
                     <button
                       onClick={() => onRemoveFromWishlist(prod.id)}
-                      className="p-1.5 text-[#968E82] hover:text-[#A34338] transition-colors"
-                      title="Remove"
+                      className="p-1.5 text-[#A89F91] hover:text-red-700 rounded transition-colors cursor-pointer"
+                      title={t.deleteItemTitle}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

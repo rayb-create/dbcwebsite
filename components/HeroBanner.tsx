@@ -15,6 +15,7 @@ import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
 import { CoverPhotoModal } from './CoverPhotoModal';
 import { useAuth } from '../context/AuthContext';
+import { isBannedHeroPhrase } from '../services/db';
 
 interface HeroBannerProps {
   onExploreCollection: () => void;
@@ -46,6 +47,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 }) => {
   const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
 
+  // Strict verified admin authorization check:
+  // Normal unauthenticated or public visitors must NEVER see or use cover controls.
+  // Requires:
+  // 1. Finished authentication loading (!authLoading)
+  // 2. Verified active authenticated user exists (currentUser)
+  // 3. User is authorized as admin in AuthContext (authIsAdmin === true)
+  // 4. If an explicit prop was provided, it must not be false (propIsAdmin !== false)
   const isAdmin = Boolean(
     !authLoading &&
     currentUser &&
@@ -69,6 +77,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   // Fallback fashion campaign visual for DBC Workshop if no custom photo uploaded yet
   const fallbackHeroImage = 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=2400&q=85';
 
+  // Safety timeout if Firestore takes unusually long, so the hero doesn't remain blank indefinitely
   const [settingsTimeout, setSettingsTimeout] = useState(false);
   useEffect(() => {
     if (isSettingsLoaded) return;
@@ -78,12 +87,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return () => clearTimeout(timer);
   }, [isSettingsLoaded]);
 
+  // Cover configuration is known when:
+  // - A custom heroImage is already populated (from localStorage or Firestore)
+  // - Or isSettingsLoaded is true
+  // - Or safety timeout reached
   const isCoverDetermined = Boolean(
     (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0) ||
     isSettingsLoaded ||
     settingsTimeout
   );
 
+  // Only resolve to fallbackHeroImage if settings have loaded and there genuinely is NO saved cover.
+  // If settings are still loading, leave heroImageSrc as empty string to avoid flashing the default AI image.
   const heroImageSrc = (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0)
     ? storeSettings.heroImage
     : isCoverDetermined
@@ -103,6 +118,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   // Focal point positioning (configurable via admin / modal)
   const focalPosition = storeSettings.heroFocalPosition || 'center';
+
+  // Configurable overlay scrim gradient strength
+  const overlayStrength = storeSettings.heroOverlayStrength || 'medium';
 
   const handleRemoveHeroImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -126,22 +144,48 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     }
   };
 
-  // Helper to filter out the unwanted hero phrase
+  // Helper to filter out the unwanted hero phrases completely
   const isBannedPhrase = (text?: string) => {
-    if (!text) return false;
-    const lower = text.toLowerCase();
-    return (
-      lower.includes('vent b2b') ||
-      lower.includes('confection textile haut gamme') ||
-      lower.includes('haut gamme') ||
-      (lower.includes('atelier de confection') && (lower.includes('vent') || lower.includes('b2b & b2c')))
-    );
+    return isBannedHeroPhrase(text);
   };
 
-  const displayTagline = (storeSettings.tagline && !isBannedPhrase(storeSettings.tagline))
-    ? storeSettings.tagline
-    : t.tagline;
+  const getSafeText = (customText?: string, defaultText: string = ''): string => {
+    if (customText && !isBannedPhrase(customText)) return customText;
+    return !isBannedPhrase(defaultText) ? defaultText : '';
+  };
 
+  const displayTagline = currentLanguage === 'es'
+    ? getSafeText(storeSettings.taglineEs, t.tagline)
+    : currentLanguage === 'ar'
+    ? getSafeText(storeSettings.taglineAr, t.tagline)
+    : currentLanguage === 'en'
+    ? getSafeText(storeSettings.taglineEn, t.tagline)
+    : getSafeText(storeSettings.tagline, t.tagline);
+
+  const displayTitle = currentLanguage === 'es'
+    ? getSafeText(storeSettings.heroTitleEs, t.heroTitle)
+    : currentLanguage === 'ar'
+    ? getSafeText(storeSettings.heroTitleAr, t.heroTitle)
+    : currentLanguage === 'en'
+    ? getSafeText(storeSettings.heroTitleEn, t.heroTitle)
+    : getSafeText(storeSettings.heroTitle, t.heroTitle);
+
+  const displaySubtitle = currentLanguage === 'es'
+    ? getSafeText(storeSettings.heroSubtitleEs, t.heroSubtitle)
+    : currentLanguage === 'ar'
+    ? getSafeText(storeSettings.heroSubtitleAr, t.heroSubtitle)
+    : currentLanguage === 'en'
+    ? getSafeText(storeSettings.heroSubtitleEn, t.heroSubtitle)
+    : getSafeText(storeSettings.heroSubtitle, t.heroSubtitle);
+
+  const displayBadge = isBannedPhrase(t.b2bB2cBadge)
+    ? (isArabic ? 'ورشة دي بي سي للألبسة • صناعة جزائرية' : (currentLanguage === 'en' ? 'DBC Workshop • Made in Algeria' : currentLanguage === 'es' ? 'Taller DBC • Hecho en Argelia' : 'Atelier DBC • Confection Algérie'))
+    : t.b2bB2cBadge;
+
+  // Derive responsive focal points so the photographic subject is framed naturally across devices:
+  // Desktop strictly respects the exact admin focalPosition ('center', 'top', etc.).
+  // Mobile portrait (iPhone/Android) prioritizes the upper/torso region (center 28%)
+  // where the garment, mannequin, and workshop craft are centered without excessive zooming or cutoff.
   const desktopFocal = focalPosition || 'center';
   let mobileFocal = 'center 28%';
   let tabletFocal = 'center 35%';
@@ -165,6 +209,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   return (
     <div id="hero-cover-section" className="w-full flex flex-col bg-[#FAF8F5] overflow-x-hidden">
+      {/* Scoped responsive focal rules: perfectly frames portrait mobile while leaving desktop 100% untouched */}
       <style>{`
         #hero-cover-visual .hero-campaign-img {
           object-position: var(--hero-mobile-focal, center 28%) !important;
@@ -181,7 +226,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         }
       `}</style>
 
-      {/* 1. HERO CAMPAIGN VISUAL */}
+      {/* 1. HERO CAMPAIGN VISUAL (Pure static photography, clean and 100% unobstructed) */}
       <section 
         id="hero-cover-visual"
         className="relative w-full aspect-[16/10] sm:aspect-[16/9] md:aspect-[16/9] lg:aspect-auto lg:h-[78vh] min-h-[220px] sm:min-h-[340px] md:min-h-[400px] lg:min-h-[460px] max-h-[360px] sm:max-h-[500px] md:max-h-[580px] lg:max-h-[820px] overflow-hidden bg-[#1E1B18] select-none"
@@ -192,6 +237,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           ['--hero-desktop-focal' as string]: desktopFocal,
         } as React.CSSProperties}
       >
+        {/* Campaign Photography */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 bg-[#1E1B18]">
           {heroImageSrc ? (
             <img
@@ -204,19 +250,24 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               onLoad={() => setIsImgLoaded(true)}
             />
           ) : (
+            /* Subtle skeleton loading placeholder while saved cover setting is being retrieved */
             <div className="w-full h-full bg-[#1E1B18] animate-pulse" />
           )}
 
+          {/* Clean, subtle cinematic tone mapping */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-black/35 pointer-events-none" />
         </div>
 
+        {/* Floating Controls & Non-Intrusive Indicators */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-full flex flex-col justify-between py-3 sm:py-5 lg:py-6">
+          {/* Top Bar: Category Pill & Discrete Admin Cover Edit Tool */}
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-black/45 backdrop-blur-md border border-white/20 rounded-full text-[10px] sm:text-xs font-mono text-white shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#25D366]" />
-              <span className="font-semibold tracking-wider uppercase">{t.b2bB2cBadge}</span>
+              <span className="font-semibold tracking-wider uppercase">{displayBadge}</span>
             </div>
 
+            {/* Quick Cover Adjustment Trigger for owner/admin ONLY */}
             {isAdmin && (
               <div className="flex items-center gap-2">
                 <button
@@ -243,6 +294,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             )}
           </div>
 
+          {/* Bottom Bar: Discrete Campaign Brand Cue & Smooth Scroll to Written Info */}
           <div className="flex items-center justify-between pb-0.5 sm:pb-2">
             <div className="hidden sm:block">
               <span className="text-[11px] font-mono tracking-widest text-white/85 uppercase px-3.5 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/15">
@@ -270,21 +322,22 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl space-y-3.5 sm:space-y-6 lg:space-y-7">
             {/* Atelier Tagline Pill */}
-            {displayTagline && !isBannedPhrase(displayTagline) && (
-              <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 bg-[#EDE6DB] text-[#785E32] rounded-full text-[11px] sm:text-xs font-mono font-bold tracking-wider uppercase border border-[#DDD3C4] max-w-full">
-                <Sparkles className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
-                <span className="truncate">{displayTagline}</span>
-              </div>
-            )}
+            <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 bg-[#EDE6DB] text-[#785E32] rounded-full text-[11px] sm:text-xs font-mono font-bold tracking-wider uppercase border border-[#DDD3C4] max-w-full">
+              <Sparkles className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
+              <span className="truncate">{displayTagline}</span>
+            </div>
 
+            {/* Main Headline with high contrast & balanced responsive typography */}
             <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight text-[#1F1D1A] leading-[1.2] sm:leading-[1.12] break-words">
-              {storeSettings.heroTitle || t.heroTitle}
+              {displayTitle}
             </h1>
 
+            {/* Subtitle Description */}
             <p className="text-sm sm:text-base md:text-lg lg:text-xl text-[#5A5247] font-sans leading-relaxed max-w-3xl">
-              {storeSettings.heroSubtitle || t.heroSubtitle}
+              {displaySubtitle}
             </p>
 
+            {/* Action CTA Buttons */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3.5 pt-1 sm:pt-4">
               <button
                 id="hero-explore-collection-btn"
@@ -317,6 +370,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </div>
           </div>
 
+          {/* Trust & Capability Metrics Grid */}
           <div className="mt-8 sm:mt-14 lg:mt-16 pt-6 sm:pt-10 border-t border-[#E8E1D5] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6 lg:gap-8">
             <div className="bg-white p-5 rounded-lg border border-[#E8E1D5] shadow-xs hover:border-[#C9A96E] transition-colors">
               <div className="flex items-center gap-3 mb-2">
@@ -368,6 +422,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       </section>
 
+      {/* 3. Toast Notification for Direct Actions */}
       {justUploadedToast && (
         <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 bg-[#1F1D1A]/95 text-white rounded-md font-mono text-xs flex items-center justify-center gap-2 shadow-2xl border border-[#C9A96E] animate-in fade-in slide-in-from-top-3">
           <Check className="w-4 h-4 text-[#C9A96E]" />
@@ -375,6 +430,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
+      {/* 4. Website Picture Cover Management Modal (Admin Only) */}
       {isAdmin && (
         <CoverPhotoModal
           isOpen={isCoverModalOpen}

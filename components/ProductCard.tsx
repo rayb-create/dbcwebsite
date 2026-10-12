@@ -79,8 +79,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     const touchEndX = e.changedTouches[0].clientX;
     const diffX = touchStartX - touchEndX;
     if (diffX > 35 && images.length > 1) {
+      // Swiped left -> next picture
       setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     } else if (diffX < -35 && images.length > 1) {
+      // Swiped right -> previous picture
       setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
     }
     setTouchStartX(null);
@@ -161,7 +163,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {currentImageIndex + 1}/{images.length}
             </span>
 
-            {/* Slide Indicator Dots */}
+            {/* Slide Indicator Dots / Pills */}
             <div 
               className="absolute bottom-3 group-hover:bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2 py-1 bg-black/40 backdrop-blur-xs rounded-full pointer-events-auto z-20 transition-all duration-300"
               onClick={(e) => e.stopPropagation()}

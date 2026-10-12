@@ -34,6 +34,10 @@ export const FloatingWhatsAppWidget: React.FC<FloatingWhatsAppWidgetProps> = ({
     : `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
         isArabic 
           ? 'السلام عليكم ورشة DBC، أود الاستفسار عن التوصيل والمنتجات.' 
+          : currentLanguage === 'en'
+          ? 'Hello DBC Workshop, I would like to inquire about your apparel collection and express delivery across Algeria.'
+          : currentLanguage === 'es'
+          ? 'Hola DBC Workshop, deseo consultar sobre sus prendas y envíos en Argelia.'
           : 'Bonjour DBC Workshop, je souhaite des informations sur vos confections.'
       )}`;
 
@@ -46,12 +50,12 @@ export const FloatingWhatsAppWidget: React.FC<FloatingWhatsAppWidgetProps> = ({
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2 pointer-events-auto select-none">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-2 pointer-events-auto select-none">
       
       {/* Contextual Product Banner / Tooltip if viewing a product */}
       {!isTooltipDismissed && (
         <div 
-          className="bg-[#1F1D1A] text-white p-2.5 sm:p-3 rounded-lg shadow-xl border border-[#C9A96E]/50 max-w-xs sm:max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex items-start gap-2.5"
+          className="bg-[#1F1D1A] text-white p-2.5 sm:p-3 rounded-lg shadow-xl border border-[#C9A96E]/50 max-w-[calc(100vw-2rem)] sm:max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex items-start gap-2.5"
           dir={isArabic ? 'rtl' : 'ltr'}
         >
           {currentlyViewedProduct ? (
@@ -65,7 +69,7 @@ export const FloatingWhatsAppWidget: React.FC<FloatingWhatsAppWidgetProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse"></span>
                   <span className="text-[10px] font-mono text-[#C9A96E] uppercase font-bold tracking-wider">
-                    {isArabic ? 'طلب المنتج الحالي' : 'Produit en consultation'}
+                    {isArabic ? 'طلب المنتج الحالي' : currentLanguage === 'en' ? 'Currently viewed product' : currentLanguage === 'es' ? 'Producto en consulta' : 'Produit en consultation'}
                   </span>
                 </div>
                 <h5 className="text-xs font-serif font-semibold text-white truncate mt-0.5">
@@ -77,15 +81,15 @@ export const FloatingWhatsAppWidget: React.FC<FloatingWhatsAppWidgetProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left rtl:text-right">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse"></span>
                 <span className="text-[10px] font-mono text-[#C9A96E] uppercase font-bold tracking-wider">
-                  {isArabic ? 'خدمة الزبائن السريعة' : 'Atelier DBC en Direct'}
+                  {isArabic ? 'خدمة الزبائن السريعة' : currentLanguage === 'en' ? 'Direct Atelier Support' : currentLanguage === 'es' ? 'Atención al Cliente' : 'Atelier DBC en Direct'}
                 </span>
               </div>
               <p className="text-xs text-[#EAE3D5] font-sans mt-0.5">
-                {isArabic ? 'اطلب أو استفسر عبر واتساب (69 ولاية)' : 'Commandes rapides & B2B via WhatsApp'}
+                {isArabic ? 'اطلب أو استفسر عبر واتساب (69 ولاية)' : currentLanguage === 'en' ? 'Fast orders & B2B via WhatsApp (69 Wilayas)' : currentLanguage === 'es' ? 'Pedidos rápidos y B2B por WhatsApp (69 Wilayas)' : 'Commandes rapides & B2B via WhatsApp'}
               </p>
             </div>
           )}

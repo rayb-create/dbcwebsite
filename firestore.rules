@@ -2,11 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions for real secure authentication and authorization
+    // Helper functions for authentication and role verification
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // Owner email check: dbcworkshop.co@gmail.com is permanently recognized as an owner/admin
     function isOwnerEmail() {
       return isAuthenticated() && (
         request.auth.token.email == 'dbcworkshop.co@gmail.com' ||
@@ -14,25 +15,37 @@ service cloud.firestore {
       );
     }
 
+    // Check if a verified admin record exists for this user in the /admins collection
+    function hasAdminRecord() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Check if the user has custom admin claims
+    function hasAdminClaim() {
+      return isAuthenticated() && 
+        request.auth.token.keys().hasAll(['admin']) && 
+        request.auth.token.admin == true;
+    }
+
+    // Strict administrator check:
+    // User must be authenticated AND either:
+    // 1. Be the primary workshop owner email (dbcworkshop.co@gmail.com), OR
+    // 2. Have a verified document in the /admins/{uid} collection, OR
+    // 3. Have a valid admin claim in their auth token.
+    //
+    // CRITICAL: request.auth.uid != null is explicitly NOT used here,
+    // ensuring standard authenticated customers are never granted admin privileges.
     function isAdmin() {
       return isAuthenticated() && (
         isOwnerEmail() ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true) ||
-        request.auth.uid != null
+        hasAdminRecord() ||
+        hasAdminClaim()
       );
     }
 
-    // Admin records
-    match /admins/{adminId} {
-      allow read: if isAuthenticated();
-      // Allow user to register their own admin document if authenticated
-      allow create, update: if isAuthenticated() && (
-        request.auth.uid == adminId ||
-        isOwnerEmail() ||
-        isAdmin()
-      );
-      allow delete: if isAdmin();
+    // Default deny catch-all for any unmapped collections
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     // Connection health check for initial app boot
@@ -40,30 +53,46 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // Public apparel catalog - anyone can browse products, only admins can modify
+    // 1. Apparel Catalog (/products)
+    // Public / Customers: Can read and list products
+    // Administrators: Full create, update, delete permissions
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Website content & settings - public read, admin write
+    // 2. Website Content & Store Settings (/settings)
+    // Public / Customers: Can read settings (contact, hero banner, SEO, delivery rates)
+    // Administrators: Can update and write settings
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Media library - public read (for product images), admin write
+    // 3. Media Assets Library (/media)
+    // Public / Customers: Can read image and banner assets
+    // Administrators: Can upload, edit, and delete media
     match /media/{mediaId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Orders & wholesale inquiries
-    // Customers can submit orders/inquiries from checkout/WhatsApp/B2B
-    // ONLY authenticated administrators can read, list, update, or delete customer data
+    // 4. Customer Orders & B2B Inquiries (/orders)
+    // Public / Customers: Can create orders from checkout or inquiries
+    // Administrators: ONLY verified admins can read, list, update, or delete customer orders
     match /orders/{orderId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
+    }
+
+    // 5. Administrators Management (/admins)
+    // Read: Authenticated users can fetch their own admin doc to verify role; listing requires admin
+    // Write: Only the primary owner or an existing verified admin can create, update, or delete admin documents
+    // (Regular users CANNOT self-register as admins)
+    match /admins/{adminId} {
+      allow get: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isOwnerEmail() || isAdmin();
     }
   }
 }

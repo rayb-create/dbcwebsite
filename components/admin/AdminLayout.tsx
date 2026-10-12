@@ -324,6 +324,7 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
               onUpdateProduct={onUpdateProduct}
               onDeleteProduct={onDeleteProduct}
               currency={currency}
+              storeSettings={safeStoreSettings}
               onOpenMediaTab={() => setActiveTab('media')}
             />
           )}
@@ -331,6 +332,8 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({
           {activeTab === 'categories' && (
             <CategoryManagerTab
               products={safeProducts}
+              storeSettings={safeStoreSettings}
+              onUpdateStoreSettings={onUpdateStoreSettings}
               onSelectCategoryFilter={() => setActiveTab('products')}
             />
           )}

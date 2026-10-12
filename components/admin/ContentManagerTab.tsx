@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { StoreSettings, MediaAsset } from '../../types';
+import { DEFAULT_STORE_SETTINGS } from '../../data/storeSettings';
 import { saveStoreSettingsToDb } from '../../services/db';
 import { useAdminLanguage } from '../../context/AdminLanguageContext';
 import { compressImageFile } from '../../utils/imageCompressor';
@@ -28,28 +29,6 @@ interface ContentManagerTabProps {
   onOpenMediaTab?: () => void;
 }
 
-const PRESET_COVERS = [
-  {
-    title: 'Atelier Confection',
-    titleAr: 'مشغل خياطة وحياكة نسيج',
-    url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'Streetwear & Hoodies',
-    titleAr: 'ستوديو ستريتوير وهوديز',
-    url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'Molleton Lourd & Tissus',
-    titleAr: 'أقمشة ومولتون قطني فاخر',
-    url: 'https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'Confection Minimaliste',
-    titleAr: 'تفصيل وتصميم ملابس مينيمال',
-    url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
-  },
-];
 
 export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
   storeSettings,
@@ -61,7 +40,10 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
   const isArabic = adminLang === 'ar';
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<StoreSettings>({ ...storeSettings });
+  const safeStoreSettings = storeSettings && typeof storeSettings === 'object' ? storeSettings : DEFAULT_STORE_SETTINGS;
+  const safeMedia = Array.isArray(media) ? media : [];
+
+  const [formData, setFormData] = useState<StoreSettings>({ ...DEFAULT_STORE_SETTINGS, ...safeStoreSettings });
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
@@ -246,10 +228,10 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
                 {/* Simulated Fashion Hero Text */}
                 <div className="absolute bottom-12 left-4 right-4 text-left pointer-events-none">
                   <span className="text-[10px] font-mono tracking-wider text-[#C9A96E] uppercase font-bold drop-shadow">
-                    {formData.tagline || 'B2B & B2C • 69 WILAYAS'}
+                    {formData.tagline || 'ATELIER DE CONFECTION TEXTILE'}
                   </span>
                   <h4 className="font-serif text-sm sm:text-base font-bold text-white drop-shadow truncate">
-                    {formData.heroTitle || 'CONFECTION TEXTILE HAUT DE GAMME'}
+                    {formData.heroTitle || 'DBC CLOTHING WORKSHOP ALGÉRIE'}
                   </h4>
                 </div>
               </div>
@@ -356,7 +338,7 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
               <div className="flex items-center justify-between border-b border-[#EAE3D5] pb-2">
                 <span className="text-xs font-mono font-bold text-[#1F1C19] flex items-center gap-1.5">
                   <Library className="w-3.5 h-3.5 text-[#8C6D3B]" />
-                  <span>{isArabic ? 'اختر صورة من مكتبة الوسائط' : 'Choisir une image de la médiathèque'} ({media.length})</span>
+                  <span>{isArabic ? 'اختر صورة من مكتبة الوسائط' : 'Choisir une image de la médiathèque'} ({safeMedia.length})</span>
                 </span>
                 <button
                   type="button"
@@ -367,7 +349,7 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
                 </button>
               </div>
 
-              {media.length === 0 ? (
+              {safeMedia.length === 0 ? (
                 <div className="py-4 text-center text-xs font-mono text-[#7C756B]">
                   {isArabic 
                     ? 'لا توجد وسائط بعد. قم برفع صورة جديدة من زر الرفع.' 
@@ -375,7 +357,7 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-1">
-                  {media.map((asset) => (
+                  {safeMedia.map((asset) => (
                     <div
                       key={asset.id}
                       onClick={() => handleSelectMediaForCover(asset.url)}
@@ -425,37 +407,6 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
             </div>
           </div>
 
-          {/* Quick Presets */}
-          <div className="max-w-xl pt-2">
-            <span className="text-[11px] font-mono text-[#8C8377] uppercase block mb-1.5 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#C9A96E]" />
-              <span>{isArabic ? 'نماذج ورشة DBC الجاهزة' : 'Photos de confection suggérées'}</span>
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PRESET_COVERS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    handleChange('heroImage', preset.url);
-                    triggerToast(isArabic ? 'تم تطبيق نموذج الواجهة' : 'Modèle appliqué !');
-                  }}
-                  className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                    formData.heroImage === preset.url
-                      ? 'border-[#8C6D3B] bg-[#F2EDE4] ring-1 ring-[#8C6D3B]'
-                      : 'border-[#DDD4C5] bg-white hover:border-[#8C6D3B]'
-                  }`}
-                >
-                  <div className="aspect-[16/10] w-full rounded overflow-hidden bg-[#EAE4D8]">
-                    <img src={preset.url} alt={preset.title} className="w-full h-full object-cover" />
-                  </div>
-                  <span className="text-[10px] font-mono text-[#1F1C19] truncate font-semibold">
-                    {isArabic ? preset.titleAr : preset.title}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Hero Focal Position & Overlay Strength */}
           <div className="max-w-xl grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#F0EBE1]">
@@ -537,7 +488,7 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
                 type="text"
                 value={formData.heroTitle || ''}
                 onChange={(e) => handleChange('heroTitle', e.target.value)}
-                placeholder="CONFECTION TEXTILE HAUT DE GAMME ALGÉRIE"
+                placeholder="ATELIER DE CONFECTION TEXTILE • ALGÉRIE"
                 className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black bg-white"
               />
             </div>

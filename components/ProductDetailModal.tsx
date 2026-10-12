@@ -7,24 +7,24 @@ import {
   Sparkles, 
   ShieldCheck, 
   Truck, 
-  MessageCircle, 
-  Building2, 
+  MessageCircle,
+  Building2,
   Layers, 
-  Info, 
-  Phone, 
-  SlidersHorizontal, 
-  Share2, 
-  ExternalLink, 
-  Trash2, 
-  Edit2, 
-  AlertTriangle, 
-  ChevronLeft, 
-  ChevronRight 
+  Info,
+  Phone,
+  SlidersHorizontal,
+  Share2,
+  ExternalLink,
+  Trash2,
+  Edit2,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Product, Currency, CustomMeasurements, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
-import { Language, TRANSLATIONS } from '../data/i18n';
-import { REVIEWS } from '../data/products';
+import { Language, TRANSLATIONS, getCategoryLabel, formatColorName } from '../data/i18n';
+import { REVIEWS, getProductSubtitle, getProductDescription, getProductFabric, getProductMillOrigin } from '../data/products';
 import { ProductWhatsAppModal } from './ProductWhatsAppModal';
 import { generateProductWhatsAppUrl } from '../utils/whatsapp';
 import { useAuth } from '../context/AuthContext';
@@ -66,8 +66,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isAdmin: propIsAdmin,
 }) => {
   const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
-
-  // Strict verified admin check: public/logged-out visitors are ALWAYS false
+  // Strict multi-factor verified admin check:
+  // Public/logged-out customers must NEVER be treated as admin.
+  // Requires:
+  // 1. Auth loading finished (!authLoading)
+  // 2. Verified active Firebase user exists (currentUser)
+  // 3. User holds confirmed admin permissions (authIsAdmin === true)
+  // 4. If an explicit prop was supplied, it must not be false (propIsAdmin !== false)
   const isAdmin = Boolean(
     !authLoading &&
     currentUser &&
@@ -283,7 +288,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </span>
                   {product.isB2BAvailable && (
                     <span className="px-2.5 py-1 bg-white/90 text-[#8C6D3B] font-mono text-[10px] rounded uppercase font-bold border border-[#DDD4C5]">
-                      Vente B2B & B2C
+                      {isArabic ? 'بيع B2B & B2C' : currentLanguage === 'es' ? 'Venta B2B & B2C' : currentLanguage === 'en' ? 'B2B & B2C Sales' : 'Vente B2B & B2C'}
                     </span>
                   )}
                 </div>
@@ -312,7 +317,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div>
                   <span className="font-bold block">{t.delivery58Wilayas}</span>
                   <span className="text-[11px] text-amber-800">
-                    Paiement en espèces à la livraison (Cash) ou par BaridiMob / CCP.
+                    {t.footerCodText} • {t.footerBaridiMobText}
                   </span>
                 </div>
               </div>
@@ -366,15 +371,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Header */}
                 <div>
                   <div className="flex items-center justify-between text-xs font-mono text-[#8C6D3B] uppercase font-bold">
-                    <span>{product.category}</span>
-                    <span>{product.readyInDays || '24-48h pour envoi'}</span>
+                    <span>{getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}</span>
+                    <span>{currentLanguage === 'es' ? '24-48h para envío' : currentLanguage === 'en' ? '24-48h for shipping' : isArabic ? '24-48 ساعة للشحن' : (product.readyInDays || '24-48h pour envoi')}</span>
                   </div>
                   <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1F1C19] mt-1">
                     {product.name}
                   </h2>
-                  {product.subtitle && (
+                  {getProductSubtitle(product, currentLanguage) && (
                     <p className="text-xs text-[#6E6659] mt-0.5 font-sans">
-                      {product.subtitle}
+                      {getProductSubtitle(product, currentLanguage)}
                     </p>
                   )}
                 </div>
@@ -384,7 +389,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-baseline justify-between">
                     <div>
                       <span className="text-[10px] font-mono uppercase text-[#7C756B] block">
-                        {t.b2cPrice} (Détail)
+                        {t.b2cPrice} ({currentLanguage === 'es' ? 'Detalle' : currentLanguage === 'en' ? 'Retail' : isArabic ? 'تجزئة' : 'Détail'})
                       </span>
                       <span className="font-mono text-xl sm:text-2xl font-bold text-[#1F1C19]">
                         {formatPrice(unitPrice, currency, isArabic)}
@@ -412,7 +417,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="uppercase text-[#615A4F] font-bold">{t.selectColor} :</span>
                     <span className="text-[#1F1C19] font-semibold">
-                      {product.colors[selectedColorIdx]?.name}
+                      {formatColorName(product.colors[selectedColorIdx]?.name, currentLanguage)}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -430,7 +435,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           className="w-3.5 h-3.5 rounded-full border border-black/20"
                           style={{ backgroundColor: color.hex }}
                         />
-                        <span>{color.name}</span>
+                        <span>{formatColorName(color.name, currentLanguage)}</span>
                       </button>
                     ))}
                   </div>
@@ -445,7 +450,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       className="text-[#8C6D3B] underline hover:text-black flex items-center gap-1 cursor-pointer text-[11px]"
                     >
                       <Ruler className="w-3 h-3" />
-                      <span>Guide des tailles</span>
+                      <span>{t.sizeGuideTitle}</span>
                     </button>
                   </div>
 
@@ -473,10 +478,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="uppercase text-[#615A4F] font-bold">
-                      {isArabic ? 'الكمية :' : 'Quantité :'}
+                      {t.quantityLabel}
                     </span>
                     <span className="text-[#8C6D3B] font-semibold">
-                      {quantity} {quantity > 1 ? (isArabic ? 'قطع' : 'pièces') : (isArabic ? 'قطعة' : 'pièce')}
+                      {quantity} {quantity > 1 ? (isArabic ? 'قطع' : (currentLanguage === 'en' ? 'items' : currentLanguage === 'es' ? 'piezas' : 'pièces')) : (isArabic ? 'قطعة' : (currentLanguage === 'en' ? 'item' : currentLanguage === 'es' ? 'pieza' : 'pièce'))}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -487,7 +492,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                         disabled={quantity <= 1}
                         className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed select-none"
-                        aria-label="Diminuer la quantité"
+                        aria-label="-"
                       >
                         -
                       </button>
@@ -499,14 +504,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         id="product-detail-qty-plus"
                         onClick={() => setQuantity((prev) => Math.min(99, prev + 1))}
                         className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] transition-colors cursor-pointer select-none"
-                        aria-label="Augmenter la quantité"
+                        aria-label="+"
                       >
                         +
                       </button>
                     </div>
                     {quantity > 1 && (
                       <span className="text-xs font-mono text-[#6E6659]">
-                        Total : <strong className="text-[#1F1C19]">{formatPrice(unitPrice * quantity, currency, isArabic)}</strong>
+                        {t.totalLabel} <strong className="text-[#1F1C19]">{formatPrice(unitPrice * quantity, currency, isArabic)}</strong>
                       </span>
                     )}
                   </div>
@@ -521,7 +526,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         activeTab === 'specs' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
                       }`}
                     >
-                      Fiche Technique
+                      {t.techSheetTab}
                     </button>
                     <button
                       onClick={() => setActiveTab('b2b')}
@@ -529,7 +534,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         activeTab === 'b2b' ? 'border-b-2 border-black font-bold text-[#8C6D3B]' : 'text-[#7C756B]'
                       }`}
                     >
-                      Tarifs Gros B2B
+                      {t.b2bRatesTab}
                     </button>
                     <button
                       onClick={() => setActiveTab('reviews')}
@@ -537,22 +542,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         activeTab === 'reviews' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
                       }`}
                     >
-                      Avis ({productReviews.length})
+                      {t.reviewsTab} ({productReviews.length})
                     </button>
                   </div>
 
                   <div className="pt-3 text-xs text-[#5C554B]">
                     {activeTab === 'specs' && (
                       <div className="space-y-2">
-                        <p className="leading-relaxed font-sans">{product.description}</p>
+                        <p className="leading-relaxed font-sans">{getProductDescription(product, currentLanguage)}</p>
                         <div className="grid grid-cols-2 gap-2 pt-2">
                           <div className="p-2 bg-white rounded border border-[#E2DAD0]">
-                            <span className="text-[10px] font-mono text-[#7C756B] block">Matière :</span>
-                            <span className="font-semibold text-[#1F1C19]">{product.fabric}</span>
+                            <span className="text-[10px] font-mono text-[#7C756B] block">{t.fabricLabel}</span>
+                            <span className="font-semibold text-[#1F1C19]">{getProductFabric(product, currentLanguage)}</span>
                           </div>
                           <div className="p-2 bg-white rounded border border-[#E2DAD0]">
-                            <span className="text-[10px] font-mono text-[#7C756B] block">Confection :</span>
-                            <span className="font-semibold text-[#1F1C19]">{product.millOrigin}</span>
+                            <span className="text-[10px] font-mono text-[#7C756B] block">{t.tailoringLabel}</span>
+                            <span className="font-semibold text-[#1F1C19]">{getProductMillOrigin(product, currentLanguage)}</span>
                           </div>
                         </div>
                       </div>
@@ -562,16 +567,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <div className="space-y-2 p-3 bg-amber-50/60 rounded border border-amber-200/70">
                         <div className="flex items-center gap-2 font-bold text-amber-950 font-serif">
                           <Building2 className="w-4 h-4 text-[#8C6D3B]" />
-                          <span>Offre Spéciale Magasins & Boutiques (B2B)</span>
+                          <span>{currentLanguage === 'es' ? 'Oferta Especial para Tiendas y Mayoristas (B2B)' : currentLanguage === 'en' ? 'Wholesale & Retailers Special Offer (B2B)' : isArabic ? 'عرض خاص لتجار الجملة والمحلات (B2B)' : 'Offre Spéciale Magasins & Boutiques (B2B)'}</span>
                         </div>
                         <p className="text-[11px] text-amber-900 leading-relaxed">
-                          • Tarif préférentiel de <strong>{formatPrice(product.wholesalePriceDzd || Math.round(product.price * 0.7), currency, isArabic)}</strong> par pièce dès 6 unités.
+                          {currentLanguage === 'es' ? '• Tarifa preferente de ' : currentLanguage === 'en' ? '• Preferential rate of ' : isArabic ? '• سعر تفضيلي بقيمة ' : '• Tarif préférentiel de '}<strong>{formatPrice(product.wholesalePriceDzd || Math.round(product.price * 0.7), currency, isArabic)}</strong>{currentLanguage === 'es' ? ' por prenda a partir de 6 unidades.' : currentLanguage === 'en' ? ' per piece from 6 units.' : isArabic ? ' للقطعة ابتداءً من 6 وحدات.' : ' par pièce dès 6 unités.'}
                         </p>
                         <p className="text-[11px] text-amber-900 leading-relaxed">
-                          • Possibilité de mixer les tailles (S à 3XL) et couleurs selon vos stocks.
+                          {currentLanguage === 'es' ? '• Posibilidad de combinar tallas (S a 3XL) y colores según su stock.' : currentLanguage === 'en' ? '• Mix and match sizes (S to 3XL) and colors according to your inventory.' : isArabic ? '• إمكانية تشكيل المقاسات والألوان حسب طلبكم.' : '• Possibilité de mixer les tailles (S à 3XL) et couleurs selon vos stocks.'}
                         </p>
                         <p className="text-[11px] text-amber-900 leading-relaxed">
-                          • Personnalisation avec étiquettes ou broderie sur commande industrielle.
+                          {currentLanguage === 'es' ? '• Personalización con etiquetas o bordados para pedidos industriales.' : currentLanguage === 'en' ? '• Custom branding with labels or embroidery on bulk orders.' : isArabic ? '• تطريز وشعارات خاصة بالعلامات التجارية عند الطلب.' : '• Personnalisation avec étiquettes ou broderie sur commande industrielle.'}
                         </p>
                       </div>
                     )}
@@ -590,7 +595,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             </div>
                           ))
                         ) : (
-                          <p className="text-[#7C756B] text-[11px]">Aucun avis pour le moment.</p>
+                          <p className="text-[#7C756B] text-[11px]">{t.noReviewsYet}</p>
                         )}
                       </div>
                     )}
@@ -611,7 +616,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {addedSuccess ? (
                       <>
                         <Check className="w-4 h-4 text-emerald-300" />
-                        <span>Ajouté au panier !</span>
+                        <span>{t.addedSuccess}</span>
                       </>
                     ) : (
                       <>
@@ -624,7 +629,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <button
                     onClick={handleWhatsAppOrder}
                     className="py-3 px-4 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-mono text-xs font-semibold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-transform active:scale-95"
-                    title="Commander directement via WhatsApp avec ce modèle"
+                    title={t.orderViaWhatsApp}
                   >
                     <MessageCircle className="w-4 h-4 fill-current" />
                     <span className="hidden sm:inline">WhatsApp</span>
@@ -639,12 +644,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </div>
                     <div className="truncate">
                       <span className="text-[11px] font-mono font-bold text-[#14532D] block truncate">
-                        {isArabic ? 'رابط واتساب ذكي ومجهز للمنتج' : 'Lien WhatsApp personnalisé'}
+                        {t.customWhatsappTitle}
                       </span>
                       <span className="text-[10px] text-[#2C6E49] hidden sm:block">
-                        {isArabic 
-                          ? 'رسالة جاهزة بالموديل، المقاس، اللون وسعر الدينار' 
-                          : 'Modèle auto-rempli avec taille, couleur, réf et wilaya'}
+                        {t.customWhatsappSub}
                       </span>
                     </div>
                   </div>
@@ -655,7 +658,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     className="px-2.5 py-1.5 bg-white hover:bg-[#EAF5EE] text-[#14532D] border border-[#B1D8BD] rounded text-[11px] font-mono font-semibold flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs transition-colors"
                   >
                     <SlidersHorizontal className="w-3 h-3 text-[#25D366]" />
-                    <span>{isArabic ? 'تخصيص الرسالة' : 'Personnaliser'}</span>
+                    <span>{isArabic ? 'تخصيص الرسالة' : (currentLanguage === 'en' ? 'Customize Message' : currentLanguage === 'es' ? 'Personalizar' : 'Personnaliser')}</span>
                   </button>
                 </div>
               </div>
@@ -673,7 +676,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-serif text-sm font-bold text-[#1F1C19]">
-                    {isArabic ? 'تأكيد حذف المنتج' : 'Supprimer ce produit ?'}
+                    {isArabic ? 'تأكيد حذف المنتج' : (currentLanguage === 'es' ? '¿Eliminar este producto?' : currentLanguage === 'en' ? 'Delete this product?' : 'Supprimer ce produit ?')}
                   </h4>
                   <p className="text-[11px] text-[#7C756B] font-mono">
                     {product.name}
@@ -685,10 +688,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <p>
                   {isArabic
                     ? 'هل أنت متأكد من رغبتك في حذف هذا المنتج من الكتالوج نهائياً؟'
-                    : 'Voulez-vous vraiment retirer définitivement cet article du catalogue et de la boutique ?'}
+                    : (currentLanguage === 'es' ? '¿Seguro que desea retirar permanentemente este artículo del catálogo?' : currentLanguage === 'en' ? 'Are you sure you want to permanently remove this product from the catalog?' : 'Voulez-vous vraiment retirer définitivement cet article du catalogue et de la boutique ?')}
                 </p>
                 <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-900 font-mono">
-                  ⚠️ {isArabic ? 'سيتم حذف المنتج فوراً.' : 'Action immédiate et irréversible.'}
+                  ⚠️ {isArabic ? 'سيتم حذف المنتج فوراً.' : (currentLanguage === 'es' ? 'Acción inmediata e irreversible.' : currentLanguage === 'en' ? 'Immediate and irreversible action.' : 'Action immédiate et irréversible.')}
                 </div>
               </div>
 
@@ -698,7 +701,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   onClick={() => setShowDeleteConfirm(false)}
                   className="px-3 py-1.5 bg-white border border-[#DDD4C5] rounded font-mono text-xs hover:bg-[#F2EDE4] text-[#3D3730] cursor-pointer"
                 >
-                  {isArabic ? 'إلغاء' : 'Annuler'}
+                  {isArabic ? 'إلغاء' : (currentLanguage === 'es' ? 'Cancelar' : currentLanguage === 'en' ? 'Cancel' : 'Annuler')}
                 </button>
                 <button
                   type="button"
@@ -717,7 +720,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-mono text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>{isArabic ? 'نعم، حذف' : 'Oui, Supprimer'}</span>
+                  <span>{isArabic ? 'نعم، حذف' : (currentLanguage === 'es' ? 'Sí, Eliminar' : currentLanguage === 'en' ? 'Yes, Delete' : 'Oui, Supprimer')}</span>
                 </button>
               </div>
             </div>

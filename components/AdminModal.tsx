@@ -157,7 +157,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   // Form fields for product
   const [prodName, setProdName] = useState('');
   const [prodSubtitle, setProdSubtitle] = useState('');
-  const [prodCategory, setProdCategory] = useState<'hoodies' | 'joggers' | 'longsleeves' | 'tees' | 'tracksuits' | 'outerwear'>('hoodies');
+  const [prodCategory, setProdCategory] = useState<string>('hoodies');
   const [prodPrice, setProdPrice] = useState<number>(6500);
   const [prodWholesalePrice, setProdWholesalePrice] = useState<number>(4500);
   const [prodFabric, setProdFabric] = useState('100% Coton Molleton Lourd');
@@ -1419,33 +1419,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       )}
                     </div>
                   </div>
-
-                  {/* Sample presets */}
-                  <div className="space-y-2 pt-2">
-                    <label className="block font-mono text-[11px] text-[#5C554B] uppercase font-semibold">
-                      {isArabic ? 'نماذج جاهزة للاختيار السريع' : 'Exemples de photos d’ambiance atelier'}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { label: 'Atelier de Confection', url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1400&q=85' },
-                        { label: 'Hoodie Studio Noir', url: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=1400&q=85' },
-                        { label: 'Minimalist Sweat Beige', url: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1400&q=85' },
-                        { label: 'Atelier Tailleur Textile', url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1400&q=85' }
-                      ].map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setTempSettings({ ...tempSettings, heroImage: preset.url })}
-                          className="text-left p-2 bg-white border border-[#DDD4C5] rounded hover:border-[#8C6D3B] flex items-center gap-2 group cursor-pointer transition-colors"
-                        >
-                          <img src={preset.url} alt="" className="w-8 h-8 rounded object-cover" />
-                          <span className="text-[11px] font-mono text-[#4A4338] group-hover:text-black line-clamp-1">
-                            {preset.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Right col: Real-time Hero Banner Preview (5 cols) */}
@@ -1763,8 +1736,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     onClick={() => {
                       setTempSettings((prev) => ({
                         ...prev,
-                        seoTitle: 'DBC Clothing Workshop | B2B & B2C Apparel & Heavyweight Hoodies Algeria',
-                        seoDescription: 'Atelier de confection textile en Algérie spécialisé dans les hoodies lourds, joggings, t-shirts épais et confection sur-mesure. Vente en gros B2B & détail B2C avec livraison dans les 69 wilayas.',
+                        seoTitle: 'DBC Clothing Workshop | Apparel & Heavyweight Hoodies Algeria',
+                        seoDescription: 'Atelier de confection textile en Algérie spécialisé dans les hoodies lourds, joggings, t-shirts épais et confection de qualité supérieure dans les 69 wilayas.',
                         seoKeywords: 'confection textile algérie, atelier vêtements alger, grossiste hoodie algérie, survêtement sur mesure, b2b textile algerie, livraison 69 wilayas, vêtements gros alger, streetwear algérie, atelier dbc',
                         seoAuthor: 'DBC Workshop Algérie',
                         ogImage: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=80',
@@ -1985,26 +1958,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       placeholder="https://images.unsplash.com/... ou lien photo atelier"
                       className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD4C5] rounded font-mono text-xs focus:bg-white focus:outline-none focus:border-black"
                     />
-                    
-                    {/* Quick photo presets */}
-                    <div className="pt-1">
-                      <span className="text-[10px] font-mono text-[#7C756B] uppercase block mb-1">
-                        {isArabic ? 'أو اختر صورة جاهزة:' : 'Ou sélectionnez une image d’ambiance :'}
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {PRESET_SAMPLE_IMAGES.slice(0, 4).map((preset, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setTempSettings({ ...tempSettings, ogImage: preset.url })}
-                            className="px-2 py-1 bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#DDD4C5] rounded text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-colors"
-                          >
-                            <img src={preset.url} alt="" className="w-4 h-4 rounded object-cover" />
-                            <span>{preset.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
 
                   {/* Submit Button */}

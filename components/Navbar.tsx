@@ -78,12 +78,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
 
+  const customNavCategories = (storeSettings.customCategories || []).map((cat) => ({
+    id: cat.id,
+    label: (currentLanguage === 'ar' ? cat.nameAr : currentLanguage === 'es' ? cat.nameEs : currentLanguage === 'en' ? cat.nameEn : cat.name) || cat.name,
+  }));
+
   const categories = [
     { id: 'all', label: t.navAll },
     { id: 'hoodies', label: t.navHoodies },
     { id: 'joggers', label: t.navJoggers },
+    { id: 'tracksuits', label: t.navTracksuits },
     { id: 'longsleeves', label: t.navLongSleeves },
     { id: 'tees', label: t.navTees },
+    { id: 'outerwear', label: t.navOuterwear || (currentLanguage === 'ar' ? 'سترات ومعاطف' : currentLanguage === 'es' ? 'Chaquetas y Abrigos' : currentLanguage === 'en' ? 'Outerwear' : 'Vestes') },
+    ...customNavCategories,
   ];
 
   return (
@@ -161,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 DBC WORKSHOP
               </span>
               <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-[#8C6D3B] uppercase block mt-0.5 sm:mt-1 truncate max-w-[110px] sm:max-w-none">
-                Atelier de Confection • Algérie
+                {t.subTagline || 'Atelier de Confection • Algérie'}
               </span>
             </div>
           </div>
@@ -388,7 +396,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onSelectCategory(cat.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider rounded ${
+                className={`w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider rounded transition-colors cursor-pointer ${
                   activeCategory === cat.id
                     ? 'bg-[#1F1D1A] text-white font-bold'
                     : 'text-[#4A4338] hover:bg-[#F2EDE4]'

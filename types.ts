@@ -41,7 +41,7 @@ export interface Product {
   subtitleEn?: string;
   subtitleEs?: string;
   category: string;
-  price: number; // in DZD
+  price: number; // in DZD (or converted)
   compareAtPrice?: number;
   wholesalePriceDzd?: number; // B2B wholesale price
   minWholesaleQty?: number;
@@ -169,8 +169,8 @@ export interface DeliveryCompany {
   id: string;
   name: string;
   phone: string;
-  trackingUrlTemplate: string;
-  trackingPrefix: string;
+  trackingUrlTemplate: string; // e.g. "https://yalidine.com/suivi/?tracking={TRACKING}"
+  trackingPrefix: string; // e.g. "DZ-YAL-"
   supportsStopDesk: boolean;
   isActive: boolean;
   notes?: string;
@@ -206,7 +206,7 @@ export type Currency = 'DZD' | 'USD' | 'EUR' | 'GBP';
 
 export interface CurrencyRate {
   symbol: string;
-  rate: number;
+  rate: number; // relative to DZD (base currency)
 }
 
 export interface StoreSettings {
@@ -229,7 +229,7 @@ export interface StoreSettings {
   mapsUrl?: string;
   heroImage?: string;
   heroImages?: string[];
-  heroFocalPosition?: string;
+  heroFocalPosition?: string; // e.g. 'center', 'top', 'bottom', 'center top', 'left', 'right'
   heroOverlayStrength?: 'subtle' | 'medium' | 'dark';
   heroTitle?: string;
   heroTitleAr?: string;

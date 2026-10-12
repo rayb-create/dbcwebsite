@@ -46,12 +46,12 @@ export const DeliveryManagerTab: React.FC<DeliveryManagerTabProps> = ({
 
   // Delivery companies state
   const [companies, setCompanies] = useState<DeliveryCompany[]>(() => {
-    return storeSettings.deliveryCompanies && storeSettings.deliveryCompanies.length > 0
+    return storeSettings?.deliveryCompanies && Array.isArray(storeSettings.deliveryCompanies) && storeSettings.deliveryCompanies.length > 0
       ? storeSettings.deliveryCompanies
       : DEFAULT_DELIVERY_COMPANIES;
   });
   const [activeCompanyId, setActiveCompanyId] = useState<string>(
-    storeSettings.activeDeliveryCompany || 'yalidine'
+    storeSettings?.activeDeliveryCompany || 'yalidine'
   );
 
   // New / Edit company modal/inline form
@@ -66,12 +66,12 @@ export const DeliveryManagerTab: React.FC<DeliveryManagerTabProps> = ({
 
   // 69 Wilayas delivery rates state
   const [customRates, setCustomRates] = useState<Record<string, { home: number; desk: number }>>(() => {
-    return storeSettings.customWilayaRates || {};
+    return storeSettings?.customWilayaRates || {};
   });
 
   // Free shipping threshold state
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(
-    storeSettings.freeShippingThresholdDzd || 0
+    storeSettings?.freeShippingThresholdDzd || 0
   );
 
   // Zone bulk inputs state

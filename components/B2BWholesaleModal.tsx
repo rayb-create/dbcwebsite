@@ -38,7 +38,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
   const [productInterest, setProductInterest] = useState('Hoodies Épais & Joggings');
   const [submitted, setSubmitted] = useState(false);
 
-  const cleanWhatsapp = storeSettings.whatsappNumber.replace(/[^0-9]/g, '');
+  const cleanWhatsapp = (storeSettings.whatsappNumber || '0550458812').replace(/[^0-9]/g, '');
 
   const handleSubmitInquiry = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +57,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200" dir={isArabic ? 'rtl' : 'ltr'}>
       <div 
         className="relative w-full max-w-3xl bg-[#FAF8F5] border border-[#D5CABB] rounded shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -71,7 +71,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
                 {t.b2bSectionTitle}
               </h2>
               <p className="text-[11px] font-mono text-[#B3AAA0]">
-                Vente en gros pour magasins de vêtements & revendeurs à travers l'Algérie
+                {t.b2bModalSubtitle}
               </p>
             </div>
           </div>
@@ -91,19 +91,19 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
               <span className="w-8 h-8 rounded bg-[#F2EDE4] flex items-center justify-center font-bold text-[#8C6D3B] font-mono text-xs">
                 -30%
               </span>
-              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">Prix Usine Directs</h4>
+              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">{t.b2bAdvantage1Title}</h4>
               <p className="text-[11px] text-[#6E6659]">
-                Tarifs de gros dégressifs applicables à partir de 6 pièces par modèle.
+                {t.b2bAdvantage1Desc}
               </p>
             </div>
 
             <div className="p-4 bg-white border border-[#E2DAD0] rounded space-y-1.5">
               <span className="w-8 h-8 rounded bg-[#F2EDE4] flex items-center justify-center font-bold text-[#8C6D3B] font-mono text-xs">
-                TEXTILE
+                MIX
               </span>
-              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">Qualité Textile Supérieure</h4>
+              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">{t.b2bAdvantage2Title}</h4>
               <p className="text-[11px] text-[#6E6659]">
-                Coton brossé de haute qualité, finitions résistantes et coupes modernes.
+                {t.b2bAdvantage2Desc}
               </p>
             </div>
 
@@ -111,9 +111,9 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
               <span className="w-8 h-8 rounded bg-[#F2EDE4] flex items-center justify-center font-bold text-[#8C6D3B] font-mono text-xs">
                 69W
               </span>
-              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">Expédition Palette & Colis</h4>
+              <h4 className="font-serif text-sm font-bold text-[#1F1C19]">{t.b2bAdvantage3Title}</h4>
               <p className="text-[11px] text-[#6E6659]">
-                Acheminement rapide de vos cartons dans toutes les 69 wilayas d'Algérie.
+                {t.b2bAdvantage3Desc}
               </p>
             </div>
           </div>
@@ -123,23 +123,23 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
             <form onSubmit={handleSubmitInquiry} className="p-5 bg-white border border-[#E2DAD0] rounded space-y-4">
               <div className="space-y-1 border-b border-[#F0EAE1] pb-3">
                 <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-                  Demander le Catalogue & Grille Tarifaire B2B
+                  {t.b2bInquiryBtn}
                 </h3>
                 <p className="text-[11px] text-[#6E6659]">
-                  Remplissez ce formulaire rapide pour recevoir instantanément notre catalogue de prix de gros sur WhatsApp ou par téléphone.
+                  {t.b2bModalSubtitle}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-mono text-[11px] text-[#5C554B] uppercase mb-1 font-bold">
-                    Nom du Magasin / Boutique *
+                    {t.b2bStoreNameLabel}
                   </label>
                   <input
                     type="text"
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    placeholder="Ex: Boutique Urban DZ / Store Constantine"
+                    placeholder="Boutique / Store"
                     className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD4C5] rounded text-xs"
                     required
                   />
@@ -147,13 +147,13 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
 
                 <div>
                   <label className="block font-mono text-[11px] text-[#5C554B] uppercase mb-1 font-bold">
-                    Nom du Gérant / Responsable *
+                    {t.b2bManagerNameLabel}
                   </label>
                   <input
                     type="text"
                     value={managerName}
                     onChange={(e) => setManagerName(e.target.value)}
-                    placeholder="Votre nom"
+                    placeholder="Nom / Name"
                     className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD4C5] rounded text-xs"
                     required
                   />
@@ -161,7 +161,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
 
                 <div>
                   <label className="block font-mono text-[11px] text-[#25D366] uppercase mb-1 font-bold">
-                    Numéro Téléphone / WhatsApp *
+                    {t.phoneLabel}
                   </label>
                   <input
                     type="tel"
@@ -175,13 +175,13 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
 
                 <div>
                   <label className="block font-mono text-[11px] text-[#5C554B] uppercase mb-1 font-bold">
-                    Wilaya du Magasin *
+                    {t.wilayaLabel}
                   </label>
                   <input
                     type="text"
                     value={wilaya}
                     onChange={(e) => setWilaya(e.target.value)}
-                    placeholder="Ex: 16 - Alger / 31 - Oran / 19 - Sétif"
+                    placeholder="16 - Alger"
                     className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD4C5] rounded text-xs"
                     required
                   />
@@ -189,7 +189,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
 
                 <div>
                   <label className="block font-mono text-[11px] text-[#5C554B] uppercase mb-1">
-                    Quantité Estimée
+                    {t.b2bTargetQuantityLabel}
                   </label>
                   <select
                     value={targetQuantity}
@@ -205,7 +205,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
 
                 <div>
                   <label className="block font-mono text-[11px] text-[#5C554B] uppercase mb-1">
-                    Articles d'intérêt
+                    {t.b2bProductInterestLabel}
                   </label>
                   <select
                     value={productInterest}
@@ -213,9 +213,10 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
                     className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#DDD4C5] rounded font-mono text-xs"
                   >
                     <option value="Hoodies Épais & Joggings">Hoodies Épais & Joggings</option>
-                    <option value="Ensembles Complets Tracksuits">Ensembles Complets Tracksuits</option>
-                    <option value="Manches Longues & Tees Épais">Manches Longues & Tees Épais</option>
-                    <option value="Gamme Textile Complète">Gamme Textile Complète (Mixte)</option>
+                    <option value="Ensembles Tracksuits Complets">Ensembles Tracksuits Complets</option>
+                    <option value="T-shirts Épais Heavyweight">T-shirts Épais Heavyweight</option>
+                    <option value="Manches Longues Waffle Thermal">Manches Longues Waffle Thermal</option>
+                    <option value="Collection Complète">Collection Complète</option>
                   </select>
                 </div>
               </div>
@@ -226,7 +227,7 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
                   className="px-6 py-2.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-mono text-xs font-bold rounded flex items-center gap-2 cursor-pointer shadow-md"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Envoyer la demande sur WhatsApp</span>
+                  <span>{t.b2bSendInquiryBtn}</span>
                 </button>
               </div>
             </form>
@@ -234,16 +235,16 @@ export const B2BWholesaleModal: React.FC<B2BWholesaleModalProps> = ({
             <div className="p-6 bg-emerald-50 border border-emerald-200 rounded text-center space-y-3">
               <Check className="w-10 h-10 text-emerald-600 mx-auto" />
               <h4 className="font-serif text-base font-bold text-emerald-950">
-                Demande transmise avec succès !
+                {t.orderSuccessTitle}
               </h4>
               <p className="text-xs text-emerald-800 max-w-md mx-auto">
-                Notre service commercial B2B prendra contact avec vous dans les plus brefs délais pour vous transmettre le catalogue et les conditions d'expédition vers votre wilaya.
+                {t.orderSuccessMsg}
               </p>
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-[#1F1D1A] text-white font-mono text-xs rounded"
+                className="px-5 py-2 bg-[#1F1D1A] text-white font-mono text-xs rounded cursor-pointer"
               >
-                Fermer
+                {t.close}
               </button>
             </div>
           )}

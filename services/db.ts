@@ -234,6 +234,45 @@ export async function deleteProductFromDb(productId: string): Promise<void> {
 // STORE SETTINGS & WEBSITE CONTENT FIRESTORE SYNCHRONIZATION
 // ============================================================================
 
+export function isBannedHeroPhrase(text?: string): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, ' ');
+  return (
+    lower.includes('vent b2b') ||
+    lower.includes('confection textile haut gamme') ||
+    lower.includes('haut gamme') ||
+    lower.includes('wholesale and retail') ||
+    lower.includes('nationwide delivery') ||
+    lower.includes('69 wilayas nationwide') ||
+    (lower.includes('b2b') && lower.includes('b2c') && lower.includes('nationwide')) ||
+    (lower.includes('b2b') && lower.includes('b2c') && lower.includes('algerie') && lower.includes('haut')) ||
+    (lower.includes('atelier de confection') && (lower.includes('vent') || lower.includes('b2b') || lower.includes('b2c'))) ||
+    (lower.includes('wholesale') && lower.includes('retail') && lower.includes('wilayas')) ||
+    (lower.includes('confection textile') && lower.includes('haut') && lower.includes('gamme'))
+  );
+}
+
+export function sanitizeStoreSettingsData(data: Partial<StoreSettings>): Partial<StoreSettings> {
+  const copy = { ...data };
+  if (copy.tagline && isBannedHeroPhrase(copy.tagline)) copy.tagline = DEFAULT_STORE_SETTINGS.tagline;
+  if (copy.taglineAr && isBannedHeroPhrase(copy.taglineAr)) copy.taglineAr = DEFAULT_STORE_SETTINGS.taglineAr;
+  if (copy.taglineEn && isBannedHeroPhrase(copy.taglineEn)) copy.taglineEn = DEFAULT_STORE_SETTINGS.taglineEn;
+  if (copy.taglineEs && isBannedHeroPhrase(copy.taglineEs)) copy.taglineEs = DEFAULT_STORE_SETTINGS.taglineEs;
+
+  if (copy.heroTitle && isBannedHeroPhrase(copy.heroTitle)) copy.heroTitle = DEFAULT_STORE_SETTINGS.heroTitle;
+  if (copy.heroTitleAr && isBannedHeroPhrase(copy.heroTitleAr)) copy.heroTitleAr = DEFAULT_STORE_SETTINGS.heroTitleAr;
+  if (copy.heroTitleEn && isBannedHeroPhrase(copy.heroTitleEn)) copy.heroTitleEn = DEFAULT_STORE_SETTINGS.heroTitleEn;
+  if (copy.heroTitleEs && isBannedHeroPhrase(copy.heroTitleEs)) copy.heroTitleEs = DEFAULT_STORE_SETTINGS.heroTitleEs;
+
+  if (copy.heroSubtitle && isBannedHeroPhrase(copy.heroSubtitle)) copy.heroSubtitle = DEFAULT_STORE_SETTINGS.heroSubtitle;
+  if (copy.heroSubtitleAr && isBannedHeroPhrase(copy.heroSubtitleAr)) copy.heroSubtitleAr = DEFAULT_STORE_SETTINGS.heroSubtitleAr;
+  if (copy.heroSubtitleEn && isBannedHeroPhrase(copy.heroSubtitleEn)) copy.heroSubtitleEn = DEFAULT_STORE_SETTINGS.heroSubtitleEn;
+  if (copy.heroSubtitleEs && isBannedHeroPhrase(copy.heroSubtitleEs)) copy.heroSubtitleEs = DEFAULT_STORE_SETTINGS.heroSubtitleEs;
+
+  if (copy.heroCtaText && isBannedHeroPhrase(copy.heroCtaText)) copy.heroCtaText = DEFAULT_STORE_SETTINGS.heroCtaText;
+  return copy;
+}
+
 export function subscribeStoreSettings(
   onUpdate: (settings: StoreSettings) => void,
   onError?: (err: Error) => void
@@ -262,7 +301,8 @@ export function subscribeStoreSettings(
       }
 
       const data = snapshot.data() as StoreSettings;
-      onUpdate({ ...DEFAULT_STORE_SETTINGS, ...data });
+      const sanitized = sanitizeStoreSettingsData(data);
+      onUpdate({ ...DEFAULT_STORE_SETTINGS, ...sanitized });
     },
     (error) => {
       console.warn('[Firestore] Settings subscription fallback to defaults:', error);
@@ -275,7 +315,8 @@ export function subscribeStoreSettings(
 export async function saveStoreSettingsToDb(settings: StoreSettings): Promise<void> {
   const path = 'settings/general';
   try {
-    const payload: StoreSettings = { ...settings };
+    const sanitized = sanitizeStoreSettingsData(settings);
+    const payload: StoreSettings = { ...sanitized } as StoreSettings;
 
     // Compress heroImage if it is a base64 data URL to prevent exceeding Firestore's 1MB document limit
     if (payload.heroImage && payload.heroImage.startsWith('data:image/')) {
@@ -629,3 +670,4 @@ export async function initializeWorkshopDatabase(): Promise<void> {
   // Respect user choice for empty database: no automatic seeding of fake products or fake orders.
   return Promise.resolve();
 }
+

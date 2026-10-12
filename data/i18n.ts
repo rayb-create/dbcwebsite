@@ -534,7 +534,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     orderLookupTitle: 'Suivi de Commande & Livraison 69 Wilayas',
     orderLookupPlaceholder: 'Numéro de commande (ex: DBC-2026-8492) ou téléphone...',
     searchPlaceholder: 'Rechercher hoodies, joggings, t-shirts...',
-    heroTitle: 'Confection Textile Haut de Gamme & Streetwear Algérien',
+    heroTitle: 'Confection Artisanale & Streetwear Algérien',
     heroSubtitle: 'Conception et fabrication artisanale dans notre atelier DBC en Algérie : hoodies lourds, pantalons de jogging molletonnés, t-shirts manches longues thermiques et tee-shirts épais. Vente au détail pour particuliers et en gros pour magasins à travers les 69 Wilayas.',
     heroExploreBtn: 'Découvrir la Collection',
     heroB2BBtn: 'Espace Vente en Gros (B2B)',
@@ -923,3 +923,4 @@ export const formatColorName = (rawColorName: string, lang: Language): string =>
   }
   return rawColorName;
 };
+
