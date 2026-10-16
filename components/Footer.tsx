@@ -43,146 +43,243 @@ export const Footer: React.FC<FooterProps> = ({
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
 
+  const cleanWhatsapp = (storeSettings.whatsappNumber || '0550458812').replace(/[^0-9]/g, '');
+
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail('');
-    }
+    if (!email) return;
+    setSubscribed(true);
+    setEmail('');
   };
 
-  const navCategories = [
-    { id: 'hoodies', label: t.navHoodies },
-    { id: 'joggers', label: t.navJoggers },
-    { id: 'long-sleeves', label: t.navLongSleeves },
-    { id: 'tees', label: t.navTees },
-    { id: 'tracksuits', label: t.navTracksuits },
-    { id: 'outerwear', label: t.navOuterwear },
-  ];
+  // Social accounts detection - retrieves exact URLs saved in Manager Panel
+  const socialLinks: { id: string; name: string; url: string; icon: React.ReactNode; color: string }[] = [];
 
-  const socialLinks = [
-    {
+  if (storeSettings.instagram && storeSettings.instagram.trim().length > 0) {
+    const raw = storeSettings.instagram.trim();
+    const url = raw.startsWith('http') ? raw : `https://${raw}`;
+    socialLinks.push({
+      id: 'instagram',
       name: 'Instagram',
-      url: storeSettings.socialInstagram || 'https://instagram.com',
+      url,
       icon: <Instagram className="w-4 h-4" />,
-    },
-    {
+      color: 'hover:text-[#E1306C] hover:border-[#E1306C]'
+    });
+  }
+
+  if (storeSettings.facebook && storeSettings.facebook.trim().length > 0) {
+    const raw = storeSettings.facebook.trim();
+    const url = raw.startsWith('http') ? raw : `https://${raw}`;
+    socialLinks.push({
+      id: 'facebook',
       name: 'Facebook',
-      url: storeSettings.socialFacebook || 'https://facebook.com',
+      url,
       icon: <Facebook className="w-4 h-4" />,
-    },
-    {
-      name: 'WhatsApp Atelier',
-      url: `https://wa.me/${storeSettings.whatsappNumber?.replace(/[^0-9]/g, '') || '213550458812'}`,
+      color: 'hover:text-[#1877F2] hover:border-[#1877F2]'
+    });
+  }
+
+  if (cleanWhatsapp.length > 5) {
+    socialLinks.push({
+      id: 'whatsapp',
+      name: 'WhatsApp',
+      url: `https://wa.me/${cleanWhatsapp}`,
       icon: <MessageCircle className="w-4 h-4" />,
-    },
-    {
-      name: 'TikTok',
-      url: storeSettings.socialTiktok || 'https://tiktok.com',
-      icon: (
-        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
-        </svg>
-      ),
-    },
-  ];
+      color: 'hover:text-[#25D366] hover:border-[#25D366]'
+    });
+  }
+
+  if (storeSettings.email && storeSettings.email.trim().length > 0) {
+    socialLinks.push({
+      id: 'email',
+      name: 'Email',
+      url: `mailto:${storeSettings.email.trim()}`,
+      icon: <Mail className="w-4 h-4" />,
+      color: 'hover:text-[#C9A96E] hover:border-[#C9A96E]'
+    });
+  }
+
+  if (storeSettings.mapsUrl && storeSettings.mapsUrl.trim().length > 0) {
+    socialLinks.push({
+      id: 'maps',
+      name: 'Google Maps',
+      url: storeSettings.mapsUrl.trim(),
+      icon: <MapPin className="w-4 h-4" />,
+      color: 'hover:text-[#EA4335] hover:border-[#EA4335]'
+    });
+  }
 
   return (
-    <footer 
-      className="bg-[#191715] text-[#ECE7DF] pt-14 pb-12 border-t border-[#36302A] relative overflow-hidden"
-      dir={isArabic ? 'rtl' : 'ltr'}
-    >
-      {/* Background Ambience */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none opacity-5">
-        <div className="absolute top-10 left-10 w-96 h-96 rounded-full bg-[#C9A96E] blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-[#8C6D3B] blur-3xl" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-[#2C2723]">
-          
-          {/* Col 1 & 2: Workshop Identity & Newsletter */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-2">
-              <span className="text-[10px] font-mono tracking-widest text-[#C9A96E] uppercase font-bold">
-                {t.tagline}
+    <footer className="bg-[#191715] text-[#ECE7DF] border-t border-[#36322E] pt-14 pb-10 font-sans" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-[#36322E]">
+          {/* Brand Info (4 cols) */}
+          <div className="lg:col-span-4 space-y-3.5">
+            <div className="flex items-center gap-2">
+              <span className="font-serif text-2xl tracking-[0.15em] font-semibold text-white">
+                {storeSettings.storeName || 'DBC WORKSHOP'}
               </span>
-              <h3 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-white uppercase">
-                {storeSettings.storeName || 'DBC CLOTHING WORKSHOP'}
-              </h3>
-              <p className="text-xs sm:text-sm text-[#A8A196] font-sans leading-relaxed max-w-md">
-                {storeSettings.storeDescription || t.footerDesc}
-              </p>
+            </div>
+            <p className="text-xs font-mono text-[#A8A196] tracking-wider uppercase">
+              {t.subTagline || t.tagline}
+            </p>
+            <p className="text-xs text-[#9E9689] leading-relaxed max-w-sm">
+              {t.footerAboutText}
+            </p>
+            <div className="pt-1 text-xs font-mono text-[#8C8477] space-y-1">
+              {storeSettings.address && <div>{t.footerShowroomLabel} {storeSettings.address}</div>}
+              {storeSettings.city && <div>{t.footerCityLabel} {storeSettings.city}</div>}
+              {storeSettings.email && (
+                <div>
+                  {t.footerDirectEmail}{' '}
+                  <a href={`mailto:${storeSettings.email}`} className="text-[#C9A96E] hover:underline" target="_blank" rel="noopener noreferrer">
+                    {storeSettings.email}
+                  </a>
+                </div>
+              )}
+              {storeSettings.phone && <div>{t.footerPhoneLabel} {storeSettings.phone}</div>}
             </div>
 
+            {/* Social Media Channels (Brand column) */}
+            {socialLinks.length > 0 && (
+              <div className="pt-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#7C756B] block mb-2">
+                  {isArabic ? 'شبكات التواصل الاجتماعي :' : (currentLanguage === 'en' ? 'Follow Us :' : currentLanguage === 'es' ? 'Síguenos :' : 'Réseaux Sociaux :')}
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {socialLinks.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 rounded-full bg-[#24211D] border border-[#3E3831] text-[#B3AAA0] transition-all duration-200 cursor-pointer shadow-xs ${item.color} hover:bg-black hover:scale-105 active:scale-95`}
+                      title={`${item.name} - DBC Workshop`}
+                      aria-label={`${item.name} DBC Workshop`}
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Newsletter */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-mono uppercase tracking-wider text-[#ECE7DF] font-semibold">
-                {t.newsletterTitle}
-              </h4>
-              <p className="text-xs text-[#8C8377]">
-                {t.newsletterDesc}
-              </p>
+            <div className="pt-4 max-w-sm">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#A8A196] block mb-2">
+                {t.footerNewsletterTitle}
+              </span>
               {subscribed ? (
-                <div className="p-3 bg-[#24211E] border border-[#C9A96E]/40 text-[#C9A96E] text-xs font-mono rounded flex items-center gap-2">
-                  <Check className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 bg-emerald-950/60 border border-emerald-800/80 rounded text-emerald-300 text-xs font-mono flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.newsletterSuccess}</span>
                 </div>
               ) : (
-                <form onSubmit={handleSubscribe} className="flex gap-2 max-w-md">
+                <form onSubmit={handleSubscribe} className="flex gap-2">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t.newsletterPlaceholder}
                     required
-                    className="flex-1 px-3.5 py-2.5 bg-[#24211E] border border-[#38322B] text-xs text-white placeholder-[#787167] rounded-none focus:outline-none focus:border-[#C9A96E] transition-colors font-mono"
+                    className="flex-1 px-3 py-1.5 text-xs bg-[#24211D] border border-[#3E3831] rounded text-white placeholder-[#787167] focus:outline-none focus:border-[#C9A96E] font-mono"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2.5 bg-[#C9A96E] hover:bg-[#B89657] text-[#191715] text-xs font-mono uppercase tracking-wider font-bold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 bg-[#C9A96E] hover:bg-[#B89657] text-[#191715] font-mono text-xs font-bold uppercase tracking-wider rounded transition-colors cursor-pointer"
                   >
-                    <span>{t.newsletterBtn}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    OK
                   </button>
                 </form>
               )}
             </div>
           </div>
 
-          {/* Col 3: Collection Links */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-mono uppercase tracking-widest text-[#C9A96E] font-bold">
+          {/* Navigation links (2 cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerColCollection}
             </h4>
-            <ul className="space-y-2.5 text-xs font-mono text-[#A8A196]">
-              {navCategories.map((cat) => (
+            <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
+              <li>
+                <button
+                  onClick={() => onSelectCategory('all')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navAll}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('hoodies')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navHoodies}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('joggers')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navJoggers}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('long-sleeves')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navLongSleeves}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('tees')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navTees}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('tracksuits')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navTracksuits}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectCategory('outerwear')}
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                >
+                  {t.navOuterwear}
+                </button>
+              </li>
+              {storeSettings?.customCategories?.map((cat) => (
                 <li key={cat.id}>
                   <button
-                    onClick={() => {
-                      onSelectCategory(cat.id);
-                      const el = document.getElementById('collection-grid');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
+                    onClick={() => onSelectCategory(cat.id)}
+                    className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right text-[#C9A96E]"
                   >
-                    {cat.label}
+                    {isArabic ? (cat.nameAr || cat.name) : currentLanguage === 'en' ? (cat.nameEn || cat.name) : currentLanguage === 'es' ? (cat.nameEs || cat.name) : cat.name}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Col 4: Wholesale & Customer Service */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-mono uppercase tracking-widest text-[#C9A96E] font-bold">
+          {/* Customer Service & B2B (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerColService}
             </h4>
-            <ul className="space-y-2.5 text-xs font-mono text-[#A8A196]">
+            <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
               <li>
                 <button
                   onClick={onOpenB2B}
-                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right flex items-center gap-1.5 text-[#C9A96E]"
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right flex items-center gap-1.5 text-[#C9A96E] font-semibold"
                 >
                   <Building2 className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.navB2B}</span>
@@ -215,77 +312,67 @@ export const Footer: React.FC<FooterProps> = ({
                   {t.navContact}
                 </button>
               </li>
+              <li className="pt-2 text-[11px] text-[#7C756B] leading-relaxed">
+                {t.footerServiceGuarantee}
+              </li>
             </ul>
           </div>
 
-          {/* Col 5: Workshop Contact & Delivery info */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-mono uppercase tracking-widest text-[#C9A96E] font-bold">
+          {/* Delivery & Direct Atelier Contact (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerColAtelier}
             </h4>
-            <div className="space-y-3 text-xs font-mono text-[#A8A196]">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-[#C9A96E] shrink-0 mt-0.5" />
-                <span className="leading-relaxed">
-                  {storeSettings.address || 'Zone d’Activité Artisanale, Alger'}
-                </span>
-              </div>
+            <div className="space-y-2 text-xs font-mono text-[#A8A196]">
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-[#C9A96E] shrink-0" />
-                <a
-                  href={`tel:${storeSettings.phone || '0550458812'}`}
-                  className="hover:text-white transition-colors"
-                >
-                  {storeSettings.phone || '0550 45 88 12'}
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-[#25D366] shrink-0" />
-                <a
-                  href={`https://wa.me/${storeSettings.whatsappNumber?.replace(/[^0-9]/g, '') || '213550458812'}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white text-[#EAE3D5] transition-colors"
-                >
-                  {storeSettings.whatsappNumber || '+213 550 45 88 12'}
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#C9A96E] shrink-0" />
-                <a
-                  href={`mailto:${storeSettings.email || 'dbcworkshop.co@gmail.com'}`}
-                  className="hover:text-white transition-colors truncate"
-                >
-                  {storeSettings.email || 'dbcworkshop.co@gmail.com'}
-                </a>
-              </div>
-            </div>
-
-            {/* Delivery highlights */}
-            <div className="pt-2">
-              <div className="p-2.5 bg-[#24211E] border border-[#38322B] rounded text-[11px] font-mono text-[#D5CEBF] flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#C9A96E] shrink-0" />
                 <span>{t.footerDeliveryHighlight}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#C9A96E] shrink-0" />
+                <span>{t.footerQualityHighlight}</span>
+              </div>
             </div>
-          </div>
 
+            <a
+              href={`https://wa.me/${cleanWhatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/30 transition-colors text-xs font-mono font-bold cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>WhatsApp : {storeSettings.whatsappNumber || '0550 45 88 12'}</span>
+            </a>
+
+            {storeSettings.baridiMobRip && (
+              <div className="pt-2 p-3 bg-[#24211D] border border-[#3B352E] rounded space-y-1 font-mono text-[11px] text-[#A8A196]">
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <CreditCard className="w-3.5 h-3.5 text-[#C9A96E]" />
+                  <span>BaridiMob Disponible</span>
+                </div>
+                <p className="text-[10px] text-[#8C8477]">
+                  RIP : {storeSettings.baridiMobRip}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Clean Brand Statement */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-[#8C8377]">
+        {/* Bottom Bar: Brand Statement & Dedicated Social Media Links */}
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#8C8477] gap-3">
           <div className="flex items-center gap-2">
-            <span>© {new Date().getFullYear()} {storeSettings.storeName || 'DBC WORKSHOP ALGÉRIE'}.</span>
-            <span>{t.footerRights}</span>
+            <span>{storeSettings.storeName || 'DBC WORKSHOP ALGÉRIE'}</span>
+            <span>•</span>
+            <span>{t.footerAllRightsReserved}</span>
           </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">
-            {/* Social Icons */}
+          
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Social media icons also cleanly embedded in the bottom banner */}
             {socialLinks.length > 0 && (
-              <div className="flex items-center gap-3 pr-2 border-r border-[#36302A] rtl:border-r-0 rtl:border-l rtl:pl-2">
+              <div className="flex items-center gap-2 border-r rtl:border-r-0 rtl:border-l border-[#36322E] pr-3 rtl:pr-0 rtl:pl-3">
                 {socialLinks.map((item) => (
                   <a
-                    key={item.name}
+                    key={`bottom-${item.id}`}
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -303,6 +390,11 @@ export const Footer: React.FC<FooterProps> = ({
             <span>•</span>
             <span>{t.footerWilayasExpress}</span>
           </div>
+        </div>
+
+        {/* Very bottom copyright notice */}
+        <div className="mt-8 pt-6 border-t border-[#292522] text-center text-[11px] font-mono text-[#6E675D]">
+          <p>© {new Date().getFullYear()} DBC Workshop. All rights reserved.</p>
         </div>
       </div>
     </footer>
