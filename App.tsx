@@ -663,3 +663,547 @@ export function App() {
       />
     );
   }
+
+  return (
+    <div className={`w-full max-w-full overflow-x-hidden min-h-screen flex flex-col bg-[#FAF8F5] text-[#1F1C19] ${isArabic ? 'font-sans' : ''}`}>
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)] bg-[#1F1D1A] text-white px-5 py-2.5 rounded shadow-2xl border border-[#C9A96E] text-xs font-mono flex items-center gap-2 animate-in fade-in slide-in-from-top-3 duration-200">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="truncate">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Main Navbar */}
+      <Navbar
+        currentLanguage={currentLanguage}
+        onLanguageChange={handleLanguageChange}
+        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        wishlistCount={wishlist.length}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
+        onOpenContact={() => setIsContactOpen(true)}
+        onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenOrderLookup={() => handleOpenOrderLookup('')}
+        activeCategory={activeCategory}
+        onSelectCategory={handleCategorySelect}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        storeSettings={storeSettings}
+      />
+
+      <main className="w-full max-w-full flex-1 overflow-x-hidden">
+        {/* DBC Workshop Hero Banner - B2B & B2C, 69 Wilayas Algeria */}
+        <HeroBanner
+          onExploreCollection={() => {
+            const el = document.getElementById('collection-grid');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onOpenB2B={() => setIsB2BOpen(true)}
+          onOpenContact={() => setIsContactOpen(true)}
+          onOpenOrderLookup={() => handleOpenOrderLookup('')}
+          onUpdateHeroImage={async (imageUrl) => {
+            let processedUrl = imageUrl;
+            if (imageUrl && imageUrl.startsWith('data:image/')) {
+              try {
+                processedUrl = await compressBase64Image(imageUrl, 1400, 0.82, 350 * 1024);
+              } catch (e) {
+                console.warn('Could not compress hero image:', e);
+              }
+            }
+            const updated = { 
+              ...storeSettings, 
+              heroImage: processedUrl,
+              heroImages: processedUrl ? [processedUrl] : []
+            };
+            setStoreSettings(updated);
+            localStorage.setItem('dbc_store_settings', JSON.stringify(updated));
+            try {
+              await saveStoreSettingsToDb(updated);
+            } catch (err) {
+              console.error('Error saving hero cover to Firestore:', err);
+            }
+            setToastMessage(
+              imageUrl 
+                ? (currentLanguage === 'ar' ? 'تم تحديث صورة واجهة الموقع بنجاح' : 'Photo de couverture du site mise à jour avec succès')
+                : (currentLanguage === 'ar' ? 'تمت إزالة صورة واجهة الموقع' : 'Photo de couverture retirée avec succès')
+            );
+            setTimeout(() => setToastMessage(null), 3500);
+          }}
+          onUpdateHeroSettings={async (heroUpdates) => {
+            let processedUrl = heroUpdates.heroImage;
+            if (processedUrl && processedUrl.startsWith('data:image/')) {
+              try {
+                processedUrl = await compressBase64Image(processedUrl, 1400, 0.82, 350 * 1024);
+              } catch (e) {
+                console.warn('Could not compress hero image:', e);
+              }
+            }
+            const updated = { 
+              ...storeSettings, 
+              ...heroUpdates,
+              ...(processedUrl !== undefined ? { heroImage: processedUrl, heroImages: processedUrl ? [processedUrl] : [] } : {})
+            };
+            setStoreSettings(updated);
+            localStorage.setItem('dbc_store_settings', JSON.stringify(updated));
+            try {
+              await saveStoreSettingsToDb(updated);
+            } catch (err) {
+              console.error('Error saving hero settings to Firestore:', err);
+            }
+            setToastMessage(
+              currentLanguage === 'ar' 
+                ? 'تم حفظ إعدادات الواجهة الرئيسية بنجاح' 
+                : 'Paramètres du Hero Banner enregistrés avec succès'
+            );
+            setTimeout(() => setToastMessage(null), 3500);
+          }}
+          storeSettings={storeSettings}
+          currentLanguage={currentLanguage}
+        />
+
+        {/* Collection & Filter Section */}
+        <section 
+          id="collection-grid" 
+          className="w-full max-w-full overflow-hidden py-10 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+        >
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-[#E8E1D5] gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#C9A96E]"></span>
+                <span className="text-xs font-mono tracking-widest text-[#8C6D3B] uppercase font-bold">
+                  {t.tagline}
+                </span>
+              </div>
+              <h2 className="font-serif text-2xl sm:text-4xl text-[#1F1D1A] font-medium tracking-tight">
+                {activeCategory === 'all' 
+                  ? t.navAll 
+                  : getCategoryLabel(activeCategory, currentLanguage, storeSettings?.customCategories)}
+              </h2>
+              <p className="text-xs sm:text-sm text-[#787167] mt-1 font-sans">
+                {activeCategory === 'b2b' 
+                  ? (isArabic ? 'عروض الجملة وتصنيع الملابس للشركات والمحلات بأسعار الورشة المباشرة' : 'Packs revendeurs et confection sur-mesure pour boutiques et marques à travers 69 wilayas')
+                  : (isArabic ? 'ملابس مصنعة بأعلى معايير الحياكة والأقمشة الثقيلة' : 'Confection haut de gamme en molleton lourd et finitions soignées')}
+              </p>
+            </div>
+
+            {/* Total Results Count */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-[#8C8377] uppercase tracking-wider">
+                {filteredProducts.length}{' '}
+                {isArabic ? 'منتج متاح' : filteredProducts.length === 1 ? 'pièce disponible' : 'pièces disponibles'}
+              </span>
+            </div>
+          </div>
+
+          {/* Filtering Controls Bar */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8 bg-[#F4EFEA] p-3 sm:p-4 rounded border border-[#E6DEC8]">
+            {/* Horizontal Categories Scroll */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none w-full lg:w-auto">
+              {allCategoryDefinitions.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-xs whitespace-nowrap transition-colors cursor-pointer ${
+                    activeCategory === cat.id
+                      ? 'bg-[#1F1D1A] text-white font-bold shadow-xs'
+                      : 'bg-white hover:bg-[#EAE4D9] text-[#5A5247] border border-[#DDD4C5]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Filter by Fabric & Sort */}
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 self-end sm:self-auto w-full lg:w-auto justify-between lg:justify-end">
+              {/* Fabric Select */}
+              {availableFabrics.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xs border border-[#DDD4C5] text-xs font-mono">
+                  <Filter className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                  <select
+                    value={fabricFilter}
+                    onChange={(e) => setFabricFilter(e.target.value)}
+                    className="bg-transparent focus:outline-none cursor-pointer text-[#1F1D1A]"
+                    aria-label="Filtrer par matière"
+                  >
+                    <option value="all">
+                      {isArabic ? 'كافة الأقمشة' : 'Toutes les matières'}
+                    </option>
+                    {availableFabrics.map((fab) => (
+                      <option key={fab} value={fab}>
+                        {fab}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sort Order Select */}
+              <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xs border border-[#DDD4C5] text-xs font-mono">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent focus:outline-none cursor-pointer text-[#1F1D1A]"
+                  aria-label="Trier la collection"
+                >
+                  <option value="featured">
+                    {isArabic ? 'الترتيب: الافتراضي' : 'Tri: Recommandé'}
+                  </option>
+                  <option value="price-asc">
+                    {isArabic ? 'السعر: من الأقل إلى الأعلى' : 'Prix: Croissant'}
+                  </option>
+                  <option value="price-desc">
+                    {isArabic ? 'السعر: من الأعلى إلى الأقل' : 'Prix: Décroissant'}
+                  </option>
+                  <option value="newest">
+                    {isArabic ? 'الأحدث أولاً' : 'Nouveautés'}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Search Badge */}
+          {searchQuery && (
+            <div className="flex items-center gap-2 mb-6 p-2.5 bg-[#EDE6DB] rounded-xs text-xs font-mono text-[#5A5247]">
+              <Search className="w-3.5 h-3.5 text-[#8C6D3B]" />
+              <span>
+                {isArabic ? `نتائج البحث عن:` : `Résultats pour :`}{' '}
+                <strong>"{searchQuery}"</strong>
+              </span>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="ml-auto underline hover:text-[#1F1D1A] cursor-pointer"
+              >
+                {isArabic ? 'إلغاء' : 'Effacer'}
+              </button>
+            </div>
+          )}
+
+          {/* Products Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded border border-[#E8E1D5] p-8 max-w-lg mx-auto">
+              <div className="w-12 h-12 rounded-full bg-[#FAF8F5] border border-[#DDD4C5] flex items-center justify-center mx-auto mb-4 text-[#8C6D3B]">
+                <Search className="w-5 h-5" />
+              </div>
+              <h3 className="font-serif text-lg font-medium text-[#1F1D1A]">
+                {t.catalogEmptyTitle}
+              </h3>
+              <p className="text-xs text-[#787167] font-mono mt-1 mb-6 leading-relaxed">
+                {t.catalogEmptyDesc}
+              </p>
+              <button
+                onClick={() => {
+                  setActiveCategory('all');
+                  setFabricFilter('all');
+                  setSearchQuery('');
+                }}
+                className="px-5 py-2.5 bg-[#1F1D1A] text-white text-xs font-mono uppercase tracking-wider rounded-xs hover:bg-black transition-colors cursor-pointer"
+              >
+                {t.catalogResetFilters}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  currency={currency}
+                  currentLanguage={currentLanguage}
+                  storeSettings={storeSettings}
+                  onSelectProduct={(p) => {
+                    setSelectedProduct(p);
+                    setLastViewedProduct(p);
+                  }}
+                  onAddToCart={(p, size, color) => handleAddToCart(p, size, color, 1)}
+                  isWishlisted={wishlist.includes(product.id)}
+                  onToggleWishlist={() => handleToggleWishlist(product.id)}
+                  onDirectWhatsAppOrder={(p) => {
+                    setWhatsAppCustomizerProduct(p);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* B2B / Wholesale Dedicated Banner */}
+        <section className="w-full bg-[#191715] text-[#ECE7DF] py-14 sm:py-20 border-y border-[#36302A] overflow-hidden relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              <div className="lg:col-span-7 space-y-4 sm:space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2C2723] rounded-full text-[11px] font-mono text-[#C9A96E] border border-[#4A423A]">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{t.heroB2BBtn}</span>
+                </div>
+                <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-medium tracking-tight text-white leading-tight">
+                  {isArabic 
+                    ? 'البيع بالجملة وتفصيل الملابس للمحلات والماركات'
+                    : 'Vente en Gros & Confection Sur-Mesure B2B'}
+                </h2>
+                <p className="text-xs sm:text-sm md:text-base text-[#A8A196] leading-relaxed max-w-2xl font-sans">
+                  {isArabic
+                    ? 'نوفر لتجار الملابس والمحلات في كامل الـ 69 ولاية أسعار الجملة التفضيلية مباشرة من ورشة الخياطة، مع إمكانية التطريز الخاص والطباعة وإضافة علامتكم التجارية.'
+                    : 'Bénéficiez de tarifs grossistes directs atelier à partir de 6 pièces par modèle. Personnalisation de broderie, sérigraphie haute densité et étiquetage de votre marque.'}
+                </p>
+                <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => setIsB2BOpen(true)}
+                    className="px-6 py-3.5 bg-[#C9A96E] hover:bg-[#B89657] text-[#191715] text-xs font-mono uppercase tracking-widest font-bold rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <span>{t.navB2B}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsContactOpen(true)}
+                    className="px-6 py-3.5 bg-transparent hover:bg-white/10 text-white text-xs font-mono uppercase tracking-widest font-semibold rounded-xs border border-white/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Phone className="w-4 h-4 text-[#C9A96E]" />
+                    <span>{t.navContact}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* B2B Highlights */}
+              <div className="lg:col-span-5 grid grid-cols-2 gap-3 sm:gap-4 font-mono">
+                <div className="p-4 sm:p-5 bg-[#24211E] border border-[#3D3730] rounded-sm">
+                  <span className="text-xl sm:text-2xl font-bold text-[#C9A96E] block mb-1">
+                    6+ pcs
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-[#A8A196] leading-snug block">
+                    {isArabic ? 'الحد الأدنى لطلب الجملة' : 'Minimum de commande souple'}
+                  </span>
+                </div>
+                <div className="p-4 sm:p-5 bg-[#24211E] border border-[#3D3730] rounded-sm">
+                  <span className="text-xl sm:text-2xl font-bold text-[#C9A96E] block mb-1">
+                    69
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-[#A8A196] leading-snug block">
+                    {isArabic ? 'ولاية مغطاة بالشحن السريع' : 'Wilayas livrées à domicile & StopDesk'}
+                  </span>
+                </div>
+                <div className="p-4 sm:p-5 bg-[#24211E] border border-[#3D3730] rounded-sm">
+                  <span className="text-xl sm:text-2xl font-bold text-[#C9A96E] block mb-1">
+                    100%
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-[#A8A196] leading-snug block">
+                    {isArabic ? 'صناعة جزائرية بأقمشة ممتازة' : 'Confection atelier algérien'}
+                  </span>
+                </div>
+                <div className="p-4 sm:p-5 bg-[#24211E] border border-[#3D3730] rounded-sm">
+                  <span className="text-xl sm:text-2xl font-bold text-[#C9A96E] block mb-1">
+                    Broderie
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-[#A8A196] leading-snug block">
+                    {isArabic ? 'تخصيص الشعار والعلامة' : 'Personnalisation & Private Label'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Customer Reviews Section */}
+        <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-[#E8E1D5]">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-mono tracking-widest text-[#8C6D3B] uppercase font-bold">
+              {isArabic ? 'آراء الزبائن والتجار' : 'Avis Clients & Partenaires'}
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl text-[#1F1D1A] font-medium tracking-tight mt-1">
+              {isArabic ? 'ثقة زبائننا عبر 69 ولاية' : 'La qualité éprouvée par nos clients'}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {REVIEWS.map((rev) => (
+              <div 
+                key={rev.id} 
+                className="bg-white p-6 rounded border border-[#E8E1D5] shadow-xs flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-1 text-[#C9A96E] mb-3">
+                    {Array.from({ length: rev.rating }).map((_, i) => (
+                      <span key={i}>★</span>
+                    ))}
+                  </div>
+                  <p className="text-xs sm:text-sm text-[#5A5247] italic font-sans leading-relaxed mb-4">
+                    "{isArabic ? (rev.commentAr || rev.comment) : rev.comment}"
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-[#F0EAE1] flex items-center justify-between text-xs font-mono">
+                  <span className="font-bold text-[#1F1D1A]">{rev.author}</span>
+                  <span className="text-[#8C8377]">{rev.location}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Frequently Asked Questions */}
+        <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <span className="text-xs font-mono tracking-widest text-[#8C6D3B] uppercase font-bold">
+              {isArabic ? 'الأسئلة الشائعة' : 'Questions Fréquentes'}
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl text-[#1F1D1A] font-medium tracking-tight mt-1">
+              {isArabic ? 'كل ما تحتاج معرفته عن الورشة والطلبيات' : 'Tout sur nos confections et livraisons'}
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {WORKSHOP_FAQS.map((faq) => {
+              const q = isArabic ? (faq.questionAr || faq.question) : faq.question;
+              const a = isArabic ? (faq.answerAr || faq.answer) : faq.answer;
+              return (
+                <details
+                  key={faq.id}
+                  className="group bg-white rounded border border-[#E8E1D5] p-4.5 cursor-pointer open:bg-[#FDFBF7] transition-colors"
+                >
+                  <summary className="font-serif text-sm sm:text-base font-medium text-[#1F1D1A] flex items-center justify-between list-none">
+                    <span>{q}</span>
+                    <span className="text-xs font-mono text-[#8C6D3B] ml-2 group-open:rotate-90 transition-transform">
+                      ▸
+                    </span>
+                  </summary>
+                  <p className="text-xs sm:text-sm text-[#5A5247] mt-3 pt-3 border-t border-[#F0EAE1] font-sans leading-relaxed">
+                    {a}
+                  </p>
+                </details>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      {/* Workshop Footer */}
+      <Footer
+        onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
+        onOpenContact={() => setIsContactOpen(true)}
+        onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenOrderLookup={() => handleOpenOrderLookup('')}
+        onSelectCategory={handleCategorySelect}
+        storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* Modals */}
+      {/* 1. Product Detail Modal */}
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          currency={currency}
+          isOpen={true}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={handleAddToCart}
+          onOpenWhatsAppInquiry={(prod) => {
+            setSelectedProduct(null);
+            setWhatsAppCustomizerProduct(prod);
+          }}
+          onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
+          currentLanguage={currentLanguage}
+          isWishlisted={wishlist.includes(selectedProduct.id)}
+          onToggleWishlist={() => handleToggleWishlist(selectedProduct.id)}
+          customCategories={storeSettings?.customCategories}
+        />
+      )}
+
+      {/* 2. Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cart}
+        currency={currency}
+        onUpdateQuantity={handleUpdateCartQuantity}
+        onRemoveItem={handleRemoveFromCart}
+        onCheckout={() => {
+          setIsCartOpen(false);
+          setIsCheckoutOpen(true);
+        }}
+        storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 3. Checkout Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cart}
+        currency={currency}
+        storeSettings={storeSettings}
+        onOrderComplete={handleOrderSubmitted}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 4. Sizing Guide Modal */}
+      <SizeGuideModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 5. Wishlist Drawer */}
+      <WishlistModal
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        wishlistIds={wishlist}
+        products={products}
+        currency={currency}
+        onRemoveWishlist={handleToggleWishlist}
+        onAddToCart={(prod, size, color) => handleAddToCart(prod, size, color, 1)}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 6. Contact / Workshop Location Modal */}
+      <ContactModal
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+        storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 7. B2B & Wholesale Modal */}
+      <B2BWholesaleModal
+        isOpen={isB2BOpen}
+        onClose={() => setIsB2BOpen(false)}
+        storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 8. Order Tracking & Lookup Modal */}
+      <OrderLookupModal
+        isOpen={isOrderLookupOpen}
+        onClose={() => setIsOrderLookupOpen(false)}
+        initialQuery={orderLookupQuery}
+        storeSettings={storeSettings}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* 9. Direct Product WhatsApp Order Customizer */}
+      {whatsAppCustomizerProduct && (
+        <ProductWhatsAppModal
+          isOpen={true}
+          onClose={() => setWhatsAppCustomizerProduct(null)}
+          product={whatsAppCustomizerProduct}
+          currency={currency}
+          currentLanguage={currentLanguage}
+          storeSettings={storeSettings}
+        />
+      )}
+
+      {/* 10. Persistent Clean Floating WhatsApp Action Button */}
+      <FloatingWhatsAppWidget
+        currentlyViewedProduct={lastViewedProduct}
+        currency={currency}
+        currentLanguage={currentLanguage}
+        storeSettings={storeSettings}
+        onOpenCustomWhatsAppModal={(prod) => setWhatsAppCustomizerProduct(prod)}
+      />
+    </div>
+  );
+}
+
+export default App;
