@@ -5,16 +5,12 @@ import {
   Search, 
   Menu, 
   X, 
-  Scissors, 
   Phone,
-  Sliders,
   Building2,
   Globe,
   ChevronDown,
   MessageCircle,
   Truck,
-  Package,
-  CreditCard,
   Coins
 } from 'lucide-react';
 import { Currency, StoreSettings } from '../types';
@@ -91,60 +87,59 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'long-sleeves', label: t.navLongSleeves },
     { id: 'tees', label: t.navTees },
     { id: 'tracksuits', label: t.navTracksuits },
-    { id: 'outerwear', label: t.navOuterwear },
-    { id: 'b2b', label: t.navB2B },
+    { id: 'outerwear', label: t.navOuterwear || (isArabic ? 'سترات ومعاطف' : currentLanguage === 'es' ? 'Chaquetas' : currentLanguage === 'en' ? 'Outerwear' : 'Vestes') },
   ];
 
   const categories = [...standardNavCategories, ...customNavCategories];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
-      {/* Top Banner: Atelier Contact, 69 Wilayas Delivery, and Order Lookup */}
-      <div className="bg-[#1F1D1A] text-[#EDE7DD] text-[11px] font-mono py-1.5 px-4 tracking-wider">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E6E6E6] transition-all">
+      {/* Top Banner: Logistics & Tracking */}
+      <div className="bg-[#111111] text-[#FFFFFF] text-[11px] font-mono py-1.5 px-4 tracking-wider border-b border-black">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]"></span>
-            <span>{t.topbarDelivery}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+            <span className="text-[#DCDCDC]">{t.topbarDelivery}</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 text-xs">
+          <div className="hidden md:flex items-center gap-5 text-xs">
             <a
               href={`https://wa.me/${storeSettings.whatsappNumber?.replace(/[^0-9]/g, '') || '213550458812'}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#E0D8CB] hover:text-white flex items-center gap-1.5 transition-colors"
+              className="text-[#DCDCDC] hover:text-white flex items-center gap-1.5 transition-colors"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+              <MessageCircle className="w-3.5 h-3.5 text-white" />
               <span>WhatsApp : {storeSettings.whatsappNumber || '0550 45 88 12'}</span>
             </a>
 
             <button
               onClick={onOpenOrderLookup}
-              className="text-[#E0D8CB] hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+              className="text-[#DCDCDC] hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Truck className="w-3.5 h-3.5 text-[#C9A96E]" />
+              <Truck className="w-3.5 h-3.5 text-white" />
               <span>{t.navOrderLookup}</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Navbar */}
+      {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-3">
           
-          {/* Mobile Menu & Search buttons */}
+          {/* Mobile Menu & Search triggers */}
           <div className="flex items-center gap-1 lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors"
+              className="p-2 text-[#111111] hover:bg-[#F3F3F1] rounded transition-colors cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-1.5 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors"
+              className="p-2 text-[#111111] hover:bg-[#F3F3F1] rounded transition-colors cursor-pointer"
               aria-label="Recherche"
             >
               <Search className="w-5 h-5" />
@@ -162,10 +157,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className="flex flex-col items-center lg:items-start group cursor-pointer"
             >
-              <span className="font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.18em] font-bold text-[#1F1D1A] uppercase group-hover:text-[#8C6D3B] transition-colors">
+              <span className="font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.2em] font-semibold text-[#111111] uppercase transition-colors">
                 {storeSettings.storeName || 'DBC WORKSHOP'}
               </span>
-              <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-[#7C756B] uppercase font-medium">
+              <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-[#737373] uppercase">
                 {t.subTagline || t.tagline}
               </span>
             </a>
@@ -177,10 +172,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`px-2.5 py-1.5 rounded uppercase transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 uppercase transition-colors cursor-pointer whitespace-nowrap text-xs font-mono ${
                   activeCategory === cat.id
-                    ? 'bg-[#1F1D1A] text-white font-bold'
-                    : 'text-[#4A4338] hover:text-black hover:bg-[#EAE4D9]/60'
+                    ? 'text-[#111111] font-bold border-b-2 border-[#111111]'
+                    : 'text-[#737373] hover:text-[#111111] border-b-2 border-transparent'
                 }`}
               >
                 {cat.label}
@@ -189,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={onOpenB2B}
-              className="px-2.5 py-1.5 rounded uppercase transition-colors cursor-pointer whitespace-nowrap text-[#8C6D3B] font-bold hover:bg-[#EAE4D9]/60 flex items-center gap-1"
+              className="ml-2 px-3 py-1.5 uppercase transition-colors cursor-pointer whitespace-nowrap text-[#111111] font-bold border border-[#E6E6E6] hover:border-[#111111] hover:bg-[#F3F3F1] flex items-center gap-1.5"
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>{t.navB2B}</span>
@@ -206,20 +201,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={t.searchPlaceholder}
-                className="w-44 lg:w-56 pl-8 pr-3 py-1.5 text-xs font-sans bg-[#F2EDE4] border border-[#DDD4C5] rounded focus:outline-none focus:border-black focus:w-64 transition-all"
+                className="w-40 lg:w-52 pl-8 pr-3 py-1.5 text-xs font-sans bg-[#F3F3F1] border border-[#E6E6E6] rounded-none focus:outline-none focus:border-[#111111] focus:w-60 transition-all text-[#111111]"
               />
-              <Search className="w-3.5 h-3.5 text-[#7C756B] absolute left-2.5 rtl:left-auto rtl:right-2.5" />
+              <Search className="w-3.5 h-3.5 text-[#737373] absolute left-2.5 rtl:left-auto rtl:right-2.5" />
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange('')}
-                  className="absolute right-2 rtl:right-auto rtl:left-2 text-[#7C756B] hover:text-black text-xs font-bold"
+                  className="absolute right-2 rtl:right-auto rtl:left-2 text-[#737373] hover:text-[#111111] text-xs font-bold"
                 >
                   ×
                 </button>
               )}
             </div>
 
-            {/* Language Switcher Dropdown */}
+            {/* Language Switcher */}
             <div className="relative">
               <button
                 id="language-selector-btn"
@@ -227,17 +222,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setLangDropdownOpen(!langDropdownOpen);
                   setCurrDropdownOpen(false);
                 }}
-                className="px-1.5 py-1 sm:px-2 sm:py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-[11px] sm:text-xs font-mono flex items-center gap-0.5 sm:gap-1 cursor-pointer"
+                className="px-2 py-1 bg-[#F3F3F1] hover:bg-[#E6E6E6] border border-[#E6E6E6] text-xs font-mono flex items-center gap-1 cursor-pointer transition-colors"
                 title="Changer la langue / تغيير اللغة"
               >
-                <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8C6D3B]" />
-                <span className="uppercase font-bold">{currentLanguage}</span>
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C756B]" />
+                <Globe className="w-3.5 h-3.5 text-[#111111]" />
+                <span className="uppercase font-bold text-[#111111]">{currentLanguage}</span>
+                <ChevronDown className="w-3 h-3 text-[#737373]" />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-44 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3 py-1 text-[10px] font-mono text-[#8C8377] uppercase border-b border-[#F0EAE1]">
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-44 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1 text-[10px] font-mono text-[#737373] uppercase border-b border-[#E6E6E6]">
                     Langue / اللغة
                   </div>
                   {LANGUAGES.map((lang) => (
@@ -247,8 +242,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onLanguageChange(lang.code);
                         setLangDropdownOpen(false);
                       }}
-                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
-                        currentLanguage === lang.code ? 'font-bold text-[#8C6D3B] bg-[#FAF8F5]' : 'text-[#2C2825]'
+                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F3F3F1] cursor-pointer ${
+                        currentLanguage === lang.code ? 'font-bold text-[#111111] bg-[#F8F8F7]' : 'text-[#737373]'
                       }`}
                     >
                       <span>{lang.native}</span>
@@ -259,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Currency Selector with Visible Coins Icon */}
+            {/* Currency Selector with Coins Icon */}
             <div className="relative">
               <button
                 id="currency-selector-btn"
@@ -267,17 +262,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setCurrDropdownOpen(!currDropdownOpen);
                   setLangDropdownOpen(false);
                 }}
-                className="px-1.5 py-1 sm:px-2 sm:py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
+                className="px-2 py-1 bg-[#F3F3F1] hover:bg-[#E6E6E6] border border-[#E6E6E6] text-xs font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
                 title="Devise / العملة"
               >
-                <Coins className="w-3.5 h-3.5 text-[#8C6D3B] shrink-0 inline-block" />
-                <span>{currency}</span>
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C756B]" />
+                <Coins className="w-3.5 h-3.5 text-[#111111] shrink-0 inline-block" />
+                <span className="text-[#111111]">{currency}</span>
+                <ChevronDown className="w-3 h-3 text-[#737373]" />
               </button>
 
               {currDropdownOpen && (
-                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-28 bg-white border border-[#DDD4C5] rounded shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3 py-1 text-[10px] font-mono text-[#8C8377] uppercase border-b border-[#F0EAE1]">
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-28 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1 text-[10px] font-mono text-[#737373] uppercase border-b border-[#E6E6E6]">
                     Devise
                   </div>
                   {CURRENCIES.map((c) => (
@@ -287,8 +282,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onCurrencyChange(c);
                         setCurrDropdownOpen(false);
                       }}
-                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F4EFE7] cursor-pointer ${
-                        currency === c ? 'font-bold text-[#8C6D3B] bg-[#FAF8F5]' : 'text-[#2C2825]'
+                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-mono flex items-center justify-between hover:bg-[#F3F3F1] cursor-pointer ${
+                        currency === c ? 'font-bold text-[#111111] bg-[#F8F8F7]' : 'text-[#737373]'
                       }`}
                     >
                       <span>{c} {c === 'DZD' ? '(د.ج)' : ''}</span>
@@ -299,47 +294,47 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Desktop Contact Trigger */}
+            {/* Direct Contact Button */}
             <button
               onClick={onOpenContact}
-              className="hidden sm:flex p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors cursor-pointer"
+              className="hidden sm:flex p-2 text-[#737373] hover:text-[#111111] hover:bg-[#F3F3F1] rounded transition-colors cursor-pointer"
               title={t.navContact}
             >
-              <Phone className="w-5 h-5" />
+              <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Wishlist Icon */}
+            {/* Wishlist Button */}
             <button
               id="navbar-wishlist-btn"
               onClick={onOpenWishlist}
-              className="p-1.5 sm:p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative cursor-pointer"
+              className="p-1.5 sm:p-2 text-[#737373] hover:text-[#111111] hover:bg-[#F3F3F1] rounded transition-colors relative cursor-pointer"
               title="Favoris"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#8C6D3B] text-white text-[9px] sm:text-[10px] font-mono font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 bg-[#111111] text-white text-[9px] font-mono font-bold rounded-full flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
             </button>
 
-            {/* Cart / Shop Icon */}
+            {/* Cart Button */}
             <button
               id="navbar-cart-btn"
               onClick={onOpenCart}
-              className="p-1.5 sm:p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-1.5 cursor-pointer"
+              className="p-1.5 sm:p-2 text-[#111111] hover:bg-[#F3F3F1] rounded transition-colors relative flex items-center gap-1.5 cursor-pointer"
               title="Panier"
             >
               <div className="relative">
                 <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-4 h-4 bg-[#111111] text-white text-[9px] font-mono font-bold rounded-full flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
               </div>
               {cartTotal > 0 && (
-                <span className="hidden xl:inline font-bold">
+                <span className="hidden xl:inline font-mono font-bold text-xs text-[#111111]">
                   {formatPrice(cartTotal, currency, isArabic)}
                 </span>
               )}
@@ -350,23 +345,23 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Search Bar Expandable */}
+      {/* Mobile Search Bar */}
       {searchOpen && (
-        <div className="md:hidden px-4 pb-3 pt-1 border-t border-[#E8E2D8] bg-[#FAF8F5]">
+        <div className="md:hidden px-4 pb-3 pt-1 border-t border-[#E6E6E6] bg-[#FFFFFF]">
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-[#DDD4C5] rounded focus:outline-none"
+              className="w-full pl-9 pr-8 py-2 text-xs font-mono bg-[#F3F3F1] border border-[#E6E6E6] rounded-none focus:outline-none focus:border-[#111111]"
               autoFocus
             />
-            <Search className="w-4 h-4 text-[#7C756B] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#737373] absolute left-3 top-2.5" />
             {searchQuery && (
               <button
                 onClick={() => onSearchChange('')}
-                className="absolute right-3 top-2 text-[#7C756B] font-bold"
+                className="absolute right-3 top-2 text-[#737373] font-bold"
               >
                 ×
               </button>
@@ -377,7 +372,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#E8E2D8] bg-[#FAF8F5] px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-150">
+        <div className="lg:hidden border-t border-[#E6E6E6] bg-[#FFFFFF] px-4 pt-3 pb-6 space-y-4 animate-in slide-in-from-top-2 duration-150">
           <div className="space-y-1">
             {categories.map((cat) => (
               <button
@@ -388,8 +383,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className={`w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider rounded transition-colors cursor-pointer ${
                   activeCategory === cat.id
-                    ? 'bg-[#1F1D1A] text-white font-bold'
-                    : 'text-[#4A4338] hover:bg-[#F2EDE4]'
+                    ? 'bg-[#111111] text-white font-bold'
+                    : 'text-[#737373] hover:bg-[#F3F3F1] hover:text-[#111111]'
                 }`}
               >
                 {cat.label}
@@ -401,9 +396,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenOrderLookup();
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#1F1C19] font-bold flex items-center gap-2 bg-white border border-[#DDD4C5] rounded"
+              className="w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#111111] font-bold flex items-center gap-2 bg-[#F3F3F1] border border-[#E6E6E6] rounded"
             >
-              <Truck className="w-4 h-4 text-[#8C6D3B]" />
+              <Truck className="w-4 h-4 text-[#111111]" />
               <span>{t.navOrderLookup} (69 Wilayas)</span>
             </button>
 
@@ -412,9 +407,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenB2B();
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#8C6D3B] font-bold flex items-center gap-2"
+              className="w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#111111] font-bold flex items-center gap-2 border border-[#E6E6E6] hover:bg-[#F3F3F1]"
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className="w-4 h-4 text-[#111111]" />
               <span>{t.navB2B}</span>
             </button>
 
@@ -423,18 +418,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenContact();
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#4A4338] flex items-center gap-2"
+              className="w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#737373] hover:text-[#111111] flex items-center gap-2"
             >
               <Phone className="w-4 h-4" />
               <span>{t.navContact} ({storeSettings.phone})</span>
             </button>
           </div>
 
-          {/* Mobile Language & Currency Selector Grid */}
-          <div className="pt-3 border-t border-[#E8E2D8] space-y-3">
+          {/* Mobile Language & Currency */}
+          <div className="pt-3 border-t border-[#E6E6E6] space-y-3">
             <div>
-              <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
-                <Globe className="w-3.5 h-3.5 text-[#8C6D3B]" />
+              <div className="text-[11px] font-mono text-[#737373] uppercase flex items-center gap-1 mb-1.5">
+                <Globe className="w-3.5 h-3.5 text-[#111111]" />
                 <span>Langue / Language</span>
               </div>
               <div className="grid grid-cols-4 gap-1.5">
@@ -447,8 +442,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }}
                     className={`py-1.5 px-2 rounded text-xs font-mono text-center cursor-pointer ${
                       currentLanguage === lang.code
-                        ? 'bg-[#1F1D1A] text-white font-bold'
-                        : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
+                        ? 'bg-[#111111] text-white font-bold'
+                        : 'bg-[#F3F3F1] text-[#737373] hover:bg-[#E6E6E6] hover:text-[#111111]'
                     }`}
                   >
                     {lang.native.split(' ')[0]}
@@ -458,8 +453,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div>
-              <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
-                <Coins className="w-3.5 h-3.5 text-[#8C6D3B] shrink-0 inline-block" />
+              <div className="text-[11px] font-mono text-[#737373] uppercase flex items-center gap-1 mb-1.5">
+                <Coins className="w-3.5 h-3.5 text-[#111111] shrink-0 inline-block" />
                 <span>Devise / Currency</span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -472,8 +467,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }}
                     className={`py-1.5 px-2 rounded text-xs font-mono text-center cursor-pointer ${
                       currency === c
-                        ? 'bg-[#1F1D1A] text-white font-bold'
-                        : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
+                        ? 'bg-[#111111] text-white font-bold'
+                        : 'bg-[#F3F3F1] text-[#737373] hover:bg-[#E6E6E6] hover:text-[#111111]'
                     }`}
                   >
                     {c} {c === 'DZD' ? '(د.ج)' : ''}
