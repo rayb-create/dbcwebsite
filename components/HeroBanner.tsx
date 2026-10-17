@@ -1,35 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  ArrowRight, 
-  MessageCircle, 
   Building2, 
+  Truck, 
+  ShieldCheck, 
+  Sparkles, 
+  ChevronDown, 
+  Phone, 
   Camera, 
   Trash2, 
   Check, 
-  ChevronDown,
-  Sparkles,
-  ShieldCheck,
-  Truck
+  Sliders, 
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
+import { StoreSettings } from '../types';
 import { Language, TRANSLATIONS } from '../data/i18n';
-import { StoreSettings, MediaAsset } from '../types';
 import { CoverPhotoModal } from './CoverPhotoModal';
 import { useAuth } from '../context/AuthContext';
-import { isBannedHeroPhrase } from '../services/db';
 
 interface HeroBannerProps {
   onExploreCollection: () => void;
   onOpenB2B: () => void;
   onOpenContact: () => void;
   onOpenOrderLookup?: () => void;
-  onOpenAdminHero?: () => void;
   onUpdateHeroImage?: (imageUrl: string) => void;
-  onUpdateHeroSettings?: (settings: Partial<StoreSettings>) => void;
-  currentLanguage: Language;
+  onUpdateHeroSettings?: (heroUpdates: Partial<StoreSettings>) => void;
   storeSettings: StoreSettings;
-  mediaAssets?: MediaAsset[];
-  isAdmin?: boolean;
-  isSettingsLoaded?: boolean;
+  currentLanguage: Language;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -39,163 +36,98 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onOpenOrderLookup,
   onUpdateHeroImage,
   onUpdateHeroSettings,
-  currentLanguage,
   storeSettings,
-  mediaAssets = [],
-  isAdmin: propIsAdmin,
-  isSettingsLoaded = false,
+  currentLanguage,
 }) => {
-  const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
-
-  // Strict verified admin authorization check:
-  // Normal unauthenticated or public visitors must NEVER see or use cover controls.
-  // Requires:
-  // 1. Finished authentication loading (!authLoading)
-  // 2. Verified active authenticated user exists (currentUser)
-  // 3. User is authorized as admin in AuthContext (authIsAdmin === true)
-  // 4. If an explicit prop was provided, it must not be false (propIsAdmin !== false)
-  const isAdmin = Boolean(
-    !authLoading &&
-    currentUser &&
-    authIsAdmin === true &&
-    propIsAdmin !== false
-  );
-  const t = TRANSLATIONS[currentLanguage];
-  const isArabic = currentLanguage === 'ar';
-  const [justUploadedToast, setJustUploadedToast] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
-  const [toastText, setToastText] = useState('');
-
-  // Clean WhatsApp phone number for Algeria
-  const cleanWhatsapp = (storeSettings.whatsappNumber || '+213550458812').replace(/[^0-9]/g, '');
-  const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(
-    isArabic
-      ? 'مرحباً ورشة DBC، أود الاستفسار عن كوليكشن الملابس (هوديز، جوجينج) والأسعار.'
-      : 'Bonjour DBC Workshop, je souhaite avoir des informations sur votre collection de vêtements (hoodies, joggings).'
-  )}`;
-
-  // Fallback fashion campaign visual for DBC Workshop if no custom photo uploaded yet
-  const fallbackHeroImage = 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=2400&q=85';
-
-  // Safety timeout if Firestore takes unusually long, so the hero doesn't remain blank indefinitely
-  const [settingsTimeout, setSettingsTimeout] = useState(false);
-  useEffect(() => {
-    if (isSettingsLoaded) return;
-    const timer = setTimeout(() => {
-      setSettingsTimeout(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [isSettingsLoaded]);
-
-  // Cover configuration is known when:
-  // - A custom heroImage is already populated (from localStorage or Firestore)
-  // - Or isSettingsLoaded is true
-  // - Or safety timeout reached
-  const isCoverDetermined = Boolean(
-    (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0) ||
-    isSettingsLoaded ||
-    settingsTimeout
-  );
-
-  // Only resolve to fallbackHeroImage if settings have loaded and there genuinely is NO saved cover.
-  // If settings are still loading, leave heroImageSrc as empty string to avoid flashing the default AI image.
-  const heroImageSrc = (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0)
-    ? storeSettings.heroImage
-    : isCoverDetermined
-      ? fallbackHeroImage
-      : '';
-
   const [isImgLoaded, setIsImgLoaded] = useState(false);
+  const [justUploadedToast, setJustUploadedToast] = useState(false);
+  const [toastText, setToastText] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    if (imgRef.current && imgRef.current.complete && heroImageSrc) {
-      setIsImgLoaded(true);
-    } else if (!heroImageSrc) {
-      setIsImgLoaded(false);
-    }
-  }, [heroImageSrc]);
+  const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
+  // Strictly verified admin flag: public/logged-out visitors are ALWAYS false
+  const isAdmin = Boolean(!authLoading && currentUser && authIsAdmin === true);
 
-  // Focal point positioning (configurable via admin / modal)
-  const focalPosition = storeSettings.heroFocalPosition || 'center';
-
-  // Configurable overlay scrim gradient strength
-  const overlayStrength = storeSettings.heroOverlayStrength || 'medium';
-
-  const handleRemoveHeroImage = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (!isAdmin) return;
-    if (onUpdateHeroSettings) {
-      onUpdateHeroSettings({ heroImage: '', heroImages: [] });
-    } else if (onUpdateHeroImage) {
-      onUpdateHeroImage('');
-    }
-    setToastText(isArabic ? 'تمت استعادة الصورة الافتراضية' : 'Photo de couverture réinitialisée');
-    setJustUploadedToast(true);
-    setTimeout(() => setJustUploadedToast(false), 3000);
-  };
+  const t = TRANSLATIONS[currentLanguage];
+  const isArabic = currentLanguage === 'ar';
 
   const scrollToWrittenInfo = () => {
     const el = document.getElementById('hero-written-info');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      onExploreCollection();
     }
   };
 
-  // Helper to filter out the unwanted hero phrases completely
-  const isBannedPhrase = (text?: string) => {
-    return isBannedHeroPhrase(text);
+  // Direct removal / reset of cover photo
+  const handleRemoveHeroImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(isArabic ? 'هل تريد استعادة صورة الواجهة الافتراضية؟' : 'Voulez-vous réinitialiser la photo de couverture ?')) {
+      if (onUpdateHeroImage) {
+        onUpdateHeroImage('');
+      }
+      setToastText(isArabic ? 'تمت استعادة الصورة الافتراضية' : 'Photo de couverture réinitialisée');
+      setJustUploadedToast(true);
+      setTimeout(() => setJustUploadedToast(false), 3000);
+    }
   };
 
-  const getSafeText = (customText?: string, defaultText: string = ''): string => {
-    if (customText && !isBannedPhrase(customText)) return customText;
-    return !isBannedPhrase(defaultText) ? defaultText : '';
-  };
+  // Dynamic Content Resolution with fallback hierarchy
+  const displayTitle = (
+    currentLanguage === 'ar'
+      ? (storeSettings.heroTitleAr || storeSettings.heroTitle)
+      : currentLanguage === 'es'
+      ? (storeSettings.heroTitleEs || storeSettings.heroTitle)
+      : currentLanguage === 'en'
+      ? (storeSettings.heroTitleEn || storeSettings.heroTitle)
+      : storeSettings.heroTitle
+  ) || t.heroHeadline;
 
-  const displayTagline = currentLanguage === 'es'
-    ? getSafeText(storeSettings.taglineEs, t.tagline)
-    : currentLanguage === 'ar'
-    ? getSafeText(storeSettings.taglineAr, t.tagline)
-    : currentLanguage === 'en'
-    ? getSafeText(storeSettings.taglineEn, t.tagline)
-    : getSafeText(storeSettings.tagline, t.tagline);
+  const displaySubtitle = (
+    currentLanguage === 'ar'
+      ? (storeSettings.heroSubtitleAr || storeSettings.heroSubtitle)
+      : currentLanguage === 'es'
+      ? (storeSettings.heroSubtitleEs || storeSettings.heroSubtitle)
+      : currentLanguage === 'en'
+      ? (storeSettings.heroSubtitleEn || storeSettings.heroSubtitle)
+      : storeSettings.heroSubtitle
+  ) || t.heroSubheadline;
 
-  const displayTitle = currentLanguage === 'es'
-    ? getSafeText(storeSettings.heroTitleEs, t.heroTitle)
-    : currentLanguage === 'ar'
-    ? getSafeText(storeSettings.heroTitleAr, t.heroTitle)
-    : currentLanguage === 'en'
-    ? getSafeText(storeSettings.heroTitleEn, t.heroTitle)
-    : getSafeText(storeSettings.heroTitle, t.heroTitle);
+  const displayBadge = (
+    currentLanguage === 'ar'
+      ? (storeSettings.heroBadgeAr || storeSettings.heroBadge)
+      : currentLanguage === 'es'
+      ? (storeSettings.heroBadgeEs || storeSettings.heroBadge)
+      : currentLanguage === 'en'
+      ? (storeSettings.heroBadgeEn || storeSettings.heroBadge)
+      : storeSettings.heroBadge
+  ) || (isArabic ? 'تصنيع محلي وتوصيل سريع' : 'Confection Atelier & Vente Directe');
 
-  const displaySubtitle = currentLanguage === 'es'
-    ? getSafeText(storeSettings.heroSubtitleEs, t.heroSubtitle)
-    : currentLanguage === 'ar'
-    ? getSafeText(storeSettings.heroSubtitleAr, t.heroSubtitle)
-    : currentLanguage === 'en'
-    ? getSafeText(storeSettings.heroSubtitleEn, t.heroSubtitle)
-    : getSafeText(storeSettings.heroSubtitle, t.heroSubtitle);
+  const displayTagline = (
+    currentLanguage === 'ar'
+      ? (storeSettings.taglineAr || storeSettings.tagline)
+      : currentLanguage === 'es'
+      ? (storeSettings.taglineEs || storeSettings.tagline)
+      : currentLanguage === 'en'
+      ? (storeSettings.taglineEn || storeSettings.tagline)
+      : storeSettings.tagline
+  ) || t.tagline;
 
-  const displayBadge = isBannedPhrase(t.b2bB2cBadge)
-    ? (isArabic ? 'ورشة دي بي سي للألبسة • صناعة جزائرية' : (currentLanguage === 'en' ? 'DBC Workshop • Made in Algeria' : currentLanguage === 'es' ? 'Taller DBC • Hecho en Argelia' : 'Atelier DBC • Confection Algérie'))
-    : t.b2bB2cBadge;
+  // Primary cover image fallback
+  const heroImageSrc = storeSettings.heroImage || 
+    (storeSettings.heroImages && storeSettings.heroImages.length > 0 ? storeSettings.heroImages[0] : null) || 
+    'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1920&q=85';
 
-  // Derive responsive focal points so the photographic subject is framed naturally across devices:
-  // Desktop strictly respects the exact admin focalPosition ('center', 'top', etc.).
-  // Mobile portrait (iPhone/Android) prioritizes the upper/torso region (center 28%)
-  // where the garment, mannequin, and workshop craft are centered without excessive zooming or cutoff.
-  const desktopFocal = focalPosition || 'center';
+  // Mobile and Desktop focal point configuration
+  const desktopFocal = storeSettings.heroFocalPoint || 'center';
   let mobileFocal = 'center 28%';
   let tabletFocal = 'center 35%';
-
-  if (desktopFocal === 'top' || desktopFocal === 'center top') {
-    mobileFocal = 'center 12%';
+  if (desktopFocal === 'top') {
+    mobileFocal = 'center 15%';
     tabletFocal = 'center 20%';
-  } else if (desktopFocal === 'bottom' || desktopFocal === 'center bottom') {
-    mobileFocal = 'center 75%';
-    tabletFocal = 'center 70%';
+  } else if (desktopFocal === 'bottom') {
+    mobileFocal = 'center 85%';
+    tabletFocal = 'center 80%';
   } else if (desktopFocal === 'left') {
     mobileFocal = 'left 28%';
     tabletFocal = 'left 35%';
@@ -209,7 +141,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   return (
     <div id="hero-cover-section" className="w-full flex flex-col bg-[#FAF8F5] overflow-x-hidden">
-      {/* Scoped responsive focal rules: perfectly frames portrait mobile while leaving desktop 100% untouched */}
+      {/* Scoped responsive focal rules */}
       <style>{`
         #hero-cover-visual .hero-campaign-img {
           object-position: var(--hero-mobile-focal, center 28%) !important;
@@ -226,7 +158,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         }
       `}</style>
 
-      {/* 1. HERO CAMPAIGN VISUAL (Pure static photography, clean and 100% unobstructed) */}
+      {/* 1. HERO CAMPAIGN VISUAL */}
       <section 
         id="hero-cover-visual"
         className="relative w-full aspect-[16/10] sm:aspect-[16/9] md:aspect-[16/9] lg:aspect-auto lg:h-[78vh] min-h-[220px] sm:min-h-[340px] md:min-h-[400px] lg:min-h-[460px] max-h-[360px] sm:max-h-[500px] md:max-h-[580px] lg:max-h-[820px] overflow-hidden bg-[#1E1B18] select-none"
@@ -250,16 +182,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               onLoad={() => setIsImgLoaded(true)}
             />
           ) : (
-            /* Subtle skeleton loading placeholder while saved cover setting is being retrieved */
             <div className="w-full h-full bg-[#1E1B18] animate-pulse" />
           )}
 
-          {/* Clean, subtle cinematic tone mapping */}
+          {/* Clean cinematic tone mapping */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-black/35 pointer-events-none" />
         </div>
 
         {/* Floating Controls & Non-Intrusive Indicators */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-full flex flex-col justify-between py-3 sm:py-5 lg:py-6">
+          
           {/* Top Bar: Category Pill & Discrete Admin Cover Edit Tool */}
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-black/45 backdrop-blur-md border border-white/20 rounded-full text-[10px] sm:text-xs font-mono text-white shadow-sm">
@@ -279,7 +211,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   <Camera className="w-3.5 h-3.5 text-[#C9A96E]" />
                   <span className="hidden sm:inline">{isArabic ? 'تعديل صورة الواجهة' : 'Photo de couverture'}</span>
                 </button>
-
                 {storeSettings.heroImage && (
                   <button
                     type="button"
@@ -294,7 +225,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             )}
           </div>
 
-          {/* Bottom Bar: Discrete Campaign Brand Cue & Smooth Scroll to Written Info */}
+          {/* Bottom Bar: Brand Cue & Smooth Scroll to Written Info */}
           <div className="flex items-center justify-between pb-0.5 sm:pb-2">
             <div className="hidden sm:block">
               <span className="text-[11px] font-mono tracking-widest text-white/85 uppercase px-3.5 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/15">
@@ -311,6 +242,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <ChevronDown className="w-3.5 h-3.5 text-[#8C6D3B]" />
             </button>
           </div>
+
         </div>
       </section>
 
@@ -321,13 +253,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl space-y-3.5 sm:space-y-6 lg:space-y-7">
+            
             {/* Atelier Tagline Pill */}
             <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 bg-[#EDE6DB] text-[#785E32] rounded-full text-[11px] sm:text-xs font-mono font-bold tracking-wider uppercase border border-[#DDD3C4] max-w-full">
               <Sparkles className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
               <span className="truncate">{displayTagline}</span>
             </div>
 
-            {/* Main Headline with high contrast & balanced responsive typography */}
+            {/* Main Headline */}
             <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight text-[#1F1D1A] leading-[1.2] sm:leading-[1.12] break-words">
               {displayTitle}
             </h1>
@@ -337,7 +270,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               {displaySubtitle}
             </p>
 
-            {/* Action CTA Buttons */}
+            {/* Action CTA Buttons - Clear & Focused Hierarchy */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3.5 pt-1 sm:pt-4">
               <button
                 id="hero-explore-collection-btn"
@@ -356,22 +289,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <Building2 className="w-4 h-4 text-[#8C6D3B]" />
                 <span>{t.heroB2BBtn}</span>
               </button>
-
-              <a
-                id="hero-whatsapp-direct-btn"
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-4 sm:px-5 py-3.5 sm:py-4 min-h-[44px] bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-mono tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs font-semibold transition-colors"
-              >
-                <MessageCircle className="w-4 h-4 text-white" />
-                <span>{t.heroContactBtn}</span>
-              </a>
             </div>
+
           </div>
 
           {/* Trust & Capability Metrics Grid */}
           <div className="mt-8 sm:mt-14 lg:mt-16 pt-6 sm:pt-10 border-t border-[#E8E1D5] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6 lg:gap-8">
+            
             <div className="bg-white p-5 rounded-lg border border-[#E8E1D5] shadow-xs hover:border-[#C9A96E] transition-colors">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-full bg-[#FAF8F5] flex items-center justify-center border border-[#DDD4C5]">
@@ -418,7 +342,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </div>
               <p className="text-xs text-[#6B6357] font-mono leading-relaxed">{t.metricQualitySub}</p>
             </div>
+
           </div>
+
         </div>
       </section>
 
@@ -430,42 +356,27 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
-      {/* 4. Website Picture Cover Management Modal (Admin Only) */}
-      {isAdmin && (
+      {/* 4. Interactive Hero Cover Customizer Modal for Administrator */}
+      {isAdmin && isCoverModalOpen && (
         <CoverPhotoModal
           isOpen={isCoverModalOpen}
           onClose={() => setIsCoverModalOpen(false)}
-          currentImage={storeSettings.heroImage || ''}
-          currentFocalPosition={focalPosition}
-          currentOverlayStrength={overlayStrength}
-          isAdmin={isAdmin}
-          onSaveCover={(url, newFocalPos, newOverlayStr) => {
-            if (!isAdmin) return;
-            const updates: Partial<StoreSettings> = {
-              heroImage: url,
-              heroImages: url ? [url] : [],
-            };
-            if (newFocalPos) updates.heroFocalPosition = newFocalPos;
-            if (newOverlayStr) updates.heroOverlayStrength = newOverlayStr;
-
+          currentImage={heroImageSrc}
+          currentSettings={storeSettings}
+          currentLanguage={currentLanguage}
+          onSave={async (updates) => {
             if (onUpdateHeroSettings) {
               onUpdateHeroSettings(updates);
-            } else if (onUpdateHeroImage) {
-              onUpdateHeroImage(url);
             }
-
-            setToastText(
-              url 
-                ? (isArabic ? 'تم حفظ وتحديث صورة الواجهة بنجاح !' : 'Photo de couverture mise à jour avec succès !')
-                : (isArabic ? 'تمت استعادة الصورة الافتراضية' : 'Photo de couverture réinitialisée !')
-            );
+            setIsCoverModalOpen(false);
+            setToastText(isArabic ? 'تم حفظ التعديلات بنجاح !' : 'Paramètres enregistrés avec succès !');
             setJustUploadedToast(true);
             setTimeout(() => setJustUploadedToast(false), 3500);
           }}
-          mediaAssets={mediaAssets}
-          currentLanguage={currentLanguage}
         />
       )}
     </div>
   );
 };
+
+export default HeroBanner;
