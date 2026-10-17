@@ -52,7 +52,7 @@ export const Footer: React.FC<FooterProps> = ({
     setEmail('');
   };
 
-  // Social accounts detection - retrieves exact URLs saved in Manager Panel
+  // Social accounts detection - ONLY show configured links from Manager Panel
   const socialLinks: { id: string; name: string; url: string; icon: React.ReactNode; color: string }[] = [];
 
   if (storeSettings.instagram && storeSettings.instagram.trim().length > 0) {
@@ -113,7 +113,8 @@ export const Footer: React.FC<FooterProps> = ({
     <footer className="bg-[#191715] text-[#ECE7DF] border-t border-[#36322E] pt-14 pb-10 font-sans" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-[#36322E]">
-          {/* Brand Info (4 cols) */}
+          
+          {/* Brand Info & Newsletter (4 cols) */}
           <div className="lg:col-span-4 space-y-3.5">
             <div className="flex items-center gap-2">
               <span className="font-serif text-2xl tracking-[0.15em] font-semibold text-white">
@@ -140,39 +141,15 @@ export const Footer: React.FC<FooterProps> = ({
               {storeSettings.phone && <div>{t.footerPhoneLabel} {storeSettings.phone}</div>}
             </div>
 
-            {/* Social Media Channels (Brand column) */}
-            {socialLinks.length > 0 && (
-              <div className="pt-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#7C756B] block mb-2">
-                  {isArabic ? 'شبكات التواصل الاجتماعي :' : (currentLanguage === 'en' ? 'Follow Us :' : currentLanguage === 'es' ? 'Síguenos :' : 'Réseaux Sociaux :')}
-                </span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {socialLinks.map((item) => (
-                    <a
-                      key={item.id}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`p-2 rounded-full bg-[#24211D] border border-[#3E3831] text-[#B3AAA0] transition-all duration-200 cursor-pointer shadow-xs ${item.color} hover:bg-black hover:scale-105 active:scale-95`}
-                      title={`${item.name} - DBC Workshop`}
-                      aria-label={`${item.name} DBC Workshop`}
-                    >
-                      {item.icon}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Newsletter */}
             <div className="pt-4 max-w-sm">
               <span className="text-[11px] font-mono uppercase tracking-wider text-[#A8A196] block mb-2">
-                {t.footerNewsletterTitle}
+                {isArabic ? 'النشرة البريدية للأزياء :' : currentLanguage === 'en' ? 'Atelier Newsletter :' : currentLanguage === 'es' ? 'Boletín de Novedades :' : 'Newsletter de l’Atelier :'}
               </span>
               {subscribed ? (
                 <div className="p-2.5 bg-emerald-950/60 border border-emerald-800/80 rounded text-emerald-300 text-xs font-mono flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 shrink-0" />
-                  <span>{t.newsletterSuccess}</span>
+                  <span>{isArabic ? 'شكراً لاشتراكك في نشرة الورشة !' : currentLanguage === 'en' ? 'Thank you for subscribing to our newsletter!' : currentLanguage === 'es' ? '¡Gracias por suscribirse a nuestro boletín!' : 'Merci pour votre inscription à la newsletter !'}</span>
                 </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -180,7 +157,7 @@ export const Footer: React.FC<FooterProps> = ({
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t.newsletterPlaceholder}
+                    placeholder={isArabic ? 'أدخل بريدك الإلكتروني...' : currentLanguage === 'en' ? 'Your email address...' : currentLanguage === 'es' ? 'Su correo electrónico...' : 'Votre adresse email...'}
                     required
                     className="flex-1 px-3 py-1.5 text-xs bg-[#24211D] border border-[#3E3831] rounded text-white placeholder-[#787167] focus:outline-none focus:border-[#C9A96E] font-mono"
                   />
@@ -198,7 +175,7 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Navigation links (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
-              {t.footerColCollection}
+              {t.footerCollectionTitle}
             </h4>
             <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
               <li>
@@ -273,7 +250,7 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Customer Service & B2B (3 cols) */}
           <div className="lg:col-span-3 space-y-3">
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
-              {t.footerColService}
+              {t.footerServicesTitle}
             </h4>
             <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
               <li>
@@ -290,7 +267,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={onOpenSizeGuide}
                   className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right"
                 >
-                  {t.footerLinkSizeGuide}
+                  {t.footerSizeGuideLink}
                 </button>
               </li>
               {onOpenOrderLookup && (
@@ -313,26 +290,50 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li className="pt-2 text-[11px] text-[#7C756B] leading-relaxed">
-                {t.footerServiceGuarantee}
+                {t.footerWhatsappCareText}
               </li>
             </ul>
           </div>
 
-          {/* Delivery & Direct Atelier Contact (3 cols) */}
+          {/* Contact, Delivery & Official Social Channels (3 cols) */}
           <div className="lg:col-span-3 space-y-3">
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
-              {t.footerColAtelier}
+              {t.footerContactAtelier}
             </h4>
             <div className="space-y-2 text-xs font-mono text-[#A8A196]">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#C9A96E] shrink-0" />
-                <span>{t.footerDeliveryHighlight}</span>
+                <span>{t.footerHomeDeskDelivery}</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#C9A96E] shrink-0" />
-                <span>{t.footerQualityHighlight}</span>
+                <span>{t.footerAlgerianCraft}</span>
               </div>
             </div>
+
+            {/* Official Social Media Channels (Single Location) */}
+            {socialLinks.length > 0 && (
+              <div className="pt-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#7C756B] block mb-2">
+                  {isArabic ? 'شبكات التواصل الرسمي :' : (currentLanguage === 'en' ? 'Official Social Profiles :' : currentLanguage === 'es' ? 'Perfiles Oficiales :' : 'Réseaux Sociaux Officiels :')}
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {socialLinks.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 rounded-full bg-[#24211D] border border-[#3E3831] text-[#B3AAA0] transition-all duration-200 cursor-pointer shadow-xs ${item.color} hover:bg-black hover:scale-105 active:scale-95`}
+                      title={`${item.name} - DBC Workshop`}
+                      aria-label={`${item.name} DBC Workshop`}
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <a
               href={`https://wa.me/${cleanWhatsapp}`}
@@ -356,9 +357,10 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
             )}
           </div>
+
         </div>
 
-        {/* Bottom Bar: Brand Statement & Dedicated Social Media Links */}
+        {/* Bottom Bar: Brand Statement */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#8C8477] gap-3">
           <div className="flex items-center gap-2">
             <span>{storeSettings.storeName || 'DBC WORKSHOP ALGÉRIE'}</span>
@@ -366,26 +368,7 @@ export const Footer: React.FC<FooterProps> = ({
             <span>{t.footerAllRightsReserved}</span>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Social media icons also cleanly embedded in the bottom banner */}
-            {socialLinks.length > 0 && (
-              <div className="flex items-center gap-2 border-r rtl:border-r-0 rtl:border-l border-[#36322E] pr-3 rtl:pr-0 rtl:pl-3">
-                {socialLinks.map((item) => (
-                  <a
-                    key={`bottom-${item.id}`}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`text-[#A8A196] hover:text-white transition-colors p-1`}
-                    title={item.name}
-                    aria-label={item.name}
-                  >
-                    {item.icon}
-                  </a>
-                ))}
-              </div>
-            )}
-
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
             <span>{t.footerAlgerianCraft}</span>
             <span>•</span>
             <span>{t.footerWilayasExpress}</span>
@@ -400,3 +383,5 @@ export const Footer: React.FC<FooterProps> = ({
     </footer>
   );
 };
+
+export default Footer;
