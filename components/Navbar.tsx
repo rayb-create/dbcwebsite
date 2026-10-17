@@ -299,21 +299,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Desktop Order Lookup Tracker Trigger */}
-            <button
-              id="navbar-order-lookup-btn"
-              onClick={onOpenOrderLookup}
-              className="hidden sm:flex px-2.5 py-1 bg-white hover:bg-[#F2EDE4] text-[#1F1C19] border border-[#DDD4C5] rounded text-xs font-mono items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
-              title="Suivi de Commande & Livraison 69 Wilayas"
-            >
-              <Truck className="w-3.5 h-3.5 text-[#8C6D3B]" />
-              <span className="hidden md:inline">{t.navOrderLookup}</span>
-            </button>
-
             {/* Desktop Contact Trigger */}
             <button
               onClick={onOpenContact}
-              className="hidden sm:flex p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors"
+              className="hidden sm:flex p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors cursor-pointer"
               title={t.navContact}
             >
               <Phone className="w-5 h-5" />
@@ -323,12 +312,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="navbar-wishlist-btn"
               onClick={onOpenWishlist}
-              className="p-1.5 sm:p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative"
+              className="p-1.5 sm:p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative cursor-pointer"
               title="Favoris"
             >
               <Heart className="w-5 h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#8C6D3B] text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#8C6D3B] text-white text-[9px] sm:text-[10px] font-mono font-bold rounded-full flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
@@ -338,7 +327,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="navbar-cart-btn"
               onClick={onOpenCart}
-              className="p-1.5 sm:p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-1.5"
+              className="p-1.5 sm:p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-1.5 cursor-pointer"
               title="Panier"
             >
               <div className="relative">
