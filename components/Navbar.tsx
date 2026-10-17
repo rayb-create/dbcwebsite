@@ -34,7 +34,7 @@ interface NavbarProps {
   onOpenAdmin?: () => void;
   onOpenContact: () => void;
   onOpenB2B: () => void;
-  onOpenOrderLookup?: () => void;
+  onOpenOrderLookup: () => void;
   activeCategory: string;
   onSelectCategory: (cat: string) => void;
   searchQuery: string;
@@ -42,13 +42,7 @@ interface NavbarProps {
   storeSettings: StoreSettings;
 }
 
-interface LanguageOption {
-  code: Language;
-  label: string;
-  native: string;
-}
-
-const LANGUAGES: LanguageOption[] = [
+const LANGUAGES: { code: Language; label: string; native: string }[] = [
   { code: 'en', label: 'English', native: 'English' },
   { code: 'fr', label: 'French', native: 'Français' },
   { code: 'ar', label: 'Arabic', native: 'العربية' },
@@ -85,7 +79,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
 
-  const categories = [
+  const customNavCategories = (storeSettings.customCategories || []).map((cat) => ({
+    id: cat.id,
+    label: (currentLanguage === 'ar' ? cat.nameAr : currentLanguage === 'es' ? cat.nameEs : currentLanguage === 'en' ? cat.nameEn : cat.name) || cat.name,
+  }));
+
+  const standardNavCategories = [
     { id: 'all', label: t.navAll },
     { id: 'hoodies', label: t.navHoodies },
     { id: 'joggers', label: t.navJoggers },
@@ -96,11 +95,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'b2b', label: t.navB2B },
   ];
 
-  const customCategories = storeSettings?.customCategories || [];
+  const categories = [...standardNavCategories, ...customNavCategories];
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
-      {/* Top Banner: Wilaya delivery notification & WhatsApp quick access */}
+      {/* Top Banner: Atelier Contact, 69 Wilayas Delivery, and Order Lookup */}
       <div className="bg-[#1F1D1A] text-[#EDE7DD] text-[11px] font-mono py-1.5 px-4 tracking-wider">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -119,31 +118,36 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>WhatsApp : {storeSettings.whatsappNumber || '0550 45 88 12'}</span>
             </a>
 
-            {onOpenOrderLookup && (
-              <button
-                onClick={onOpenOrderLookup}
-                className="text-[#E0D8CB] hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <Truck className="w-3.5 h-3.5 text-[#C9A96E]" />
-                <span>{t.navOrderLookup}</span>
-              </button>
-            )}
+            <button
+              onClick={onOpenOrderLookup}
+              className="text-[#E0D8CB] hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Truck className="w-3.5 h-3.5 text-[#C9A96E]" />
+              <span>{t.navOrderLookup}</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Navbar Bar */}
+      {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
-          {/* Mobile menu button */}
-          <div className="flex items-center lg:hidden">
+          {/* Mobile Menu & Search buttons */}
+          <div className="flex items-center gap-1 lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 -ml-2 text-[#2C2825] hover:text-black focus:outline-none cursor-pointer"
-              aria-label="Menu"
+              className="p-1.5 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors"
+              aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="p-1.5 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors"
+              aria-label="Recherche"
+            >
+              <Search className="w-5 h-5" />
             </button>
           </div>
 
@@ -183,54 +187,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ))}
 
-            {customCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => onSelectCategory(cat.id)}
-                className={`px-2.5 py-1.5 rounded uppercase transition-colors cursor-pointer whitespace-nowrap ${
-                  activeCategory === cat.id
-                    ? 'bg-[#8C6D3B] text-white font-bold'
-                    : 'text-[#8C6D3B] hover:text-black hover:bg-[#EAE4D9]/60'
-                }`}
-              >
-                {isArabic ? (cat.nameAr || cat.name) : currentLanguage === 'en' ? (cat.nameEn || cat.name) : currentLanguage === 'es' ? (cat.nameEs || cat.name) : cat.name}
-              </button>
-            ))}
+            <button
+              onClick={onOpenB2B}
+              className="px-2.5 py-1.5 rounded uppercase transition-colors cursor-pointer whitespace-nowrap text-[#8C6D3B] font-bold hover:bg-[#EAE4D9]/60 flex items-center gap-1"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{t.navB2B}</span>
+            </button>
           </nav>
 
-          {/* Action Icons & Selectors */}
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Right Action Icons & Selectors */}
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
             
-            {/* Search Bar Toggle / Expandable Input */}
-            <div className="relative">
-              {searchOpen ? (
-                <div className="flex items-center bg-[#F2EDE4] border border-[#DDD4C5] rounded px-2.5 py-1 animate-in fade-in duration-200">
-                  <Search className="w-3.5 h-3.5 text-[#8C6D3B] shrink-0" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder={t.searchPlaceholder}
-                    autoFocus
-                    className="w-28 sm:w-44 md:w-56 bg-transparent border-none text-xs font-mono text-[#1F1D1A] focus:outline-none pl-2 pr-1"
-                  />
-                  <button
-                    onClick={() => {
-                      onSearchChange('');
-                      setSearchOpen(false);
-                    }}
-                    className="text-[#7C756B] hover:text-black cursor-pointer p-0.5"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
+            {/* Desktop Search */}
+            <div className="hidden md:flex items-center relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className="w-44 lg:w-56 pl-8 pr-3 py-1.5 text-xs font-sans bg-[#F2EDE4] border border-[#DDD4C5] rounded focus:outline-none focus:border-black focus:w-64 transition-all"
+              />
+              <Search className="w-3.5 h-3.5 text-[#7C756B] absolute left-2.5 rtl:left-auto rtl:right-2.5" />
+              {searchQuery && (
                 <button
-                  onClick={() => setSearchOpen(true)}
-                  className="p-2 text-[#2C2825] hover:text-black hover:bg-[#EDE7DD] rounded-full transition-colors cursor-pointer"
-                  title={t.searchPlaceholder}
+                  onClick={() => onSearchChange('')}
+                  className="absolute right-2 rtl:right-auto rtl:left-2 text-[#7C756B] hover:text-black text-xs font-bold"
                 >
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ×
                 </button>
               )}
             </div>
@@ -286,7 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="px-1.5 py-1 sm:px-2 sm:py-1 bg-[#F2EDE4] hover:bg-[#E8E1D5] border border-[#DDD4C5] rounded text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
                 title="Devise / العملة"
               >
-                <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8C6D3B]" />
+                <Coins className="w-3.5 h-3.5 text-[#8C6D3B] shrink-0 inline-block" />
                 <span>{currency}</span>
                 <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7C756B]" />
               </button>
@@ -315,36 +299,58 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Wishlist Button */}
+            {/* Desktop Order Lookup Tracker Trigger */}
             <button
-              onClick={onOpenWishlist}
-              className="p-2 text-[#2C2825] hover:text-black hover:bg-[#EDE7DD] rounded-full transition-colors relative cursor-pointer"
-              title={t.navWishlist}
+              id="navbar-order-lookup-btn"
+              onClick={onOpenOrderLookup}
+              className="hidden sm:flex px-2.5 py-1 bg-white hover:bg-[#F2EDE4] text-[#1F1C19] border border-[#DDD4C5] rounded text-xs font-mono items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+              title="Suivi de Commande & Livraison 69 Wilayas"
             >
-              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Truck className="w-3.5 h-3.5 text-[#8C6D3B]" />
+              <span className="hidden md:inline">{t.navOrderLookup}</span>
+            </button>
+
+            {/* Desktop Contact Trigger */}
+            <button
+              onClick={onOpenContact}
+              className="hidden sm:flex p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors"
+              title={t.navContact}
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+
+            {/* Wishlist Icon */}
+            <button
+              id="navbar-wishlist-btn"
+              onClick={onOpenWishlist}
+              className="p-1.5 sm:p-2 text-[#4A4338] hover:text-black hover:bg-[#F2EDE4] rounded transition-colors relative"
+              title="Favoris"
+            >
+              <Heart className="w-5 h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#8C6D3B] text-white text-[10px] font-mono font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#8C6D3B] text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
             </button>
 
-            {/* Cart Button */}
+            {/* Cart / Shop Icon */}
             <button
-              onClick={onOpenCart}
               id="navbar-cart-btn"
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-[#1F1D1A] hover:bg-black text-white rounded text-xs font-mono font-semibold transition-colors cursor-pointer shadow-xs"
-              title={t.cartTitle}
+              onClick={onOpenCart}
+              className="p-1.5 sm:p-2 text-[#1F1C19] hover:bg-[#F2EDE4] rounded transition-colors relative flex items-center gap-1.5"
+              title="Panier"
             >
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C9A96E]" />
-              <span className="hidden sm:inline">{cartCount}</span>
-              {cartCount > 0 && (
-                <span className="sm:hidden text-[11px] font-bold text-[#C9A96E]">
-                  ({cartCount})
-                </span>
-              )}
+              <div className="relative">
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-black text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
               {cartTotal > 0 && (
-                <span className="hidden md:inline border-l border-white/20 pl-1.5 text-[#C9A96E]">
+                <span className="hidden xl:inline font-bold">
                   {formatPrice(cartTotal, currency, isArabic)}
                 </span>
               )}
@@ -355,103 +361,87 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#FAF8F5] border-b border-[#DDD4C5] px-4 pt-3 pb-6 space-y-4 animate-in slide-in-from-top-2 duration-200">
-          
-          {/* Quick Search */}
+      {/* Mobile Search Bar Expandable */}
+      {searchOpen && (
+        <div className="md:hidden px-4 pb-3 pt-1 border-t border-[#E8E2D8] bg-[#FAF8F5]">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8C6D3B]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-[#DDD4C5] rounded text-xs font-mono text-[#1F1D1A] focus:outline-none"
+              className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-[#DDD4C5] rounded focus:outline-none"
+              autoFocus
             />
+            <Search className="w-4 h-4 text-[#7C756B] absolute left-3 top-2.5" />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-3 top-2 text-[#7C756B] font-bold"
+              >
+                ×
+              </button>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* Categories Grid */}
-          <div>
-            <div className="text-[11px] font-mono text-[#8C8377] uppercase tracking-wider mb-2">
-              {t.footerColCollection}
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    onSelectCategory(cat.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`py-2 px-3 rounded text-left rtl:text-right transition-colors cursor-pointer ${
-                    activeCategory === cat.id
-                      ? 'bg-[#1F1D1A] text-white font-bold'
-                      : 'bg-[#F2EDE4] text-[#2C2825] hover:bg-[#E8E1D5]'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-[#E8E2D8] bg-[#FAF8F5] px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-150">
+          <div className="space-y-1">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  onSelectCategory(cat.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left rtl:text-right px-3 py-2 text-xs font-mono uppercase tracking-wider rounded transition-colors cursor-pointer ${
+                  activeCategory === cat.id
+                    ? 'bg-[#1F1D1A] text-white font-bold'
+                    : 'text-[#4A4338] hover:bg-[#F2EDE4]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
 
-              {customCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    onSelectCategory(cat.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`py-2 px-3 rounded text-left rtl:text-right transition-colors cursor-pointer ${
-                    activeCategory === cat.id
-                      ? 'bg-[#8C6D3B] text-white font-bold'
-                      : 'bg-[#EAE4D9] text-[#8C6D3B] font-semibold hover:bg-[#DDD4C5]'
-                  }`}
-                >
-                  {isArabic ? (cat.nameAr || cat.name) : currentLanguage === 'en' ? (cat.nameEn || cat.name) : currentLanguage === 'es' ? (cat.nameEs || cat.name) : cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
+            <button
+              onClick={() => {
+                onOpenOrderLookup();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#1F1C19] font-bold flex items-center gap-2 bg-white border border-[#DDD4C5] rounded"
+            >
+              <Truck className="w-4 h-4 text-[#8C6D3B]" />
+              <span>{t.navOrderLookup} (69 Wilayas)</span>
+            </button>
 
-          {/* Quick Action Links */}
-          <div className="pt-2 border-t border-[#E8E2D8] flex flex-col gap-2 text-xs font-mono">
             <button
               onClick={() => {
                 onOpenB2B();
                 setMobileMenuOpen(false);
               }}
-              className="py-2.5 px-3 bg-[#24211D] text-[#C9A96E] rounded flex items-center gap-2 font-bold cursor-pointer"
+              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#8C6D3B] font-bold flex items-center gap-2"
             >
               <Building2 className="w-4 h-4" />
               <span>{t.navB2B}</span>
             </button>
-
-            {onOpenOrderLookup && (
-              <button
-                onClick={() => {
-                  onOpenOrderLookup();
-                  setMobileMenuOpen(false);
-                }}
-                className="py-2 px-3 bg-[#F2EDE4] hover:bg-[#E8E1D5] rounded flex items-center gap-2 text-[#2C2825] cursor-pointer"
-              >
-                <Truck className="w-4 h-4 text-[#8C6D3B]" />
-                <span>{t.navOrderLookup}</span>
-              </button>
-            )}
 
             <button
               onClick={() => {
                 onOpenContact();
                 setMobileMenuOpen(false);
               }}
-              className="py-2 px-3 bg-[#F2EDE4] hover:bg-[#E8E1D5] rounded flex items-center gap-2 text-[#2C2825] cursor-pointer"
+              className="w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-[#4A4338] flex items-center gap-2"
             >
               <Phone className="w-4 h-4" />
               <span>{t.navContact} ({storeSettings.phone})</span>
             </button>
           </div>
 
-          {/* Mobile Language and Currency Selectors */}
+          {/* Mobile Language & Currency Selector Grid */}
           <div className="pt-3 border-t border-[#E8E2D8] space-y-3">
             <div>
               <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
@@ -480,7 +470,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <div>
               <div className="text-[11px] font-mono text-[#8C8377] uppercase flex items-center gap-1 mb-1.5">
-                <Coins className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <Coins className="w-3.5 h-3.5 text-[#8C6D3B] shrink-0 inline-block" />
                 <span>Devise / Currency</span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -497,7 +487,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'bg-[#F2EDE4] text-[#4A4338] hover:bg-[#E8E1D5]'
                     }`}
                   >
-                    {c}
+                    {c} {c === 'DZD' ? '(د.ج)' : ''}
                   </button>
                 ))}
               </div>
@@ -509,3 +499,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
+export default Navbar;
