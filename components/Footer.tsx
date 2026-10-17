@@ -3,17 +3,13 @@ import {
   Truck, 
   ShieldCheck, 
   Mail, 
-  ArrowRight, 
   Check, 
-  Heart, 
   Building2, 
-  Phone, 
   MessageCircle, 
   CreditCard, 
   Instagram,
   Facebook,
-  MapPin,
-  ExternalLink
+  MapPin
 } from 'lucide-react';
 import { StoreSettings } from '../types';
 import { Language, TRANSLATIONS } from '../data/i18n';
@@ -63,7 +59,7 @@ export const Footer: React.FC<FooterProps> = ({
       name: 'Instagram',
       url,
       icon: <Instagram className="w-4 h-4" />,
-      color: 'hover:text-[#E1306C] hover:border-[#E1306C]'
+      color: 'hover:text-[#FFFFFF] hover:border-white'
     });
   }
 
@@ -75,7 +71,7 @@ export const Footer: React.FC<FooterProps> = ({
       name: 'Facebook',
       url,
       icon: <Facebook className="w-4 h-4" />,
-      color: 'hover:text-[#1877F2] hover:border-[#1877F2]'
+      color: 'hover:text-[#FFFFFF] hover:border-white'
     });
   }
 
@@ -85,7 +81,7 @@ export const Footer: React.FC<FooterProps> = ({
       name: 'WhatsApp',
       url: `https://wa.me/${cleanWhatsapp}`,
       icon: <MessageCircle className="w-4 h-4" />,
-      color: 'hover:text-[#25D366] hover:border-[#25D366]'
+      color: 'hover:text-[#FFFFFF] hover:border-white'
     });
   }
 
@@ -95,7 +91,7 @@ export const Footer: React.FC<FooterProps> = ({
       name: 'Email',
       url: `mailto:${storeSettings.email.trim()}`,
       icon: <Mail className="w-4 h-4" />,
-      color: 'hover:text-[#C9A96E] hover:border-[#C9A96E]'
+      color: 'hover:text-[#FFFFFF] hover:border-white'
     });
   }
 
@@ -105,35 +101,35 @@ export const Footer: React.FC<FooterProps> = ({
       name: 'Google Maps',
       url: storeSettings.mapsUrl.trim(),
       icon: <MapPin className="w-4 h-4" />,
-      color: 'hover:text-[#EA4335] hover:border-[#EA4335]'
+      color: 'hover:text-[#FFFFFF] hover:border-white'
     });
   }
 
   return (
-    <footer className="bg-[#191715] text-[#ECE7DF] border-t border-[#36322E] pt-14 pb-10 font-sans" dir={isArabic ? 'rtl' : 'ltr'}>
+    <footer className="bg-[#111111] text-[#FFFFFF] border-t border-black pt-16 pb-12 font-sans" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-[#36322E]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-[#262626]">
           
           {/* Brand Info & Newsletter (4 cols) */}
-          <div className="lg:col-span-4 space-y-3.5">
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-2xl tracking-[0.15em] font-semibold text-white">
+          <div className="lg:col-span-4 space-y-4">
+            <div>
+              <span className="font-serif text-2xl tracking-[0.2em] font-normal text-white uppercase">
                 {storeSettings.storeName || 'DBC WORKSHOP'}
               </span>
             </div>
-            <p className="text-xs font-mono text-[#A8A196] tracking-wider uppercase">
+            <p className="text-xs font-mono text-[#737373] tracking-widest uppercase">
               {t.subTagline || t.tagline}
             </p>
-            <p className="text-xs text-[#9E9689] leading-relaxed max-w-sm">
+            <p className="text-xs text-[#A3A3A3] leading-relaxed max-w-sm">
               {t.footerAboutText}
             </p>
-            <div className="pt-1 text-xs font-mono text-[#8C8477] space-y-1">
+            <div className="pt-1 text-xs font-mono text-[#737373] space-y-1">
               {storeSettings.address && <div>{t.footerShowroomLabel} {storeSettings.address}</div>}
               {storeSettings.city && <div>{t.footerCityLabel} {storeSettings.city}</div>}
               {storeSettings.email && (
                 <div>
                   {t.footerDirectEmail}{' '}
-                  <a href={`mailto:${storeSettings.email}`} className="text-[#C9A96E] hover:underline" target="_blank" rel="noopener noreferrer">
+                  <a href={`mailto:${storeSettings.email}`} className="text-white hover:underline" target="_blank" rel="noopener noreferrer">
                     {storeSettings.email}
                   </a>
                 </div>
@@ -143,12 +139,12 @@ export const Footer: React.FC<FooterProps> = ({
 
             {/* Newsletter */}
             <div className="pt-4 max-w-sm">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#A8A196] block mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-[#737373] block mb-2">
                 {isArabic ? 'النشرة البريدية للأزياء :' : currentLanguage === 'en' ? 'Atelier Newsletter :' : currentLanguage === 'es' ? 'Boletín de Novedades :' : 'Newsletter de l’Atelier :'}
               </span>
               {subscribed ? (
-                <div className="p-2.5 bg-emerald-950/60 border border-emerald-800/80 rounded text-emerald-300 text-xs font-mono flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 shrink-0" />
+                <div className="p-3 bg-[#1A1A1A] border border-[#333333] text-white text-xs font-mono flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 shrink-0 text-white" />
                   <span>{isArabic ? 'شكراً لاشتراكك في نشرة الورشة !' : currentLanguage === 'en' ? 'Thank you for subscribing to our newsletter!' : currentLanguage === 'es' ? '¡Gracias por suscribirse a nuestro boletín!' : 'Merci pour votre inscription à la newsletter !'}</span>
                 </div>
               ) : (
@@ -159,11 +155,11 @@ export const Footer: React.FC<FooterProps> = ({
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={isArabic ? 'أدخل بريدك الإلكتروني...' : currentLanguage === 'en' ? 'Your email address...' : currentLanguage === 'es' ? 'Su correo electrónico...' : 'Votre adresse email...'}
                     required
-                    className="flex-1 px-3 py-1.5 text-xs bg-[#24211D] border border-[#3E3831] rounded text-white placeholder-[#787167] focus:outline-none focus:border-[#C9A96E] font-mono"
+                    className="flex-1 px-3 py-2 text-xs bg-[#1A1A1A] border border-[#333333] text-white placeholder-[#737373] focus:outline-none focus:border-white font-mono"
                   />
                   <button
                     type="submit"
-                    className="px-3 py-1.5 bg-[#C9A96E] hover:bg-[#B89657] text-[#191715] font-mono text-xs font-bold uppercase tracking-wider rounded transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-white hover:bg-[#DCDCDC] text-[#111111] font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                   >
                     OK
                   </button>
@@ -177,7 +173,7 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerCollectionTitle}
             </h4>
-            <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
+            <ul className="space-y-2 text-xs font-mono text-[#A3A3A3]">
               <li>
                 <button
                   onClick={() => onSelectCategory('all')}
@@ -238,7 +234,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <li key={cat.id}>
                   <button
                     onClick={() => onSelectCategory(cat.id)}
-                    className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right text-[#C9A96E]"
+                    className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right text-[#DCDCDC]"
                   >
                     {isArabic ? (cat.nameAr || cat.name) : currentLanguage === 'en' ? (cat.nameEn || cat.name) : currentLanguage === 'es' ? (cat.nameEs || cat.name) : cat.name}
                   </button>
@@ -252,11 +248,11 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerServicesTitle}
             </h4>
-            <ul className="space-y-2 text-xs font-mono text-[#A8A196]">
+            <ul className="space-y-2 text-xs font-mono text-[#A3A3A3]">
               <li>
                 <button
                   onClick={onOpenB2B}
-                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right flex items-center gap-1.5 text-[#C9A96E] font-semibold"
+                  className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right flex items-center gap-1.5 text-white font-bold"
                 >
                   <Building2 className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.navB2B}</span>
@@ -276,7 +272,7 @@ export const Footer: React.FC<FooterProps> = ({
                     onClick={onOpenOrderLookup}
                     className="hover:text-white transition-colors cursor-pointer text-left rtl:text-right flex items-center gap-1.5"
                   >
-                    <Truck className="w-3.5 h-3.5 shrink-0 text-[#C9A96E]" />
+                    <Truck className="w-3.5 h-3.5 shrink-0 text-white" />
                     <span>{t.navOrderLookup}</span>
                   </button>
                 </li>
@@ -289,7 +285,7 @@ export const Footer: React.FC<FooterProps> = ({
                   {t.navContact}
                 </button>
               </li>
-              <li className="pt-2 text-[11px] text-[#7C756B] leading-relaxed">
+              <li className="pt-2 text-[11px] text-[#737373] leading-relaxed">
                 {t.footerWhatsappCareText}
               </li>
             </ul>
@@ -300,13 +296,13 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
               {t.footerContactAtelier}
             </h4>
-            <div className="space-y-2 text-xs font-mono text-[#A8A196]">
+            <div className="space-y-2 text-xs font-mono text-[#A3A3A3]">
               <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-[#C9A96E] shrink-0" />
+                <Truck className="w-4 h-4 text-white shrink-0" />
                 <span>{t.footerHomeDeskDelivery}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#C9A96E] shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-white shrink-0" />
                 <span>{t.footerAlgerianCraft}</span>
               </div>
             </div>
@@ -314,7 +310,7 @@ export const Footer: React.FC<FooterProps> = ({
             {/* Official Social Media Channels (Single Location) */}
             {socialLinks.length > 0 && (
               <div className="pt-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#7C756B] block mb-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#737373] block mb-2">
                   {isArabic ? 'شبكات التواصل الرسمي :' : (currentLanguage === 'en' ? 'Official Social Profiles :' : currentLanguage === 'es' ? 'Perfiles Oficiales :' : 'Réseaux Sociaux Officiels :')}
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -324,7 +320,7 @@ export const Footer: React.FC<FooterProps> = ({
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-2 rounded-full bg-[#24211D] border border-[#3E3831] text-[#B3AAA0] transition-all duration-200 cursor-pointer shadow-xs ${item.color} hover:bg-black hover:scale-105 active:scale-95`}
+                      className="p-2 border border-[#333333] text-[#A3A3A3] hover:text-white hover:border-white transition-colors cursor-pointer"
                       title={`${item.name} - DBC Workshop`}
                       aria-label={`${item.name} DBC Workshop`}
                     >
@@ -339,19 +335,19 @@ export const Footer: React.FC<FooterProps> = ({
               href={`https://wa.me/${cleanWhatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/30 transition-colors text-xs font-mono font-bold cursor-pointer"
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 border border-[#333333] hover:border-white text-white transition-colors text-xs font-mono font-bold cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               <span>WhatsApp : {storeSettings.whatsappNumber || '0550 45 88 12'}</span>
             </a>
 
             {storeSettings.baridiMobRip && (
-              <div className="pt-2 p-3 bg-[#24211D] border border-[#3B352E] rounded space-y-1 font-mono text-[11px] text-[#A8A196]">
+              <div className="pt-2 p-3 bg-[#1A1A1A] border border-[#2E2E2E] space-y-1 font-mono text-[11px] text-[#A3A3A3]">
                 <div className="flex items-center gap-1.5 text-white font-bold">
-                  <CreditCard className="w-3.5 h-3.5 text-[#C9A96E]" />
+                  <CreditCard className="w-3.5 h-3.5 text-white" />
                   <span>BaridiMob Disponible</span>
                 </div>
-                <p className="text-[10px] text-[#8C8477]">
+                <p className="text-[10px] text-[#737373]">
                   RIP : {storeSettings.baridiMobRip}
                 </p>
               </div>
@@ -361,7 +357,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Bar: Brand Statement */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#8C8477] gap-3">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#737373] gap-3">
           <div className="flex items-center gap-2">
             <span>{storeSettings.storeName || 'DBC WORKSHOP ALGÉRIE'}</span>
             <span>•</span>
@@ -376,7 +372,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Very bottom copyright notice */}
-        <div className="mt-8 pt-6 border-t border-[#292522] text-center text-[11px] font-mono text-[#6E675D]">
+        <div className="mt-8 pt-6 border-t border-[#262626] text-center text-[11px] font-mono text-[#737373]">
           <p>© {new Date().getFullYear()} DBC Workshop. All rights reserved.</p>
         </div>
       </div>
