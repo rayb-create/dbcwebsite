@@ -46,12 +46,13 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* Subtle architectural monochrome scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3F3F1;
+  background: #F8F8F7;
 }
 ::-webkit-scrollbar-thumb {
   background: #DCDCDC;
