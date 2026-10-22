@@ -5,9 +5,7 @@ import {
   Camera, 
   Trash2, 
   Check, 
-  ChevronDown,
-  ShieldCheck,
-  Truck
+  ChevronDown 
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
@@ -61,27 +59,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
   const [toastText, setToastText] = useState('');
 
-  // Fallback high-fashion campaign photography for DBC Workshop:
-  // Minimalist, studio-lit editorial model composition with architectural silhouette & generous presence.
   // Hero image is intentionally blank unless explicitly uploaded by the store owner in the Manager Panel
-  const fallbackHeroImage = '';
-
-  // Safety timeout if Firestore takes long, ensuring the hero doesn't remain blank indefinitely
-  const [settingsTimeout, setSettingsTimeout] = useState(false);
-  useEffect(() => {
-    if (isSettingsLoaded) return;
-    const timer = setTimeout(() => {
-      setSettingsTimeout(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [isSettingsLoaded]);
-
-  const isCoverDetermined = Boolean(
-    (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0) ||
-    isSettingsLoaded ||
-    settingsTimeout
-  );
-
   const heroImageSrc = (storeSettings.heroImage && storeSettings.heroImage.trim().length > 0)
     ? storeSettings.heroImage
     : '';
@@ -113,15 +91,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     setTimeout(() => setJustUploadedToast(false), 3000);
   };
 
-  const scrollToWrittenInfo = () => {
-    const el = document.getElementById('hero-written-info');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      onExploreCollection();
-    }
-  };
-
   const isBannedPhrase = (text?: string) => {
     return isBannedHeroPhrase(text);
   };
@@ -131,9 +100,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return !isBannedPhrase(defaultText) ? defaultText : '';
   };
 
-  // Dynamic Content Resolution with fallback to editorial brand positioning
   const displayBrandName = storeSettings.storeName || 'DBC WORKSHOP';
   
+  // Short, carefully typeset editorial headline
   const displayHeadline = currentLanguage === 'ar'
     ? 'اثبت حضورك الخاص.'
     : currentLanguage === 'es'
@@ -142,15 +111,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     ? 'IMPOSEZ VOTRE PRÉSENCE.'
     : 'OWN YOUR PRESENCE.';
 
-
-
-  const displayTagline = currentLanguage === 'es'
-    ? getSafeText(storeSettings.taglineEs, 'Atelier de Confección & Marca Textil Argelina')
-    : currentLanguage === 'ar'
-    ? getSafeText(storeSettings.taglineAr, 'ورشة تصنيع ملابس فاخرة • جودة جزائرية معتمدة')
+  // One concise supporting sentence
+  const displaySubtitle = currentLanguage === 'ar'
+    ? (getSafeText(storeSettings.heroSubtitleAr, 'تصميم وحياكة أرقى الملابس والأطقم في الجزائر بمقاييس عالمية للأفراد والمتاجر.'))
+    : currentLanguage === 'es'
+    ? (getSafeText(storeSettings.heroSubtitleEs, 'Diseño y confección de prendas premium en Argelia para clientes y tiendas.'))
     : currentLanguage === 'en'
-    ? getSafeText(storeSettings.taglineEn, 'Apparel Atelier & Luxury Garment Production')
-    : getSafeText(storeSettings.tagline, 'Atelier de Confection & Marque Textile');
+    ? (getSafeText(storeSettings.heroSubtitleEn, 'Design and garment manufacturing in Algeria crafted for individuals and wholesale partners.'))
+    : (getSafeText(storeSettings.heroSubtitle, 'Conception et confection de vêtements haut de gamme en Algérie pour particuliers et boutiques revendeurs.'));
 
   // Focal point mapping for responsive devices
   const desktopFocal = focalPosition || 'center';
@@ -192,10 +160,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         }
       `}</style>
 
-      {/* 1. IMMERSIVE EDITORIAL FASHION CAMPAIGN HERO */}
+      {/* REFINED EDITORIAL HERO: Calm, beautiful, intentional */}
       <section 
         id="hero-campaign-visual"
-        className="relative w-full min-h-[75vh] sm:min-h-[82vh] lg:min-h-[90vh] flex flex-col justify-between overflow-hidden bg-[#111111] select-none"
+        className={`relative w-full flex flex-col justify-between overflow-hidden select-none transition-colors ${
+          heroImageSrc 
+            ? 'min-h-[75vh] sm:min-h-[82vh] lg:min-h-[88vh] bg-[#111111]' 
+            : 'min-h-[55vh] sm:min-h-[64vh] lg:min-h-[72vh] bg-[#FBFBFA] border-b border-[#E6E6E6]'
+        }`}
         style={{
           width: '100%',
           ['--hero-mobile-focal' as string]: mobileFocal,
@@ -203,9 +175,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           ['--hero-desktop-focal' as string]: desktopFocal,
         } as React.CSSProperties}
       >
-        {/* Full-Bleed Campaign Image */}
-        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 bg-[#111111]">
-          {heroImageSrc ? (
+        {/* Large, spacious image area (Displays user's photo when uploaded, otherwise remains clean neutral background) */}
+        {heroImageSrc ? (
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0 bg-[#111111]">
             <img
               ref={imgRef}
               src={heroImageSrc}
@@ -215,29 +187,33 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               }`}
               onLoad={() => setIsImgLoaded(true)}
             />
-          ) : (
-            <div className="w-full h-full bg-[#111111] animate-pulse" />
-          )}
+            {/* Subtle editorial scrim for legibility */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/40 pointer-events-none" />
+          </div>
+        ) : null}
 
-          {/* Architectural Fashion Scrim: Subtle, high-contrast monochrome gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50 pointer-events-none" />
-        </div>
-
-        {/* Top Floating Utility: Atelier Badge & Admin Cover Controls */}
+        {/* Top Header Eyebrow & Admin Cover Controls */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] sm:text-xs font-sans uppercase tracking-[0.2em] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-            <span>{displayBrandName} • {isArabic ? 'صناعة جزائرية' : 'Algérie'}</span>
+          <div className={`inline-flex items-center gap-2 text-[11px] font-sans uppercase tracking-[0.25em] font-medium ${
+            heroImageSrc ? 'text-white/80' : 'text-[#737373]'
+          }`}>
+            <span>{displayBrandName}</span>
+            <span>•</span>
+            <span>{isArabic ? 'ورشة أزياء جزائرية' : 'Atelier de Confection'}</span>
           </div>
 
-          {/* Admin-only cover photo customizer trigger */}
+          {/* Admin-only cover photo customizer trigger (Strictly hidden for public visitors) */}
           {isAdmin && (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsCoverModalOpen(true)}
-                className="px-3 py-1.5 bg-black/75 hover:bg-black text-white text-xs font-sans flex items-center gap-1.5 border border-white/25 transition-colors cursor-pointer backdrop-blur-md shadow-md"
-                title={isArabic ? 'تعديل صورة الواجهة وموضع التركيز' : 'Modifier la photo de couverture'}
+                className={`px-3 py-1.5 text-xs font-sans flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                  heroImageSrc
+                    ? 'bg-black/75 hover:bg-black text-white border-white/25 backdrop-blur-md'
+                    : 'bg-white hover:bg-[#F3F3F1] text-[#111111] border-[#E6E6E6]'
+                }`}
+                title={isArabic ? 'رفع صورة الواجهة وتحديد موضع التركيز' : 'Ajouter une photo de couverture'}
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{isArabic ? 'صورة الواجهة' : 'Photo de couverture'}</span>
@@ -246,8 +222,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <button
                   type="button"
                   onClick={handleRemoveHeroImage}
-                  className="p-1.5 bg-black/75 hover:bg-rose-900 text-white text-xs font-sans border border-white/25 transition-colors cursor-pointer backdrop-blur-md shadow-md"
-                  title={isArabic ? 'استعادة الصورة الافتراضية' : 'Réinitialiser la photo'}
+                  className="p-1.5 bg-black/75 hover:bg-rose-900 text-white text-xs font-sans border border-white/25 transition-colors cursor-pointer backdrop-blur-md"
+                  title={isArabic ? 'إزالة الصورة' : 'Retirer la photo'}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -256,146 +232,57 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           )}
         </div>
 
-        {/* Bottom Editorial Content Overlay: Typographic Presence with Generous Whitespace */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 sm:pb-16 lg:pb-20 pt-24 flex flex-col justify-end">
-          <div className="max-w-3xl space-y-4 sm:space-y-6">
+        {/* Hero Content: Short Headline, One Concise Sentence, One Primary CTA & One Subtle Secondary Link */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-24 pt-16 sm:pt-24 flex flex-col justify-end">
+          <div className="max-w-2xl space-y-4 sm:space-y-6">
             
-            {/* Atelier Brand Label */}
-            <div className="text-white/80 text-xs sm:text-sm font-sans tracking-[0.3em] uppercase font-semibold">
-              {displayBrandName}
-            </div>
-
-            {/* Editorial Headline: Cormorant Garamond */}
-            <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal tracking-tight text-white leading-[1.05] drop-shadow-sm">
+            {/* Carefully typeset headline */}
+            <h1 className={`font-serif text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal tracking-tight leading-[1.05] ${
+              heroImageSrc ? 'text-white drop-shadow-sm' : 'text-[#111111]'
+            }`}>
               {displayHeadline}
             </h1>
 
+            {/* One concise supporting sentence */}
+            <p className={`text-sm sm:text-base md:text-lg font-sans leading-relaxed max-w-xl font-light ${
+              heroImageSrc ? 'text-white/85' : 'text-[#737373]'
+            }`}>
+              {displaySubtitle}
+            </p>
 
-
-            {/* Two Primary Action Pathways: Explore Collection & Wholesale / Manufacturing */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-6">
+            {/* Action Pathways: 1 Primary CTA + 1 Subtle Secondary Link */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-3 sm:pt-5">
               <button
                 id="hero-explore-collection-btn"
                 onClick={onExploreCollection}
-                className="px-8 py-4 sm:py-4.5 bg-white text-[#111111] hover:bg-[#F3F3F1] text-xs font-sans uppercase tracking-[0.2em] font-bold flex items-center justify-center gap-3 cursor-pointer transition-all duration-200 shadow-xl"
+                className={`px-8 py-3.5 sm:py-4 text-xs font-sans uppercase tracking-[0.2em] font-semibold flex items-center justify-center gap-3 cursor-pointer transition-all duration-200 ${
+                  heroImageSrc
+                    ? 'bg-white text-[#111111] hover:bg-[#F3F3F1] shadow-lg'
+                    : 'bg-[#111111] text-white hover:bg-black shadow-sm'
+                }`}
               >
-                <span>{isArabic ? 'استكشف التشكيلة' : (currentLanguage === 'en' ? 'EXPLORE COLLECTION' : currentLanguage === 'es' ? 'EXPLORAR COLECCIÓN' : 'EXPLORER LA COLLECTION')}</span>
-                <ArrowRight className="w-4 h-4 text-[#111111]" />
+                <span>{isArabic ? 'استكشف التشكيلة' : (currentLanguage === 'en' ? 'Explore the Collection' : currentLanguage === 'es' ? 'Explorar la Colección' : 'Explorer la Collection')}</span>
+                <ArrowRight className={`w-3.5 h-3.5 ${heroImageSrc ? 'text-[#111111]' : 'text-white'}`} />
               </button>
 
               <button
                 id="hero-b2b-inquiry-btn"
                 onClick={onOpenB2B}
-                className="px-8 py-4 sm:py-4.5 bg-black/60 hover:bg-black/85 text-white text-xs font-sans uppercase tracking-[0.2em] font-bold border border-white/40 hover:border-white flex items-center justify-center gap-3 cursor-pointer transition-all duration-200 backdrop-blur-md shadow-xl"
+                className={`px-6 py-3.5 sm:py-4 text-xs font-sans uppercase tracking-[0.2em] font-medium transition-colors cursor-pointer flex items-center justify-center gap-2 underline underline-offset-4 ${
+                  heroImageSrc
+                    ? 'text-white/90 hover:text-white decoration-white/50'
+                    : 'text-[#111111] hover:text-[#737373] decoration-[#111111]/40'
+                }`}
               >
-                <Building2 className="w-4 h-4 text-white" />
-                <span>{isArabic ? 'خدمات الجملة والتصنيع (B2B)' : (currentLanguage === 'en' ? 'WHOLESALE & MANUFACTURING' : currentLanguage === 'es' ? 'VENTA MAYORISTA Y CONFECCIÓN' : 'VENTE EN GROS & CONFECTION')}</span>
+                <span>{isArabic ? 'اكتشف الورشة والإنتاج' : (currentLanguage === 'en' ? 'Discover the Atelier' : currentLanguage === 'es' ? 'Descubrir el Atelier' : 'Découvrir l’Atelier')}</span>
               </button>
             </div>
 
           </div>
-
-          {/* Smooth scroll cue to workshop details */}
-          <div className="pt-8 sm:pt-12 flex justify-start">
-            <button
-              onClick={scrollToWrittenInfo}
-              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-xs font-sans uppercase tracking-[0.15em] transition-colors cursor-pointer"
-            >
-              <span>{isArabic ? 'تفاصيل الورشة والإنتاج' : 'Atelier & Savoir-Faire'}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-white animate-bounce" />
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* 2. ARCHITECTURAL WORKSHOP SPECIFICATIONS & CREDENTIALS SECTION */}
-      <section 
-        id="hero-written-info"
-        className="w-full bg-[#FFFFFF] border-b border-[#E6E6E6] py-12 sm:py-20 lg:py-24 text-[#111111] overflow-hidden"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            
-            {/* Left Column: Atelier Philosophy */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6">
-              <div className="text-xs font-sans tracking-[0.25em] text-[#737373] uppercase font-semibold">
-                {displayTagline}
-              </div>
-
-              <h2 className="font-serif text-3xl sm:text-5xl font-normal tracking-tight text-[#111111] leading-[1.15]">
-                {isArabic 
-                  ? 'حياكة أزياء جزائرية بمواصفات عالمية للأفراد والمتاجر.'
-                  : currentLanguage === 'en'
-                  ? 'High-density garment construction crafted with precision in Algeria.'
-                  : currentLanguage === 'es'
-                  ? 'Confección textil de alta densidad diseñada y producida en Argelia.'
-                  : 'Confection textile haute densité réalisée avec exigence en Algérie.'}
-              </h2>
-
-              <p className="text-sm sm:text-base text-[#737373] font-sans leading-relaxed max-w-2xl">
-                {storeSettings.heroSubtitle || t.heroSubtitle || (
-                  isArabic 
-                    ? 'من خامات القطن الثقيلة (Heavyweight Fleece 380 GSM) إلى أدق تفاصيل الحياكة والتطريز، تجمع ورشتنا بين خطوط الموضة الراقية والقدرة الإنتاجية لتلبية طلبات التجزئة والتوزيع بالجملة عبر كافة الولايات.'
-                    : 'De la sélection de molletons épais (380 GSM) aux finitions d’assemblage soignées, DBC Workshop conjugue allure contemporaine et rigueur manufacturière pour les particuliers et les revendeurs à travers les 69 wilayas.'
-                )}
-              </p>
-            </div>
-
-            {/* Right Column: Key Manufacturing Credentials */}
-            <div className="lg:col-span-5 grid grid-cols-1 gap-4 pt-2">
-              <div className="p-6 bg-[#F8F8F7] border border-[#E6E6E6] space-y-2">
-                <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-[#111111]" />
-                  <span className="font-serif text-lg font-normal text-[#111111]">
-                    {t.metricB2B}
-                  </span>
-                </div>
-                <p className="text-xs text-[#737373] font-sans leading-relaxed">
-                  {t.metricB2BSub}
-                </p>
-              </div>
-
-              <div 
-                onClick={onOpenOrderLookup} 
-                className={`p-6 bg-[#F8F8F7] border border-[#E6E6E6] space-y-2 transition-colors ${onOpenOrderLookup ? "cursor-pointer hover:border-[#111111]" : ""}`}
-                title="Suivi de commande & Délais des 69 Wilayas"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-[#111111]" />
-                    <span className="font-serif text-lg font-normal text-[#111111]">
-                      {t.metricWilayas}
-                    </span>
-                  </div>
-                  {onOpenOrderLookup && (
-                    <span className="text-xs font-sans font-bold text-[#111111] underline">
-                      {isArabic ? 'تتبع الطلبية' : 'Suivi'}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-[#737373] font-sans leading-relaxed">
-                  {t.metricWilayasSub}
-                </p>
-              </div>
-
-              <div className="p-6 bg-[#F8F8F7] border border-[#E6E6E6] space-y-2">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-[#111111]" />
-                  <span className="font-serif text-lg font-normal text-[#111111]">
-                    {t.metricQuality}
-                  </span>
-                </div>
-                <p className="text-xs text-[#737373] font-sans leading-relaxed">
-                  {t.metricQualitySub}
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Toast Notification for Direct Actions */}
+      {/* Toast Notification for Direct Actions */}
       {justUploadedToast && (
         <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-[#111111] text-white font-sans text-xs flex items-center justify-center gap-2 shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-3">
           <Check className="w-4 h-4 text-white" />
@@ -403,7 +290,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
       )}
 
-      {/* 4. Interactive Hero Cover Customizer Modal for Administrator */}
+      {/* Interactive Hero Cover Customizer Modal for Administrator */}
       {isAdmin && isCoverModalOpen && (
         <CoverPhotoModal
           isOpen={isCoverModalOpen}
