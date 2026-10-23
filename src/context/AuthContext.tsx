@@ -90,7 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pass);
       const user = userCredential.user;
       
-      // Immediately set user to prevent intermediate null state
       setCurrentUser(user);
 
       let authorized = false;
@@ -208,4 +207,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
