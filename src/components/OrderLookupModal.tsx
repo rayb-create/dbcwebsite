@@ -27,7 +27,7 @@ import {
 import { fetchLiveOrder, subscribeLiveOrder } from '../services/db';
 import { generatePdfReceipt } from '../utils/pdfReceipt';
 
-interface OrderLookupModalProps {
+export interface OrderLookupModalProps {
   isOpen: boolean;
   onClose: () => void;
   orders: Order[];
@@ -138,6 +138,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({
       }
     } catch (err) {
       console.error('Error during order lookup:', err);
+      // Fallback to local check
       const local = orders.find(
         (o) =>
           o.orderNumber.toLowerCase() === clean.toLowerCase() ||
