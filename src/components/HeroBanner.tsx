@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
-  Building2, 
-  Camera, 
-  Trash2, 
-  Check, 
-  ChevronDown 
+  Check 
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/i18n';
 import { StoreSettings, MediaAsset } from '../types';
@@ -100,7 +96,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return !isBannedPhrase(defaultText) ? defaultText : '';
   };
 
-  const displayBrandName = storeSettings.storeName || 'DBC WORKSHOP';
+  const displayBrandName = storeSettings.storeName || 'RENASC';
   
   // Short, carefully typeset editorial headline
   const displayHeadline = currentLanguage === 'ar'
@@ -191,46 +187,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/40 pointer-events-none" />
           </div>
         ) : null}
-
-        {/* Top Header Eyebrow & Admin Cover Controls */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 flex items-center justify-between">
-          <div className={`inline-flex items-center gap-2 text-[11px] font-sans uppercase tracking-[0.25em] font-medium ${
-            heroImageSrc ? 'text-white/80' : 'text-[#737373]'
-          }`}>
-            <span>{displayBrandName}</span>
-            <span>•</span>
-            <span>{isArabic ? 'ورشة أزياء جزائرية' : 'Atelier de Confection'}</span>
-          </div>
-
-          {/* Admin-only cover photo customizer trigger (Strictly hidden for public visitors) */}
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsCoverModalOpen(true)}
-                className={`px-3 py-1.5 text-xs font-sans flex items-center gap-1.5 border transition-colors cursor-pointer ${
-                  heroImageSrc
-                    ? 'bg-black/75 hover:bg-black text-white border-white/25 backdrop-blur-md'
-                    : 'bg-white hover:bg-[#F3F3F1] text-[#111111] border-[#E6E6E6]'
-                }`}
-                title={isArabic ? 'رفع صورة الواجهة وتحديد موضع التركيز' : 'Ajouter une photo de couverture'}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isArabic ? 'صورة الواجهة' : 'Photo de couverture'}</span>
-              </button>
-              {storeSettings.heroImage && (
-                <button
-                  type="button"
-                  onClick={handleRemoveHeroImage}
-                  className="p-1.5 bg-black/75 hover:bg-rose-900 text-white text-xs font-sans border border-white/25 transition-colors cursor-pointer backdrop-blur-md"
-                  title={isArabic ? 'إزالة الصورة' : 'Retirer la photo'}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Hero Content: Short Headline, One Concise Sentence, One Primary CTA & One Subtle Secondary Link */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-24 pt-16 sm:pt-24 flex flex-col justify-end">

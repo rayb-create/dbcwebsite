@@ -28,6 +28,7 @@ interface NavbarProps {
   onOpenContact: () => void;
   onOpenB2B: () => void;
   onOpenOrderLookup: () => void;
+  onOpenStory?: () => void;
   activeCategory: string;
   onSelectCategory: (cat: string) => void;
   searchQuery: string;
@@ -58,6 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenContact,
   onOpenB2B,
   onOpenOrderLookup,
+  onOpenStory,
   activeCategory,
   onSelectCategory,
   searchQuery,
@@ -85,28 +87,55 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E6E6E6] transition-all">
       {/* Refined Slim Editorial Header with Generous Spacing */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
+        <div className="grid grid-cols-3 items-center h-16 sm:h-20">
           
-          {/* Mobile Menu & Search triggers */}
-          <div className="flex items-center gap-1 lg:hidden">
+          {/* LEFT COLUMN: Mobile triggers & Desktop Curated Navigation */}
+          <div className="col-span-1 flex items-center justify-start gap-1 sm:gap-2">
+            {/* Mobile Menu & Search triggers (visible on < 1024px) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#111111] hover:bg-[#F3F3F1] transition-colors cursor-pointer"
+              className="p-2 text-[#111111] hover:bg-[#F3F3F1] transition-colors cursor-pointer lg:hidden"
               aria-label="Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-[#111111] hover:bg-[#F3F3F1] transition-colors cursor-pointer"
+              className="p-2 text-[#111111] hover:bg-[#F3F3F1] transition-colors cursor-pointer lg:hidden"
               aria-label="Recherche"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
             </button>
+
+            {/* Desktop Curated Editorial Navigation (visible on >= 1024px) */}
+            <nav className="hidden lg:flex items-center space-x-5 xl:space-x-7 rtl:space-x-reverse text-xs font-sans uppercase tracking-[0.2em] font-medium text-[#111111]">
+              <button
+                onClick={scrollToCollection}
+                className={`py-1 transition-colors cursor-pointer ${
+                  activeCategory !== 'all' ? 'text-[#737373] hover:text-[#111111]' : 'text-[#111111] font-semibold border-b border-[#111111]'
+                }`}
+              >
+                {isArabic ? 'المجموعة' : (currentLanguage === 'en' ? 'Shop' : currentLanguage === 'es' ? 'Colección' : 'Collection')}
+              </button>
+
+              <button
+                onClick={onOpenStory || onOpenB2B}
+                className="py-1 text-[#737373] hover:text-[#111111] transition-colors cursor-pointer"
+              >
+                {isArabic ? 'الورشة' : (currentLanguage === 'en' ? 'The Atelier' : currentLanguage === 'es' ? 'El Atelier' : 'L’Atelier')}
+              </button>
+
+              <button
+                onClick={onOpenStory || onOpenContact}
+                className="py-1 text-[#737373] hover:text-[#111111] transition-colors cursor-pointer"
+              >
+                {isArabic ? 'عن الدار' : (currentLanguage === 'en' ? 'About' : currentLanguage === 'es' ? 'Sobre Nosotros' : 'À Propos')}
+              </button>
+            </nav>
           </div>
 
-          {/* Editorial Logo / Brand Wordmark */}
-          <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">
+          {/* CENTER COLUMN: Exact Horizontally Centered RENASC Wordmark */}
+          <div className="col-span-1 flex items-center justify-center text-center">
             <a 
               href="#" 
               onClick={(e) => {
@@ -114,64 +143,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onSelectCategory('all');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex flex-col items-center lg:items-start group cursor-pointer"
+              className="inline-block group cursor-pointer"
+              aria-label="RENASC Home"
             >
-              <span className="font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.22em] font-normal text-[#111111] uppercase transition-colors">
-                {storeSettings.storeName || 'DBC WORKSHOP'}
-              </span>
-              <span className="text-[9px] font-sans tracking-[0.25em] text-[#737373] uppercase font-medium">
-                {isArabic ? 'ورشة أزياء جزائرية' : 'Atelier • Confection'}
+              <span className="font-serif text-2xl sm:text-3xl lg:text-3xl xl:text-4xl tracking-[0.25em] sm:tracking-[0.28em] font-normal text-[#111111] uppercase transition-colors select-none block ml-[0.25em] rtl:mr-[0.25em] rtl:ml-0">
+                RENASC
               </span>
             </a>
           </div>
 
-          {/* Desktop Curated Editorial Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6 rtl:space-x-reverse text-xs font-sans uppercase tracking-[0.18em] font-medium text-[#111111]">
-            <button
-              onClick={scrollToCollection}
-              className={`py-1 transition-colors cursor-pointer ${
-                activeCategory !== 'all' ? 'text-[#737373] hover:text-[#111111]' : 'text-[#111111] font-semibold border-b border-[#111111]'
-              }`}
-            >
-              {isArabic ? 'التشكيلة' : (currentLanguage === 'en' ? 'Shop' : currentLanguage === 'es' ? 'Colección' : 'Collection')}
-            </button>
-
-            <button
-              onClick={onOpenB2B}
-              className="py-1 text-[#737373] hover:text-[#111111] transition-colors cursor-pointer"
-            >
-              {isArabic ? 'الورشة والتصنيع' : (currentLanguage === 'en' ? 'Atelier & Manufacturing' : currentLanguage === 'es' ? 'Atelier y Confección' : 'Atelier & Confection')}
-            </button>
-
-            <button
-              onClick={onOpenContact}
-              className="py-1 text-[#737373] hover:text-[#111111] transition-colors cursor-pointer"
-            >
-              {isArabic ? 'اتصل بنا' : (currentLanguage === 'en' ? 'Contact' : currentLanguage === 'es' ? 'Contacto' : 'Contact')}
-            </button>
-
-            <button
-              onClick={onOpenOrderLookup}
-              className="py-1 text-[#737373] hover:text-[#111111] transition-colors cursor-pointer flex items-center gap-1.5"
-            >
-              <Truck className="w-3.5 h-3.5 text-[#737373]" />
-              <span>{isArabic ? 'تتبع الطلبية' : (currentLanguage === 'en' ? 'Track Order' : currentLanguage === 'es' ? 'Seguimiento' : 'Suivi')}</span>
-            </button>
-          </nav>
-
-          {/* Right Action Icons & Discreet Selectors */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* RIGHT COLUMN: Action Icons & Discreet Utility Selectors */}
+          <div className="col-span-1 flex items-center justify-end gap-1 sm:gap-2 xl:gap-2.5 shrink-0">
             
-            {/* Desktop Search Input */}
-            <div className="hidden md:flex items-center relative">
+            {/* Desktop Search Input (Desktop lg+) */}
+            <div className="hidden lg:flex items-center relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={isArabic ? 'بحث...' : (currentLanguage === 'en' ? 'Search...' : currentLanguage === 'es' ? 'Buscar...' : 'Recherche...')}
-                className="w-36 lg:w-44 pl-7 pr-3 py-1 text-xs font-sans bg-transparent border-b border-[#E6E6E6] focus:border-[#111111] focus:outline-none transition-all text-[#111111]"
+                className="w-28 xl:w-40 pl-6 pr-3 py-1 text-xs font-sans bg-transparent border-b border-[#E6E6E6] focus:border-[#111111] focus:outline-none transition-all text-[#111111]"
               />
-              <Search className="w-3.5 h-3.5 text-[#737373] absolute left-1 rtl:left-auto rtl:right-1" />
+              <Search className="w-3.5 h-3.5 text-[#737373] absolute left-0.5 rtl:left-auto rtl:right-0.5" />
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange('')}
@@ -182,8 +175,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Language Selector */}
-            <div className="relative">
+            {/* Language Selector (Desktop & Tablet md+) */}
+            <div className="relative hidden md:block">
               <button
                 id="language-selector-btn"
                 onClick={() => {
@@ -194,33 +187,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Langue / Language"
               >
                 <Globe className="w-3.5 h-3.5 text-[#111111]" />
-                <span>{currentLanguage}</span>
+                <span className="text-[11px] font-semibold">{currentLanguage}</span>
                 <ChevronDown className="w-3 h-3 text-[#737373]" />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  {LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        onLanguageChange(lang.code);
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-sans flex items-center justify-between hover:bg-[#F8F8F7] cursor-pointer ${
-                        currentLanguage === lang.code ? 'font-semibold text-[#111111]' : 'text-[#737373]'
-                      }`}
-                    >
-                      <span>{lang.native}</span>
-                      {currentLanguage === lang.code && <span>✓</span>}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setLangDropdownOpen(false)} />
+                  <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-36 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          onLanguageChange(lang.code);
+                          setLangDropdownOpen(false);
+                        }}
+                        className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-sans flex items-center justify-between hover:bg-[#F8F8F7] cursor-pointer ${
+                          currentLanguage === lang.code ? 'font-semibold text-[#111111]' : 'text-[#737373]'
+                        }`}
+                      >
+                        <span>{lang.native}</span>
+                        {currentLanguage === lang.code && <span>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
-            {/* Currency Selector */}
-            <div className="relative">
+            {/* Currency Selector (Desktop & Tablet md+) */}
+            <div className="relative hidden md:block">
               <button
                 id="currency-selector-btn"
                 onClick={() => {
@@ -231,28 +227,31 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Devise / Currency"
               >
                 <Coins className="w-3.5 h-3.5 text-[#111111] shrink-0" />
-                <span>{currency}</span>
+                <span className="text-[11px] font-semibold">{currency}</span>
                 <ChevronDown className="w-3 h-3 text-[#737373]" />
               </button>
 
               {currDropdownOpen && (
-                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-28 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  {CURRENCIES.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => {
-                        onCurrencyChange(c);
-                        setCurrDropdownOpen(false);
-                      }}
-                      className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-sans flex items-center justify-between hover:bg-[#F8F8F7] cursor-pointer ${
-                        currency === c ? 'font-semibold text-[#111111]' : 'text-[#737373]'
-                      }`}
-                    >
-                      <span>{c}</span>
-                      {currency === c && <span>✓</span>}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setCurrDropdownOpen(false)} />
+                  <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-28 bg-white border border-[#E6E6E6] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                    {CURRENCIES.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          onCurrencyChange(c);
+                          setCurrDropdownOpen(false);
+                        }}
+                        className={`w-full text-left rtl:text-right px-3 py-1.5 text-xs font-sans flex items-center justify-between hover:bg-[#F8F8F7] cursor-pointer ${
+                          currency === c ? 'font-semibold text-[#111111]' : 'text-[#737373]'
+                        }`}
+                      >
+                        <span>{c}</span>
+                        {currency === c && <span>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -265,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Heart className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-[#111111] text-white text-[9px] font-sans font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-[#111111] text-white text-[9px] font-sans font-bold flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
@@ -281,13 +280,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="relative">
                 <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#111111] text-white text-[9px] font-sans font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#111111] text-white text-[9px] font-sans font-bold flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
               </div>
               {cartTotal > 0 && (
-                <span className="hidden xl:inline font-sans font-medium text-xs text-[#111111]">
+                <span className="hidden 2xl:inline font-sans font-medium text-xs text-[#111111]">
                   {formatPrice(cartTotal, currency, isArabic)}
                 </span>
               )}
@@ -334,17 +333,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className="w-full text-left rtl:text-right py-2 text-[#111111] font-semibold border-b border-[#F3F3F1]"
             >
-              {isArabic ? 'التشكيلة' : (currentLanguage === 'en' ? 'Shop Collection' : currentLanguage === 'es' ? 'Colección' : 'Collection')}
+              {isArabic ? 'المجموعة' : (currentLanguage === 'en' ? 'Shop' : currentLanguage === 'es' ? 'Colección' : 'Collection')}
             </button>
 
             <button
               onClick={() => {
-                onOpenB2B();
+                if (onOpenStory) onOpenStory();
+                else onOpenB2B();
                 setMobileMenuOpen(false);
               }}
               className="w-full text-left rtl:text-right py-2 text-[#737373] hover:text-[#111111] border-b border-[#F3F3F1]"
             >
-              {isArabic ? 'الورشة والتصنيع (B2B)' : (currentLanguage === 'en' ? 'Atelier & Manufacturing' : currentLanguage === 'es' ? 'Atelier y Confección' : 'Atelier & Confection')}
+              {isArabic ? 'الورشة' : (currentLanguage === 'en' ? 'The Atelier' : currentLanguage === 'es' ? 'El Atelier' : 'L’Atelier')}
+            </button>
+
+            <button
+              onClick={() => {
+                if (onOpenStory) onOpenStory();
+                else onOpenContact();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left rtl:text-right py-2 text-[#737373] hover:text-[#111111] border-b border-[#F3F3F1]"
+            >
+              {isArabic ? 'عن الدار' : (currentLanguage === 'en' ? 'About' : currentLanguage === 'es' ? 'Sobre Nosotros' : 'À Propos')}
             </button>
 
             <button
@@ -354,7 +365,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className="w-full text-left rtl:text-right py-2 text-[#737373] hover:text-[#111111] border-b border-[#F3F3F1] flex items-center justify-between"
             >
-              <span>{isArabic ? 'تتبع الطلبيات' : 'Suivi de commande'}</span>
+              <span>{isArabic ? 'تتبع الطلبية' : (currentLanguage === 'en' ? 'Track Order' : currentLanguage === 'es' ? 'Seguimiento' : 'Suivi de commande')}</span>
               <Truck className="w-4 h-4 text-[#737373]" />
             </button>
 
@@ -365,7 +376,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className="w-full text-left rtl:text-right py-2 text-[#737373] hover:text-[#111111]"
             >
-              {isArabic ? 'اتصل بالورشة' : (currentLanguage === 'en' ? 'Contact' : currentLanguage === 'es' ? 'Contacto' : 'Contact')}
+              {isArabic ? 'تواصل معنا' : (currentLanguage === 'en' ? 'Contact' : currentLanguage === 'es' ? 'Contacto' : 'Contact')}
             </button>
           </div>
 

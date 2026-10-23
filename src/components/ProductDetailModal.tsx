@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
-  Scissors, 
   Ruler, 
   Check, 
-  Sparkles, 
-  ShieldCheck, 
   Truck, 
   MessageCircle,
-  Building2,
-  Layers, 
-  Info,
-  Phone,
-  SlidersHorizontal,
-  Share2,
-  ExternalLink,
-  Trash2,
-  Edit2,
-  AlertTriangle,
+  ShieldCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit2,
+  Trash2,
+  ShoppingBag
 } from 'lucide-react';
 import { Product, Currency, CustomMeasurements, StoreSettings } from '../types';
 import { formatPrice } from '../utils/format';
 import { Language, TRANSLATIONS, getCategoryLabel, formatColorName } from '../data/i18n';
-import { REVIEWS, getProductSubtitle, getProductDescription, getProductFabric, getProductMillOrigin } from '../data/products';
-import { ProductWhatsAppModal } from './ProductWhatsAppModal';
+import { getProductSubtitle, getProductDescription, getProductFabric, getProductMillOrigin } from '../data/products';
 import { generateProductWhatsAppUrl } from '../utils/whatsapp';
 import { useAuth } from '../context/AuthContext';
 
@@ -66,42 +56,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isAdmin: propIsAdmin,
 }) => {
   const { isAdmin: authIsAdmin, currentUser, loading: authLoading } = useAuth();
-  // Strict multi-factor verified admin check:
-  // Public/logged-out customers must NEVER be treated as admin.
-  // Requires:
-  // 1. Auth loading finished (!authLoading)
-  // 2. Verified active Firebase user exists (currentUser)
-  // 3. User holds confirmed admin permissions (authIsAdmin === true)
-  // 4. If an explicit prop was supplied, it must not be false (propIsAdmin !== false)
   const isAdmin = Boolean(
     !authLoading &&
     currentUser &&
     authIsAdmin === true &&
     propIsAdmin !== false
   );
+
   const t = TRANSLATIONS[currentLanguage];
   const isArabic = currentLanguage === 'ar';
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>(product?.sizes?.[1] || product?.sizes?.[0] || 'L');
+  const [selectedSize, setSelectedSize] = useState<string>('L');
   const [quantity, setQuantity] = useState<number>(1);
-  const [isMadeToMeasure, setIsMadeToMeasure] = useState(false);
-  const [activeTab, setActiveTab] = useState<'specs' | 'story' | 'b2b' | 'reviews'>('specs');
   const [addedSuccess, setAddedSuccess] = useState(false);
-  const [isCustomWhatsAppOpen, setIsCustomWhatsAppOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  // Initialize selected size when product changes
+  useEffect(() => {
+    if (product?.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[1] || product.sizes[0]);
+    }
+    setSelectedImageIdx(0);
+    setQuantity(1);
+    setAddedSuccess(false);
+  }, [product?.id]);
 
   const images = Array.isArray(product?.images) && product.images.length > 0 
     ? product.images 
     : ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80'];
-
-  // Reset selected image and quantity when product changes
-  useEffect(() => {
-    setSelectedImageIdx(0);
-    setQuantity(1);
-  }, [product?.id]);
 
   // Keyboard navigation for image slider
   useEffect(() => {
@@ -111,11 +96,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         setSelectedImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
       } else if (e.key === 'ArrowRight') {
         setSelectedImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      } else if (e.key === 'Escape') {
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, product, images.length]);
+  }, [isOpen, product, images.length, onClose]);
 
   const handlePrevImage = () => {
     setSelectedImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -133,176 +120,138 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     if (touchStartX === null || images.length <= 1) return;
     const touchEndX = e.changedTouches[0].clientX;
     const diffX = touchStartX - touchEndX;
-    if (diffX > 35) {
+    if (diffX > 40) {
       handleNextImage();
-    } else if (diffX < -35) {
+    } else if (diffX < -40) {
       handlePrevImage();
     }
     setTouchStartX(null);
   };
 
-  // Custom measurements state
-  const [measurements, setMeasurements] = useState<CustomMeasurements>({
-    chest: 104,
-    waist: 86,
-    sleeve: 64,
-    inseam: 80,
-    fitPreference: 'tailored',
-    specialNotes: '',
-  });
-
   if (!isOpen || !product) return null;
 
   const unitPrice = product.price;
-  const productReviews = REVIEWS.filter((r) => r.productId === product.id);
 
   const handleAdd = () => {
     onAddToCart(
       product,
-      isMadeToMeasure ? 'Sur-Mesure (M2M)' : selectedSize,
+      selectedSize,
       selectedColorIdx,
-      isMadeToMeasure,
-      isMadeToMeasure ? measurements : undefined,
+      false,
+      undefined,
       undefined,
       unitPrice,
       quantity
     );
-
     setAddedSuccess(true);
-    setTimeout(() => {
-      setAddedSuccess(false);
-      onClose();
-    }, 700);
+    setTimeout(() => setAddedSuccess(false), 2400);
   };
 
-  const handleWhatsAppOrder = () => {
-    const selectedColor = product.colors[selectedColorIdx]?.name || 'Standard';
+  const handleWhatsAppInquiry = () => {
+    const selectedColor = product.colors[selectedColorIdx] || product.colors[0];
     const url = generateProductWhatsAppUrl(product, storeSettings, {
-      selectedColor,
-      selectedSize,
-      quantity,
-      isMadeToMeasure,
-      currency,
       language: currentLanguage,
-      intent: 'order',
+      currency,
+      selectedColor: selectedColor?.name,
+      selectedSize,
+      intent: 'inquiry',
     });
     window.open(url, '_blank');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
+      dir={isArabic ? 'rtl' : 'ltr'}
+    >
       <div 
-        className="relative w-full max-w-5xl bg-[#FAF8F5] rounded border border-[#DCD4C7] shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-white border border-[#E6E6E6] shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-3 bg-[#1F1D1A] text-white border-b border-[#3B352E]">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-[#C9A96E] uppercase font-bold">
-              DBC Workshop Confection Algérie
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-between px-6 py-4 bg-[#111111] text-white border-b border-black">
+          <div className="flex items-center gap-3">
+            <span className="font-serif text-lg tracking-[0.2em] font-normal uppercase">
+              RENASC
             </span>
-            <span className="text-[#68625B]">•</span>
-            <span className="text-xs font-mono text-[#B3AAA0]">
-              {product.fabricWeight || 'Heavyweight Fleece'}
+            <span className="text-[#666666]">•</span>
+            <span className="text-[11px] font-sans uppercase tracking-widest text-[#A3A3A3]">
+              {getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}
             </span>
           </div>
+
           <button
             onClick={onClose}
-            className="p-1.5 text-[#B3AAA0] hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 text-[#A3A3A3] hover:text-white transition-colors cursor-pointer"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal content body */}
-        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
-            {/* Left Column: Product Gallery (6 cols) */}
-            <div className="lg:col-span-6 space-y-4">
-              {/* Main Photo Gallery with Sliding Buttons & Gestures */}
+        {/* Modal Body */}
+        <div className="p-5 sm:p-8 overflow-y-auto flex-1 font-sans">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 lg:gap-12">
+            
+            {/* LEFT COLUMN: Editorial Image Gallery (6 cols on tablet & desktop) */}
+            <div className="md:col-span-6 space-y-4">
               <div 
-                className="relative aspect-[4/5] bg-[#F2EDE4] rounded overflow-hidden border border-[#E0D7C9] select-none group"
+                className="relative aspect-[4/5] bg-[#FBFBFA] border border-[#E6E6E6] overflow-hidden select-none group"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
               >
                 <img
                   key={selectedImageIdx}
                   src={images[selectedImageIdx] || images[0]}
-                  alt={`${product.name} - Photo ${selectedImageIdx + 1}`}
-                  className="w-full h-full object-cover transition-all duration-300"
+                  alt={`${product.name} - Vue ${selectedImageIdx + 1}`}
+                  className="w-full h-full object-cover transition-opacity duration-300"
                 />
 
-                {/* Sliding Buttons (Left & Right) */}
+                {/* Left / Right Nav Arrows */}
                 {images.length > 1 && (
                   <>
                     <button
                       type="button"
-                      id="product-detail-modal-prev-btn"
                       onClick={handlePrevImage}
-                      aria-label="Image précédente"
-                      title="Image précédente (Touche flèche gauche)"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-lg border border-[#DDD4C5] flex items-center justify-center backdrop-blur-xs transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer z-20"
+                      aria-label="Photo précédente"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/95 hover:bg-white text-[#111111] border border-[#E6E6E6] flex items-center justify-center transition-colors cursor-pointer shadow-sm z-10"
                     >
-                      <ChevronLeft className="w-5 h-5 text-[#1F1D1A]" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
 
                     <button
                       type="button"
-                      id="product-detail-modal-next-btn"
                       onClick={handleNextImage}
-                      aria-label="Image suivante"
-                      title="Image suivante (Touche flèche droite)"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-[#1F1D1A] shadow-lg border border-[#DDD4C5] flex items-center justify-center backdrop-blur-xs transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer z-20"
+                      aria-label="Photo suivante"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/95 hover:bg-white text-[#111111] border border-[#E6E6E6] flex items-center justify-center transition-colors cursor-pointer shadow-sm z-10"
                     >
-                      <ChevronRight className="w-5 h-5 text-[#1F1D1A]" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
 
-                    {/* Image Counter Badge */}
-                    <div className="absolute top-3 right-3 px-2.5 py-1 bg-[#1F1D1A]/85 text-white font-mono text-xs rounded backdrop-blur-xs flex items-center gap-1.5 z-10 shadow-xs">
-                      <span>{selectedImageIdx + 1} / {images.length}</span>
-                    </div>
-
-                    {/* Slide Indicator Dots */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-black/45 backdrop-blur-xs rounded-full z-20">
-                      {images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setSelectedImageIdx(idx)}
-                          aria-label={`Aller à la photo ${idx + 1}`}
-                          className={`transition-all duration-300 rounded-full cursor-pointer ${
-                            selectedImageIdx === idx 
-                              ? 'w-5 h-1.5 bg-white shadow-xs' 
-                              : 'w-1.5 h-1.5 bg-white/60 hover:bg-white'
-                          }`}
-                        />
-                      ))}
+                    {/* Image Counter */}
+                    <div className="absolute top-3 right-3 px-2.5 py-1 bg-[#111111]/85 text-white text-[10px] tracking-widest font-mono uppercase z-10">
+                      {selectedImageIdx + 1} / {images.length}
                     </div>
                   </>
                 )}
 
-                {/* Tags */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
-                  <span className="px-2.5 py-1 bg-[#1F1D1A]/90 text-white font-mono text-[10px] rounded uppercase font-bold">
-                    {product.fabricWeight || 'Heavyweight Fleece'}
+                {/* Fabric Weight Badge */}
+                <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                  <span className="px-2.5 py-1 bg-[#111111] text-white text-[10px] font-sans tracking-widest uppercase font-medium">
+                    {product.fabricWeight || 'Heavyweight'}
                   </span>
-                  {product.isB2BAvailable && (
-                    <span className="px-2.5 py-1 bg-white/90 text-[#8C6D3B] font-mono text-[10px] rounded uppercase font-bold border border-[#DDD4C5]">
-                      {isArabic ? 'بيع B2B & B2C' : currentLanguage === 'es' ? 'Venta B2B & B2C' : currentLanguage === 'en' ? 'B2B & B2C Sales' : 'Vente B2B & B2C'}
-                    </span>
-                  )}
                 </div>
               </div>
 
               {/* Thumbnails */}
-              {product.images.length > 1 && (
+              {images.length > 1 && (
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  {product.images.map((img, idx) => (
+                  {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIdx(idx)}
-                      className={`w-16 h-20 rounded overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
-                        selectedImageIdx === idx ? 'border-[#1F1D1A] scale-105' : 'border-[#DDD4C5] opacity-70 hover:opacity-100'
+                      className={`w-16 h-20 overflow-hidden border transition-all flex-shrink-0 cursor-pointer ${
+                        selectedImageIdx === idx ? 'border-[#111111] ring-1 ring-[#111111]' : 'border-[#E6E6E6] opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -311,435 +260,286 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               )}
 
-              {/* 58 Wilayas Delivery Banner */}
-              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded flex items-center gap-3 text-xs text-amber-900">
-                <Truck className="w-5 h-5 text-amber-700 flex-shrink-0" />
-                <div>
-                  <span className="font-bold block">{t.delivery58Wilayas}</span>
-                  <span className="text-[11px] text-amber-800">
-                    {t.footerCodText} • {t.footerBaridiMobText}
-                  </span>
+              {/* Discreet Logistics Line */}
+              <div className="pt-2 text-xs text-[#737373] space-y-1.5 font-light">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5 text-[#111111] shrink-0" />
+                  <span>{t.delivery58Wilayas} • {t.footerCodText}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#111111] shrink-0" />
+                  <span>Confection soignée • Finitions haute précision</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Customization & Purchasing (6 cols) */}
-            <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
-              <div className="space-y-4">
-                {/* Workshop Manager Actions (Edit / Delete this product) - Admin Only */}
+            {/* RIGHT COLUMN: Product Specifications & Actions (6 cols on tablet & desktop) */}
+            <div className="md:col-span-6 flex flex-col justify-between space-y-6">
+              <div className="space-y-5">
+                
+                {/* Admin Manager Actions (Only if authenticated administrator) */}
                 {isAdmin && (onDeleteProduct || onEditProduct) && (
-                  <div className="p-2.5 bg-[#FAF7F2] border border-[#E4DCCE] rounded flex items-center justify-between gap-2 text-xs font-mono">
-                    <span className="text-[#8C6D3B] font-semibold flex items-center gap-1.5">
-                      <span>⚙️ {isArabic ? 'إدارة الموديل:' : 'Atelier DBC :'}</span>
+                  <div className="p-3 bg-[#FBFBFA] border border-[#E6E6E6] flex items-center justify-between text-xs">
+                    <span className="text-[#111111] font-medium uppercase tracking-wider text-[11px]">
+                      Gestion Atelier
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       {onEditProduct && (
                         <button
                           type="button"
-                          id="product-detail-edit-btn"
                           onClick={() => {
-                            if (!isAdmin) return;
                             onClose();
                             onEditProduct(product);
                           }}
-                          className="px-2.5 py-1 bg-white hover:bg-[#F2EDE4] text-[#3D3730] border border-[#DDD4C5] rounded flex items-center gap-1 cursor-pointer transition-colors shadow-2xs text-[11px]"
-                          title="Modifier ce produit dans le gestionnaire"
+                          className="px-2.5 py-1 bg-white hover:bg-[#F3F3F1] text-[#111111] border border-[#E6E6E6] text-[11px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
                         >
-                          <Edit2 className="w-3 h-3 text-[#8C6D3B]" />
+                          <Edit2 className="w-3 h-3" />
                           <span>{isArabic ? 'تعديل' : 'Modifier'}</span>
                         </button>
                       )}
                       {onDeleteProduct && (
                         <button
                           type="button"
-                          id="product-detail-delete-btn"
-                          onClick={() => {
-                            if (!isAdmin) return;
-                            setShowDeleteConfirm(true);
-                          }}
-                          className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 rounded flex items-center gap-1 cursor-pointer transition-colors shadow-2xs text-[11px]"
-                          title={isArabic ? 'حذف هذا المنتج من الكتالوج' : 'Supprimer définitivement ce produit'}
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
                         >
-                          <Trash2 className="w-3 h-3 text-rose-600" />
-                          <span>{isArabic ? 'حذف المنتج' : 'Supprimer'}</span>
+                          <Trash2 className="w-3 h-3" />
+                          <span>{isArabic ? 'حذف' : 'Supprimer'}</span>
                         </button>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Header */}
+                {/* Title & Subtitle */}
                 <div>
-                  <div className="flex items-center justify-between text-xs font-mono text-[#8C6D3B] uppercase font-bold">
-                    <span>{getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}</span>
-                    <span>{currentLanguage === 'es' ? '24-48h para envío' : currentLanguage === 'en' ? '24-48h for shipping' : isArabic ? '24-48 ساعة للشحن' : (product.readyInDays || '24-48h pour envoi')}</span>
-                  </div>
-                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1F1C19] mt-1">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-[#737373] font-medium block mb-1">
+                    {getCategoryLabel(product.category, currentLanguage, storeSettings?.customCategories)}
+                  </span>
+                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal text-[#111111] leading-tight">
                     {product.name}
-                  </h2>
+                  </h1>
                   {getProductSubtitle(product, currentLanguage) && (
-                    <p className="text-xs text-[#6E6659] mt-0.5 font-sans">
+                    <p className="text-xs text-[#737373] mt-1.5 font-light">
                       {getProductSubtitle(product, currentLanguage)}
                     </p>
                   )}
                 </div>
 
-                {/* Price Display */}
-                <div className="p-3.5 bg-white border border-[#E2DAD0] rounded space-y-1.5">
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <span className="text-[10px] font-mono uppercase text-[#7C756B] block">
-                        {t.b2cPrice} ({currentLanguage === 'es' ? 'Detalle' : currentLanguage === 'en' ? 'Retail' : isArabic ? 'تجزئة' : 'Détail'})
+                {/* Retail Price Display */}
+                <div className="pb-4 border-b border-[#E6E6E6]">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-2xl sm:text-3xl font-medium text-[#111111]">
+                      {formatPrice(unitPrice, currency, isArabic)}
+                    </span>
+                    {product.compareAtPrice && product.compareAtPrice > product.price && (
+                      <span className="text-sm text-[#737373] line-through">
+                        {formatPrice(product.compareAtPrice, currency, isArabic)}
                       </span>
-                      <span className="font-mono text-xl sm:text-2xl font-bold text-[#1F1C19]">
-                        {formatPrice(unitPrice, currency, isArabic)}
-                      </span>
-                    </div>
-
-                    {product.wholesalePriceDzd && (
-                      <div className="text-right">
-                        <span className="text-[10px] font-mono uppercase text-[#8C6D3B] block font-bold">
-                          {t.b2bWholesalePrice}
-                        </span>
-                        <span className="font-mono text-lg font-bold text-[#8C6D3B]">
-                          {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#7C756B] block">
-                          {t.minWholesaleQty}
-                        </span>
-                      </div>
                     )}
+                  </div>
+                  <div className="text-[11px] text-emerald-800 font-medium mt-1 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block" />
+                    <span>{isArabic ? 'متوفر وجاهز للشحن خلال 24-48 ساعة' : 'En stock • Expédition rapide sous 24 à 48h'}</span>
                   </div>
                 </div>
 
                 {/* Color Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="uppercase text-[#615A4F] font-bold">{t.selectColor} :</span>
-                    <span className="text-[#1F1C19] font-semibold">
-                      {formatColorName(product.colors[selectedColorIdx]?.name, currentLanguage)}
-                    </span>
+                {product.colors && product.colors.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="uppercase tracking-widest text-[#737373] text-[11px] font-medium">
+                        {t.selectColor} :
+                      </span>
+                      <span className="text-[#111111] font-medium">
+                        {formatColorName(product.colors[selectedColorIdx]?.name, currentLanguage)}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colors.map((color, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedColorIdx(idx)}
+                          className={`flex items-center gap-2 px-3 py-1.5 border text-xs transition-colors cursor-pointer ${
+                            selectedColorIdx === idx
+                              ? 'bg-[#111111] text-white border-black font-medium'
+                              : 'bg-white text-[#525252] border-[#E6E6E6] hover:border-[#111111]'
+                          }`}
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full border border-black/20"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <span>{formatColorName(color.name, currentLanguage)}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {product.colors.map((color, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedColorIdx(idx)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono transition-all cursor-pointer ${
-                          selectedColorIdx === idx
-                            ? 'bg-[#1F1D1A] text-white border-black font-bold shadow-xs'
-                            : 'bg-white text-[#4A4338] border-[#DDD4C5] hover:bg-[#F2EDE4]'
-                        }`}
-                      >
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-black/20"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        <span>{formatColorName(color.name, currentLanguage)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )}
 
                 {/* Size Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="uppercase text-[#615A4F] font-bold">{t.selectSize} :</span>
-                    <button
-                      onClick={onOpenSizeGuide}
-                      className="text-[#8C6D3B] underline hover:text-black flex items-center gap-1 cursor-pointer text-[11px]"
-                    >
-                      <Ruler className="w-3 h-3" />
-                      <span>{t.sizeGuideTitle}</span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => {
-                          setSelectedSize(size);
-                          setIsMadeToMeasure(false);
-                        }}
-                        className={`min-w-[48px] py-2 px-3 text-xs font-mono rounded border transition-colors cursor-pointer ${
-                          selectedSize === size && !isMadeToMeasure
-                            ? 'bg-[#1F1D1A] text-white border-black font-bold'
-                            : 'bg-white text-[#4A4338] border-[#DDD4C5] hover:bg-[#F2EDE4]'
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quantity Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="uppercase text-[#615A4F] font-bold">
-                      {t.quantityLabel}
-                    </span>
-                    <span className="text-[#8C6D3B] font-semibold">
-                      {quantity} {quantity > 1 ? (isArabic ? 'قطع' : (currentLanguage === 'en' ? 'items' : currentLanguage === 'es' ? 'piezas' : 'pièces')) : (isArabic ? 'قطعة' : (currentLanguage === 'en' ? 'item' : currentLanguage === 'es' ? 'pieza' : 'pièce'))}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="inline-flex items-center border border-[#DDD4C5] rounded bg-white overflow-hidden shadow-2xs">
-                      <button
-                        type="button"
-                        id="product-detail-qty-minus"
-                        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                        disabled={quantity <= 1}
-                        className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed select-none"
-                        aria-label="-"
-                      >
-                        -
-                      </button>
-                      <span className="w-12 h-9 flex items-center justify-center font-mono font-bold text-sm text-[#1F1C19] border-x border-[#DDD4C5] select-none">
-                        {quantity}
+                {product.sizes && product.sizes.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="uppercase tracking-widest text-[#737373] text-[11px] font-medium">
+                        {t.selectSize} :
                       </span>
                       <button
                         type="button"
-                        id="product-detail-qty-plus"
-                        onClick={() => setQuantity((prev) => Math.min(99, prev + 1))}
-                        className="w-9 h-9 flex items-center justify-center text-base font-bold text-[#1F1C19] hover:bg-[#F2EDE4] active:bg-[#E8DFD1] transition-colors cursor-pointer select-none"
-                        aria-label="+"
+                        onClick={onOpenSizeGuide}
+                        className="text-[#737373] hover:text-[#111111] underline underline-offset-2 flex items-center gap-1 text-[11px] cursor-pointer"
                       >
-                        +
+                        <Ruler className="w-3 h-3" />
+                        <span>{t.sizeGuideTitle}</span>
                       </button>
                     </div>
-                    {quantity > 1 && (
-                      <span className="text-xs font-mono text-[#6E6659]">
-                        {t.totalLabel} <strong className="text-[#1F1C19]">{formatPrice(unitPrice * quantity, currency, isArabic)}</strong>
+
+                    <div className="flex flex-wrap gap-2">
+                      {product.sizes.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setSelectedSize(size)}
+                          className={`min-w-[46px] py-2 px-3.5 text-xs font-sans uppercase tracking-wider border transition-colors cursor-pointer ${
+                            selectedSize === size
+                              ? 'bg-[#111111] text-white border-black font-semibold'
+                              : 'bg-white text-[#525252] border-[#E6E6E6] hover:border-[#111111]'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity Controls */}
+                <div className="space-y-2">
+                  <span className="uppercase tracking-widest text-[#737373] text-[11px] font-medium block">
+                    {t.quantityLabel}
+                  </span>
+                  <div className="inline-flex items-center border border-[#E6E6E6] bg-white">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                      disabled={quantity <= 1}
+                      className="w-10 h-10 flex items-center justify-center text-sm font-medium text-[#111111] hover:bg-[#F3F3F1] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer select-none"
+                    >
+                      -
+                    </button>
+                    <span className="w-12 h-10 flex items-center justify-center font-medium text-xs text-[#111111] border-x border-[#E6E6E6] select-none">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((prev) => Math.min(99, prev + 1))}
+                      className="w-10 h-10 flex items-center justify-center text-sm font-medium text-[#111111] hover:bg-[#F3F3F1] cursor-pointer select-none"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Editorial Description & Tailoring Specs */}
+                <div className="pt-3 border-t border-[#E6E6E6] space-y-3">
+                  <p className="text-xs text-[#525252] font-light leading-relaxed">
+                    {getProductDescription(product, currentLanguage)}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="p-3 bg-[#FBFBFA] border border-[#E6E6E6]">
+                      <span className="text-[10px] uppercase tracking-widest text-[#737373] block mb-0.5">
+                        {t.fabricLabel}
                       </span>
-                    )}
+                      <span className="text-xs font-medium text-[#111111]">
+                        {getProductFabric(product, currentLanguage)}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-[#FBFBFA] border border-[#E6E6E6]">
+                      <span className="text-[10px] uppercase tracking-widest text-[#737373] block mb-0.5">
+                        {t.tailoringLabel}
+                      </span>
+                      <span className="text-xs font-medium text-[#111111]">
+                        {getProductMillOrigin(product, currentLanguage)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Tabs: Specifications & Wholesale */}
-                <div className="pt-2">
-                  <div className="flex border-b border-[#E2DAD0] text-xs font-mono">
-                    <button
-                      onClick={() => setActiveTab('specs')}
-                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
-                        activeTab === 'specs' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
-                      }`}
-                    >
-                      {t.techSheetTab}
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('b2b')}
-                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
-                        activeTab === 'b2b' ? 'border-b-2 border-black font-bold text-[#8C6D3B]' : 'text-[#7C756B]'
-                      }`}
-                    >
-                      {t.b2bRatesTab}
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('reviews')}
-                      className={`pb-2 px-3 uppercase tracking-wider cursor-pointer ${
-                        activeTab === 'reviews' ? 'border-b-2 border-black font-bold text-black' : 'text-[#7C756B]'
-                      }`}
-                    >
-                      {t.reviewsTab} ({productReviews.length})
-                    </button>
-                  </div>
-
-                  <div className="pt-3 text-xs text-[#5C554B]">
-                    {activeTab === 'specs' && (
-                      <div className="space-y-2">
-                        <p className="leading-relaxed font-sans">{getProductDescription(product, currentLanguage)}</p>
-                        <div className="grid grid-cols-2 gap-2 pt-2">
-                          <div className="p-2 bg-white rounded border border-[#E2DAD0]">
-                            <span className="text-[10px] font-mono text-[#7C756B] block">{t.fabricLabel}</span>
-                            <span className="font-semibold text-[#1F1C19]">{getProductFabric(product, currentLanguage)}</span>
-                          </div>
-                          <div className="p-2 bg-white rounded border border-[#E2DAD0]">
-                            <span className="text-[10px] font-mono text-[#7C756B] block">{t.tailoringLabel}</span>
-                            <span className="font-semibold text-[#1F1C19]">{getProductMillOrigin(product, currentLanguage)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === 'b2b' && (
-                      <div className="space-y-2 p-3 bg-amber-50/60 rounded border border-amber-200/70">
-                        <div className="flex items-center gap-2 font-bold text-amber-950 font-serif">
-                          <Building2 className="w-4 h-4 text-[#8C6D3B]" />
-                          <span>{currentLanguage === 'es' ? 'Oferta Especial para Tiendas y Mayoristas (B2B)' : currentLanguage === 'en' ? 'Wholesale & Retailers Special Offer (B2B)' : isArabic ? 'عرض خاص لتجار الجملة والمحلات (B2B)' : 'Offre Spéciale Magasins & Boutiques (B2B)'}</span>
-                        </div>
-                        <p className="text-[11px] text-amber-900 leading-relaxed">
-                          {currentLanguage === 'es' ? '• Tarifa preferente de ' : currentLanguage === 'en' ? '• Preferential rate of ' : isArabic ? '• سعر تفضيلي بقيمة ' : '• Tarif préférentiel de '}<strong>{formatPrice(product.wholesalePriceDzd || Math.round(product.price * 0.7), currency, isArabic)}</strong>{currentLanguage === 'es' ? ' por prenda a partir de 6 unidades.' : currentLanguage === 'en' ? ' per piece from 6 units.' : isArabic ? ' للقطعة ابتداءً من 6 وحدات.' : ' par pièce dès 6 unités.'}
-                        </p>
-                        <p className="text-[11px] text-amber-900 leading-relaxed">
-                          {currentLanguage === 'es' ? '• Posibilidad de combinar tallas (S a 3XL) y colores según su stock.' : currentLanguage === 'en' ? '• Mix and match sizes (S to 3XL) and colors according to your inventory.' : isArabic ? '• إمكانية تشكيل المقاسات والألوان حسب طلبكم.' : '• Possibilité de mixer les tailles (S à 3XL) et couleurs selon vos stocks.'}
-                        </p>
-                        <p className="text-[11px] text-amber-900 leading-relaxed">
-                          {currentLanguage === 'es' ? '• Personalización con etiquetas o bordados para pedidos industriales.' : currentLanguage === 'en' ? '• Custom branding with labels or embroidery on bulk orders.' : isArabic ? '• تطريز وشعارات خاصة بالعلامات التجارية عند الطلب.' : '• Personnalisation avec étiquettes ou broderie sur commande industrielle.'}
-                        </p>
-                      </div>
-                    )}
-
-                    {activeTab === 'reviews' && (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {productReviews.length > 0 ? (
-                          productReviews.map((rev) => (
-                            <div key={rev.id} className="p-2.5 bg-white border border-[#E2DAD0] rounded space-y-1">
-                              <div className="flex justify-between font-mono text-[11px]">
-                                <span className="font-bold text-[#1F1C19]">{rev.author} - {rev.location}</span>
-                                <span className="text-amber-600">★★★★★</span>
-                              </div>
-                              <p className="font-serif text-xs font-semibold text-[#1F1C19]">{rev.title}</p>
-                              <p className="text-[11px] text-[#6E6659]">{rev.comment}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-[#7C756B] text-[11px]">{t.noReviewsYet}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-[#DDD4C5] space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <button
-                    id="product-detail-add-cart-btn"
-                    onClick={handleAdd}
-                    className={`flex-1 py-3 px-4 font-mono text-xs uppercase tracking-wider rounded transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                      addedSuccess ? 'bg-emerald-700 text-white' : 'bg-[#1F1D1A] hover:bg-[#3D3730] text-white'
-                    }`}
-                  >
-                    {addedSuccess ? (
-                      <>
-                        <Check className="w-4 h-4 text-emerald-300" />
-                        <span>{t.addedSuccess}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 text-[#C9A96E]" />
-                        <span>{t.addToCart} • {formatPrice(unitPrice * quantity, currency, isArabic)}</span>
-                      </>
-                    )}
-                  </button>
+              <div className="pt-5 border-t border-[#E6E6E6] space-y-3">
+                <button
+                  type="button"
+                  id="product-detail-add-to-cart-btn"
+                  onClick={handleAdd}
+                  className="w-full py-4 bg-[#111111] hover:bg-black text-white text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShoppingBag className="w-4 h-4 text-white" />
+                  <span>
+                    {addedSuccess
+                      ? (isArabic ? 'تمت الإضافة إلى الحقيبة ✓' : 'Ajouté à la sélection ✓')
+                      : `${t.addToCart} • ${formatPrice(unitPrice * quantity, currency, isArabic)}`}
+                  </span>
+                </button>
 
-                  <button
-                    onClick={handleWhatsAppOrder}
-                    className="py-3 px-4 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-mono text-xs font-semibold rounded flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-transform active:scale-95"
-                    title={t.orderViaWhatsApp}
-                  >
-                    <MessageCircle className="w-4 h-4 fill-current" />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </button>
-                </div>
-
-                {/* Custom WhatsApp Greeting Link Bar */}
-                <div className="p-2.5 bg-[#F4F9F5] border border-[#CDE5D4] rounded-md flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0">
-                      <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                    </div>
-                    <div className="truncate">
-                      <span className="text-[11px] font-mono font-bold text-[#14532D] block truncate">
-                        {t.customWhatsappTitle}
-                      </span>
-                      <span className="text-[10px] text-[#2C6E49] hidden sm:block">
-                        {t.customWhatsappSub}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomWhatsAppOpen(true)}
-                    className="px-2.5 py-1.5 bg-white hover:bg-[#EAF5EE] text-[#14532D] border border-[#B1D8BD] rounded text-[11px] font-mono font-semibold flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs transition-colors"
-                  >
-                    <SlidersHorizontal className="w-3 h-3 text-[#25D366]" />
-                    <span>{isArabic ? 'تخصيص الرسالة' : (currentLanguage === 'en' ? 'Customize Message' : currentLanguage === 'es' ? 'Personalizar' : 'Personnaliser')}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleWhatsAppInquiry}
+                  className="w-full py-3 bg-white hover:bg-[#FBFBFA] text-[#111111] border border-[#E6E6E6] hover:border-[#111111] text-xs uppercase tracking-widest font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 text-[#111111]" />
+                  <span>{isArabic ? 'استفسار عبر واتساب' : 'Conseil & Question via WhatsApp'}</span>
+                </button>
               </div>
+
             </div>
+
           </div>
         </div>
 
-        {/* Custom In-Modal Delete Confirmation - Admin Only */}
-        {isAdmin && showDeleteConfirm && (
-          <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-lg border border-[#DDD4C5] shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-150">
-              <div className="p-4 border-b border-[#EAE3D5] flex items-center gap-3 bg-[#FAF8F5]">
-                <div className="w-10 h-10 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-serif text-sm font-bold text-[#1F1C19]">
-                    {isArabic ? 'تأكيد حذف المنتج' : (currentLanguage === 'es' ? '¿Eliminar este producto?' : currentLanguage === 'en' ? 'Delete this product?' : 'Supprimer ce produit ?')}
-                  </h4>
-                  <p className="text-[11px] text-[#7C756B] font-mono">
-                    {product.name}
-                  </p>
-                </div>
-              </div>
+      </div>
 
-              <div className="p-4 text-xs text-[#4A4338] leading-relaxed space-y-2">
-                <p>
-                  {isArabic
-                    ? 'هل أنت متأكد من رغبتك في حذف هذا المنتج من الكتالوج نهائياً؟'
-                    : (currentLanguage === 'es' ? '¿Seguro que desea retirar permanentemente este artículo del catálogo?' : currentLanguage === 'en' ? 'Are you sure you want to permanently remove this product from the catalog?' : 'Voulez-vous vraiment retirer définitivement cet article du catalogue et de la boutique ?')}
-                </p>
-                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-900 font-mono">
-                  ⚠️ {isArabic ? 'سيتم حذف المنتج فوراً.' : (currentLanguage === 'es' ? 'Acción inmediata e irreversible.' : currentLanguage === 'en' ? 'Immediate and irreversible action.' : 'Action immédiate et irréversible.')}
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-[#FAF8F5] border-t border-[#EAE3D5] flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-1.5 bg-white border border-[#DDD4C5] rounded font-mono text-xs hover:bg-[#F2EDE4] text-[#3D3730] cursor-pointer"
-                >
-                  {isArabic ? 'إلغاء' : (currentLanguage === 'es' ? 'Cancelar' : currentLanguage === 'en' ? 'Cancel' : 'Annuler')}
-                </button>
-                <button
-                  type="button"
-                  id="confirm-detail-delete-btn"
-                  onClick={() => {
-                    if (!isAdmin) {
-                      setShowDeleteConfirm(false);
-                      return;
-                    }
-                    if (onDeleteProduct) {
-                      onDeleteProduct(product.id);
-                    }
-                    setShowDeleteConfirm(false);
-                    onClose();
-                  }}
-                  className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-mono text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{isArabic ? 'نعم، حذف' : (currentLanguage === 'es' ? 'Sí, Eliminar' : currentLanguage === 'en' ? 'Yes, Delete' : 'Oui, Supprimer')}</span>
-                </button>
-              </div>
+      {/* Delete Confirmation Modal for Admin */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75">
+          <div className="bg-white border border-[#E6E6E6] p-6 max-w-sm w-full space-y-4">
+            <h3 className="font-serif text-lg font-medium text-[#111111]">
+              {isArabic ? 'تأكيد حذف المنتج' : 'Confirmer la suppression'}
+            </h3>
+            <p className="text-xs text-[#525252] leading-relaxed">
+              {isArabic 
+                ? 'هل أنت متأكد من حذف هذا المنتج نهائياً من الكتالوج؟'
+                : 'Voulez-vous supprimer définitivement ce produit du catalogue ?'}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-[#E6E6E6] text-xs font-medium text-[#111111] hover:bg-[#F3F3F1] cursor-pointer"
+              >
+                {isArabic ? 'إلغاء' : 'Annuler'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteProduct) onDeleteProduct(product.id);
+                  setShowDeleteConfirm(false);
+                  onClose();
+                }}
+                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-medium cursor-pointer"
+              >
+                {isArabic ? 'حذف' : 'Supprimer'}
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Custom WhatsApp Greeting Modal for this viewed product */}
-        <ProductWhatsAppModal
-          product={product}
-          isOpen={isCustomWhatsAppOpen}
-          onClose={() => setIsCustomWhatsAppOpen(false)}
-          selectedColor={product.colors[selectedColorIdx]?.name}
-          selectedSize={selectedSize}
-          isMadeToMeasure={isMadeToMeasure}
-          currency={currency}
-          currentLanguage={currentLanguage}
-          storeSettings={storeSettings}
-        />
-      </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default ProductDetailModal;

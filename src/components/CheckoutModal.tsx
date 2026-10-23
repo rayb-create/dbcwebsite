@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   Check, 
@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { CartItem, Currency, Order, StoreSettings } from '../types';
 import { formatPrice, generateOrderNumber, parseNumericPrice } from '../utils/format';
 import { ALGERIAN_WILAYAS, Wilaya, getWilayaByCode } from '../data/wilayas';
+import { getCommunesForWilaya, AdministrativeCommune } from '../data/communes';
 import { Language, TRANSLATIONS } from '../data/i18n';
 
 interface CheckoutModalProps {
@@ -54,7 +55,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Customer form details tailored for Algerian Wilayas
   const [selectedWilayaCode, setSelectedWilayaCode] = useState<string>('16'); // Default 16 - Alger
-  const [commune, setCommune] = useState('Dély Ibrahim');
+  const [commune, setCommune] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -130,6 +131,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setStep('details');
       return;
     }
+
+    const matchedCommune = availableCommunes.find(
+      (c) => c.nameAscii.toLowerCase() === commune.trim().toLowerCase() || c.nameAr === commune.trim()
+    );
+
+    if (!commune.trim() || !matchedCommune) {
+      setFormError(
+        isArabic ? 'يرجى اختيار بلدية صالحة تابعة للولاية المحددة.' :
+        currentLanguage === 'es' ? 'Por favor seleccione un municipio válido para la provincia elegida.' :
+        currentLanguage === 'en' ? 'Please select a valid commune belonging to the chosen wilaya.' :
+        'Veuillez sélectionner une commune valide appartenant à la wilaya sélectionnée.'
+      );
+      setStep('details');
+      return;
+    }
     setFormError(null);
 
     setIsProcessing(true);
@@ -162,6 +178,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const finalShipping = shippingCostDzd;
       const finalDiscount = discountAmountDzd;
       const finalTotal = Math.max(0, (finalSubtotal - finalDiscount) + finalShipping);
+      const dairaToSave = matchedCommune.dairaAscii;
 
       const newOrder: Order = {
         id: `order-${Date.now()}`,
@@ -181,9 +198,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         customer: {
           fullName,
           phone,
-          email: email || 'client@dbc.dz',
-          address: `${address} - ${commune}`,
-          city: commune,
+          email: email || 'client@renasc.dz',
+          address: `${address.trim() ? `${address.trim()} - ` : ''}${matchedCommune.nameAscii}`,
+          city: matchedCommune.nameAscii,
+          commune: matchedCommune.nameAscii,
+          daira: dairaToSave,
           wilayaCode: currentWilaya.code,
           wilayaName: isArabic ? currentWilaya.nameAr : currentWilaya.nameEn,
           notes,
@@ -308,7 +327,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const copyReceiptText = () => {
     if (!placedOrder) return;
-    const receiptText = `=== DBC WORKSHOP ALGÉRIE - REÇU DE COMMANDE ===\nCommande N°: ${placedOrder.orderNumber}\nDate: ${placedOrder.date}\nClient: ${placedOrder.customer.fullName} (${placedOrder.customer.phone})\nDestination: ${placedOrder.customer.wilayaCode} - ${placedOrder.customer.wilayaName}\nMode de livraison: ${placedOrder.deliveryType === 'home' ? 'À Domicile' : 'StopDesk'}\nN° de Suivi: ${placedOrder.trackingNumber} (${placedOrder.carrierName})\n\nArticles:\n${placedOrder.items.map(i => `• ${i.product.name} [${i.size}] × ${i.quantity} = ${formatPrice(Number(i.pricePerUnit) * Number(i.quantity), currency)}`).join('\n')}\n\nSous-total: ${formatPrice(placedOrder.subtotal, currency)}\nFrais de livraison: ${formatPrice(placedOrder.shipping, currency)}\nTOTAL NET: ${formatPrice(placedOrder.total, currency)}\nMode de paiement: ${placedOrder.paymentMethod === 'cod' ? 'Paiement à la livraison' : 'BaridiMob'}\n===============================================`;
+    const receiptText = `=== RENASC - REÇU DE COMMANDE ===\nCommande N°: ${placedOrder.orderNumber}\nDate: ${placedOrder.date}\nClient: ${placedOrder.customer.fullName} (${placedOrder.customer.phone})\nDestination: ${placedOrder.customer.wilayaCode} - ${placedOrder.customer.wilayaName}\nMode de livraison: ${placedOrder.deliveryType === 'home' ? 'À Domicile' : 'StopDesk'}\nN° de Suivi: ${placedOrder.trackingNumber} (${placedOrder.carrierName})\n\nArticles:\n${placedOrder.items.map(i => `• ${i.product.name} [${i.size}] × ${i.quantity} = ${formatPrice(Number(i.pricePerUnit) * Number(i.quantity), currency)}`).join('\n')}\n\nSous-total: ${formatPrice(placedOrder.subtotal, currency)}\nFrais de livraison: ${formatPrice(placedOrder.shipping, currency)}\nTOTAL NET: ${formatPrice(placedOrder.total, currency)}\nMode de paiement: ${placedOrder.paymentMethod === 'cod' ? 'Paiement à la livraison' : 'BaridiMob'}\n===============================================`;
     navigator.clipboard?.writeText(receiptText);
     setCopiedReceipt(true);
     setTimeout(() => setCopiedReceipt(false), 2500);
@@ -320,23 +339,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setTimeout(() => setCopiedRip(false), 2000);
   };
 
+  const availableCommunes = useMemo(() => {
+    const list = getCommunesForWilaya(selectedWilayaCode);
+    return [...list].sort((a, b) => 
+      isArabic 
+        ? a.nameAr.localeCompare(b.nameAr, 'ar')
+        : a.nameAscii.localeCompare(b.nameAscii, 'fr')
+    );
+  }, [selectedWilayaCode, isArabic]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-4xl bg-[#FAF8F5] border border-[#D5CABB] rounded shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-white border border-[#E6E6E6] shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1F1D1A] text-white border-b border-[#3B352E]">
-          <div className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-[#C9A96E]" />
+        <div className="flex items-center justify-between px-6 py-4 bg-[#111111] text-white border-b border-black">
+          <div className="flex items-center gap-2.5">
+            <Truck className="w-5 h-5 text-white" />
             <div>
-              <h2 className="font-serif text-lg sm:text-xl font-medium tracking-wide">
-                {step === 'confirmation' ? t.orderSuccessTitle : `${t.siteTitle} • Livraison Algérie`}
+              <h2 className="font-serif text-lg sm:text-xl font-normal tracking-[0.1em] uppercase">
+                {step === 'confirmation' ? t.orderSuccessTitle : 'RENASC • LIVRAISON ALGÉRIE'}
               </h2>
-              <p className="text-[11px] font-mono text-[#B3AAA0]">
+              <p className="text-[11px] font-sans text-[#A3A3A3]">
                 {t.delivery58Wilayas} • Paiement à la réception ou BaridiMob
               </p>
             </div>
@@ -344,24 +372,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <button
             id="close-checkout-modal-btn"
             onClick={onClose}
-            className="p-1.5 text-[#B3AAA0] hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 text-[#A3A3A3] hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-7 overflow-y-auto flex-1 font-sans">
           {step !== 'confirmation' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Delivery Form & Payment (7 cols) */}
-              <div className="lg:col-span-7 space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left Column: Delivery Form & Payment (7 cols on tablet & desktop) */}
+              <div className="md:col-span-7 space-y-5">
                 {/* Step tabs */}
-                <div className="flex border-b border-[#DDD4C5] text-xs font-mono">
+                <div className="flex border-b border-[#E6E6E6] text-xs font-sans">
                   <button
                     onClick={() => setStep('details')}
                     className={`pb-2.5 px-3 uppercase tracking-wider cursor-pointer ${
-                      step === 'details' ? 'font-bold text-[#1F1C19] border-b-2 border-black' : 'text-[#847B6F]'
+                      step === 'details' ? 'font-bold text-[#111111] border-b-2 border-black' : 'text-[#737373]'
                     }`}
                   >
                     1. {t.wilayaLabel} & Coordonnées
@@ -369,7 +397,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <button
                     onClick={() => setStep('payment')}
                     className={`pb-2.5 px-3 uppercase tracking-wider cursor-pointer ${
-                      step === 'payment' ? 'font-bold text-[#1F1C19] border-b-2 border-black' : 'text-[#847B6F]'
+                      step === 'payment' ? 'font-bold text-[#111111] border-b-2 border-black' : 'text-[#737373]'
                     }`}
                   >
                     2. {t.paymentMethod} & Validation
@@ -379,61 +407,85 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {step === 'details' && (
                   <div className="space-y-4 text-xs animate-in fade-in duration-150">
                     {formError && (
-                      <div className="p-3 bg-rose-50 border border-rose-200 rounded text-rose-800 flex items-center gap-2 font-medium text-xs animate-in fade-in duration-150">
+                      <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2 font-medium text-xs animate-in fade-in duration-150">
                         <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                         <span>{formError}</span>
                       </div>
                     )}
 
-                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded text-[11px] text-amber-900 flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                    <div className="p-3 bg-[#FBFBFA] border border-[#E6E6E6] text-[11px] text-[#525252] flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-[#111111] flex-shrink-0" />
                       <span>{t.delivery58Wilayas}. Expédition sous 24 à 48 heures.</span>
                     </div>
 
-                    {/* Wilaya Selection - 69 Wilayas */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] font-bold">
-                          {t.wilayaLabel} *
-                        </label>
-                        <span className="text-[10px] font-mono text-[#8C6D3B]">
-                          Partenaire : {carrierName}
-                        </span>
-                      </div>
-                      <select
-                        id="checkout-wilaya-select"
-                        value={selectedWilayaCode}
-                        onChange={(e) => setSelectedWilayaCode(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-white border border-[#DDD4C5] rounded font-mono text-xs focus:outline-none focus:border-black cursor-pointer"
-                      >
-                        {ALGERIAN_WILAYAS.map((w) => {
-                          const customW = getWilayaByCode(w.code, storeSettings.customWilayaRates) || w;
-                          return (
+                    {/* Algerian Wilaya & Commune Selection - Exactly TWO dropdowns */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* 1. Wilaya / الولاية */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] font-sans uppercase text-[#737373] font-semibold">
+                            {isArabic ? 'الولاية' : t.wilayaLabel} *
+                          </label>
+                          <span className="text-[10px] font-sans text-[#737373]">
+                            {carrierName}
+                          </span>
+                        </div>
+                        <select
+                          id="checkout-wilaya-select"
+                          value={selectedWilayaCode}
+                          onChange={(e) => {
+                            setSelectedWilayaCode(e.target.value);
+                            setCommune('');
+                            if (formError) setFormError(null);
+                          }}
+                          className="w-full px-3 py-2.5 bg-white border border-[#E6E6E6] font-sans text-xs focus:outline-none focus:border-black cursor-pointer"
+                        >
+                          {ALGERIAN_WILAYAS.map((w) => (
                             <option key={w.code} value={w.code}>
-                              {w.code} - {w.nameEn} ({w.nameAr}) • Domicile: {customW.homeDeliveryFeeDzd} DZD | Bureau: {customW.deskDeliveryFeeDzd} DZD
+                              {w.code} — {isArabic ? w.nameAr : w.nameEn}
                             </option>
-                          );
-                        })}
-                      </select>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 2. Commune / البلدية */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] font-sans uppercase text-[#737373] font-semibold">
+                            {isArabic ? 'البلدية' : t.cityCommuneLabel} *
+                          </label>
+                          <span className="text-[10px] font-sans text-[#737373]">
+                            {availableCommunes.length} {isArabic ? 'بلدية' : 'communes'}
+                          </span>
+                        </div>
+                        <select
+                          id="checkout-commune-select"
+                          value={commune}
+                          onChange={(e) => {
+                            setCommune(e.target.value);
+                            if (formError) setFormError(null);
+                          }}
+                          className="w-full px-3 py-2.5 bg-white border border-[#E6E6E6] focus:outline-none focus:border-black font-sans text-xs cursor-pointer"
+                          required
+                        >
+                          <option value="">
+                            {isArabic 
+                              ? `-- اختر البلدية (${availableCommunes.length} متاحة) --` 
+                              : `-- Sélectionner la commune (${availableCommunes.length} disponibles) --`}
+                          </option>
+                          {availableCommunes.map((comm) => (
+                            <option key={comm.id} value={comm.nameAscii}>
+                              {isArabic ? comm.nameAr : `${comm.nameAscii} (${comm.nameAr})`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] mb-1 font-bold">
-                          {t.cityCommuneLabel} *
-                        </label>
-                        <input
-                          type="text"
-                          value={commune}
-                          onChange={(e) => setCommune(e.target.value)}
-                          placeholder="Ex: Dély Ibrahim, Chéraga, El Eulma..."
-                          className="w-full px-3 py-2 bg-white border border-[#DDD4C5] rounded focus:outline-none focus:border-black font-sans text-xs"
-                          required
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
 
                       <div>
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] mb-1 font-bold">
+                        <label className="block text-[11px] font-sans uppercase text-[#737373] mb-1 font-semibold">
                           {t.fullNameLabel} *
                         </label>
                         <input
@@ -444,13 +496,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             if (formError) setFormError(null);
                           }}
                           placeholder="Nom & Prénom"
-                          className="w-full px-3 py-2 bg-white border border-[#DDD4C5] rounded focus:outline-none focus:border-black font-sans text-xs"
+                          className="w-full px-3 py-2 bg-white border border-[#E6E6E6] focus:outline-none focus:border-black font-sans text-xs"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] mb-1 font-bold text-emerald-800">
+                        <label className="block text-[11px] font-sans uppercase text-[#737373] mb-1 font-semibold">
                           {t.phoneLabel} *
                         </label>
                         <input
@@ -461,13 +513,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             if (formError) setFormError(null);
                           }}
                           placeholder="05 / 06 / 07 XX XX XX"
-                          className="w-full px-3 py-2 bg-white border border-emerald-300 rounded focus:outline-none focus:border-emerald-600 font-mono text-xs font-bold"
+                          className="w-full px-3 py-2 bg-white border border-[#E6E6E6] focus:outline-none focus:border-black font-sans text-xs"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] mb-1">
+                        <label className="block text-[11px] font-sans uppercase text-[#737373] mb-1 font-semibold">
                           {t.emailOptionalLabel}
                         </label>
                         <input
@@ -475,12 +527,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="email@example.com"
-                          className="w-full px-3 py-2 bg-white border border-[#DDD4C5] rounded focus:outline-none focus:border-black font-sans text-xs"
+                          className="w-full px-3 py-2 bg-white border border-[#E6E6E6] focus:outline-none focus:border-black font-sans text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-mono uppercase text-[#736C61] mb-1">
+                        <label className="block text-[11px] font-sans uppercase text-[#737373] mb-1 font-semibold">
                           {t.addressLabel}
                         </label>
                         <input
@@ -488,22 +540,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
                           placeholder="Numéro de rue, bâtiment, quartier..."
-                          className="w-full px-3 py-2 bg-white border border-[#DDD4C5] rounded focus:outline-none focus:border-black font-sans text-xs"
+                          className="w-full px-3 py-2 bg-white border border-[#E6E6E6] focus:outline-none focus:border-black font-sans text-xs"
                         />
                       </div>
                     </div>
 
                     {/* Delivery Method Choice */}
                     <div className="space-y-2 pt-2">
-                      <label className="block text-[11px] font-mono uppercase text-[#736C61] font-bold">
+                      <label className="block text-[11px] font-sans uppercase text-[#737373] font-semibold">
                         {t.deliveryMethod}
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <label
-                          className={`p-3 border rounded flex items-start gap-3 cursor-pointer transition-colors ${
+                          className={`p-3.5 border flex items-start gap-3 cursor-pointer transition-colors ${
                             deliveryType === 'home'
-                              ? 'bg-[#F2EDE4] border-black text-[#1F1C19]'
-                              : 'bg-white border-[#DDD4C5] text-[#5C554B]'
+                              ? 'bg-[#111111] text-white border-[#111111]'
+                              : 'bg-white text-[#525252] border-[#E6E6E6] hover:border-[#111111]'
                           }`}
                         >
                           <input
@@ -511,32 +563,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             name="deliveryType"
                             checked={deliveryType === 'home'}
                             onChange={() => setDeliveryType('home')}
-                            className="mt-0.5"
+                            className="mt-0.5 accent-white"
                           />
                           <div>
-                            <span className="font-mono text-xs font-bold block">
+                            <span className="font-sans text-xs font-semibold block">
                               {t.homeDelivery}
                             </span>
-                            <span className="text-[11px] text-[#7A7266] block">
-                              {isFreeShipping ? (
-                                <span className="text-emerald-700 font-bold">
-                                  {t.freeShippingTag}
-                                </span>
-                              ) : (
-                                `${t.shippingLabel} : ${formatPrice(currentWilaya.homeDeliveryFeeDzd, currency, isArabic)}`
-                              )}
-                            </span>
-                            <span className="text-[10px] text-emerald-700 block">
+                            <span className={`text-[11px] block mt-0.5 ${deliveryType === 'home' ? 'text-white/80' : 'text-[#737373]'}`}>
                               Livraison jusqu’à votre porte ({carrierName})
                             </span>
                           </div>
                         </label>
 
                         <label
-                          className={`p-3 border rounded flex items-start gap-3 cursor-pointer transition-colors ${
+                          className={`p-3.5 border flex items-start gap-3 cursor-pointer transition-colors ${
                             deliveryType === 'desk'
-                              ? 'bg-[#F2EDE4] border-black text-[#1F1C19]'
-                              : 'bg-white border-[#DDD4C5] text-[#5C554B]'
+                              ? 'bg-[#111111] text-white border-[#111111]'
+                              : 'bg-white text-[#525252] border-[#E6E6E6] hover:border-[#111111]'
                           }`}
                         >
                           <input
@@ -544,26 +587,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             name="deliveryType"
                             checked={deliveryType === 'desk'}
                             onChange={() => setDeliveryType('desk')}
-                            className="mt-0.5"
+                            className="mt-0.5 accent-white"
                           />
                           <div>
-                            <span className="font-mono text-xs font-bold block">
-                              {t.deskDelivery}
+                            <span className="font-sans text-xs font-semibold block">
+                              {t.deskDelivery} (StopDesk)
                             </span>
-                            <span className="text-[11px] text-[#7A7266] block">
-                              {isFreeShipping ? (
-                                <span className="text-emerald-700 font-bold">
-                                  🎉 LIVRAISON GRATUITE (0 DZD)
-                                </span>
-                              ) : (
-                                `Frais : ${formatPrice(currentWilaya.deskDeliveryFeeDzd, currency, isArabic)}`
-                              )}
-                            </span>
-                            <span className="text-[10px] text-[#7A7266] block">
-                              Récupération agence {carrierName} StopDesk la plus proche
+                            <span className={`text-[11px] block mt-0.5 ${deliveryType === 'desk' ? 'text-white/80' : 'text-[#737373]'}`}>
+                              Récupération agence {carrierName} la plus proche
                             </span>
                           </div>
                         </label>
+                      </div>
+                    </div>
+
+                    {/* Dedicated Applicable Delivery Fee Area */}
+                    <div className="p-3.5 bg-[#FBFBFA] border border-[#E6E6E6] flex items-center justify-between text-xs font-sans">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-widest text-[#737373] block font-medium">
+                          {isArabic ? 'تكلفة التوصيل المطبقة' : 'Frais de livraison applicables'}
+                        </span>
+                        <span className="text-xs text-[#111111] font-medium">
+                          {currentWilaya.code} — {currentWilaya.nameEn} ({deliveryType === 'home' ? (isArabic ? 'توصيل إلى باب المنزل' : 'À Domicile') : (isArabic ? 'استلام من المكتب' : 'StopDesk Bureau')})
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-sm text-[#111111]">
+                          {isFreeShipping ? (
+                            <span className="text-emerald-700 font-bold">{isArabic ? 'مجاني' : 'Gratuit (0 DZD)'}</span>
+                          ) : (
+                            formatPrice(shippingCostDzd, currency, isArabic)
+                          )}
+                        </span>
                       </div>
                     </div>
 
@@ -571,19 +626,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!fullName.trim() || !phone.trim()) {
+                          if (!fullName.trim() || !phone.trim() || !commune.trim()) {
                             setFormError(
-                              isArabic ? 'يرجى إدخال الاسم ورقم الهاتف للمتابعة' :
-                              currentLanguage === 'es' ? 'Por favor ingrese su nombre y teléfono para continuar' :
-                              currentLanguage === 'en' ? 'Please enter your name and phone number to continue' :
-                              'Veuillez saisir votre nom et numéro de téléphone pour continuer'
+                              isArabic ? 'يرجى إدخال الاسم، رقم الهاتف، واختيار البلدية للمتابعة' :
+                              currentLanguage === 'es' ? 'Por favor ingrese su nombre, teléfono y municipio para continuar' :
+                              currentLanguage === 'en' ? 'Please enter your name, phone number, and select a commune to continue' :
+                              'Veuillez renseigner votre nom, téléphone et sélectionner votre commune pour continuer'
                             );
                             return;
                           }
                           setFormError(null);
                           setStep('payment');
                         }}
-                        className="px-6 py-2.5 bg-[#1F1D1A] text-white font-mono text-xs rounded hover:bg-[#3D3730] flex items-center gap-2 cursor-pointer shadow-md"
+                        className="px-6 py-3 bg-[#111111] hover:bg-black text-white font-sans text-xs uppercase tracking-widest font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                       >
                         <span>{isArabic ? 'المتابعة إلى خطوة الدفع' : currentLanguage === 'es' ? 'Continuar al Pago' : currentLanguage === 'en' ? 'Continue to Payment' : 'Continuer vers le paiement'}</span>
                         <span>→</span>
@@ -738,31 +793,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 )}
               </div>
 
-              {/* Right Column: Order Summary (5 cols) */}
-              <div className="lg:col-span-5 bg-white p-5 border border-[#E2DAD0] rounded space-y-4 self-start">
-                <h3 className="font-serif text-base font-semibold text-[#1F1C19] border-b border-[#E2DAD0] pb-2">
+              {/* Right Column: Order Summary (5 cols on tablet & desktop) */}
+              <div className="md:col-span-5 bg-[#FBFBFA] p-5 border border-[#E6E6E6] space-y-4 self-start">
+                <h3 className="font-serif text-base font-normal text-[#111111] border-b border-[#E6E6E6] pb-2 uppercase tracking-wider">
                   {t.orderSummary} ({items.length})
                 </h3>
 
                 <div className="max-h-60 overflow-y-auto space-y-3 pr-1 text-xs">
                   {items.map((item) => (
-                    <div key={item.cartItemId} className="flex gap-3 pb-3 border-b border-[#F0EAE1]">
+                    <div key={item.cartItemId} className="flex gap-3 pb-3 border-b border-[#E6E6E6]">
                       <img
                         src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=300&q=80'}
                         alt={item.product.name}
-                        className="w-14 h-16 object-cover rounded border border-[#DDD4C5]"
+                        className="w-14 h-16 object-cover border border-[#E6E6E6] bg-white"
                       />
                       <div className="flex-1 space-y-0.5">
-                        <h4 className="font-serif text-xs font-semibold text-[#1F1C19] line-clamp-1">
+                        <h4 className="font-serif text-xs font-normal text-[#111111] line-clamp-1">
                           {item.product.name}
                         </h4>
-                        <p className="text-[10px] font-mono text-[#7C756B]">
+                        <p className="text-[10px] font-sans text-[#737373]">
                           {isArabic ? 'المقاس:' : currentLanguage === 'es' ? 'Talla:' : currentLanguage === 'en' ? 'Size:' : 'Taille :'} {item.size} • {isArabic ? 'اللون:' : currentLanguage === 'es' ? 'Color:' : currentLanguage === 'en' ? 'Color:' : 'Couleur :'} {item.color.name}
                         </p>
-                        <p className="text-[10px] font-mono text-[#7C756B]">
+                        <p className="text-[10px] font-sans text-[#737373]">
                           {isArabic ? 'الكمية:' : currentLanguage === 'es' ? 'Cantidad:' : currentLanguage === 'en' ? 'Quantity:' : 'Quantité :'} {item.quantity}
                         </p>
-                        <p className="font-mono text-xs font-bold text-[#1F1C19] pt-0.5">
+                        <p className="font-sans text-xs font-semibold text-[#111111] pt-0.5">
                           {formatPrice(item.pricePerUnit * item.quantity, currency, isArabic)}
                         </p>
                       </div>
@@ -771,34 +826,34 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
 
                 {/* Pricing totals */}
-                <div className="space-y-2 pt-2 text-xs font-mono border-t border-[#E2DAD0]">
-                  <div className="flex justify-between text-[#5C554B]">
+                <div className="space-y-2 pt-2 text-xs font-sans border-t border-[#E6E6E6]">
+                  <div className="flex justify-between text-[#737373]">
                     <span>{t.cartSubtotal}</span>
                     <span>{formatPrice(subtotalDzd, currency, isArabic)}</span>
                   </div>
 
                   {discountAmountDzd > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <span>{isArabic ? 'الخصم الترويجي' : currentLanguage === 'es' ? 'Descuento B2B / Promo' : currentLanguage === 'en' ? 'Discount B2B / Promo' : 'Remise B2B / Promo'} ({appliedDiscountPct}%)</span>
+                    <div className="flex justify-between text-emerald-800">
+                      <span>{isArabic ? 'الخصم الترويجي' : currentLanguage === 'es' ? 'Descuento Promo' : currentLanguage === 'en' ? 'Promo Discount' : 'Remise Promo'} ({appliedDiscountPct}%)</span>
                       <span>-{formatPrice(discountAmountDzd, currency, isArabic)}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-[#5C554B]">
+                  <div className="flex justify-between text-[#737373]">
                     <span>{isArabic ? 'التوصيل' : currentLanguage === 'es' ? 'Envío' : currentLanguage === 'en' ? 'Shipping' : 'Livraison'} ({currentWilaya.code} - {isArabic ? currentWilaya.nameAr : currentWilaya.nameEn})</span>
                     <span>{formatPrice(shippingCostDzd, currency, isArabic)}</span>
                   </div>
 
-                  <div className="flex justify-between text-sm font-bold text-[#1F1C19] pt-2 border-t border-[#DDD4C5]">
+                  <div className="flex justify-between text-sm font-semibold text-[#111111] pt-2 border-t border-[#E6E6E6]">
                     <span>{t.netTotalToPay}</span>
                     <span>{formatPrice(totalDzd, currency, isArabic)}</span>
                   </div>
                 </div>
 
                 {/* Assurance Box */}
-                <div className="p-3 bg-[#FAF8F5] border border-[#DDD4C5] rounded space-y-1.5 text-[10px] text-[#6E6659]">
-                  <div className="flex items-center gap-1.5 font-bold text-[#1F1C19]">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#8C6D3B]" />
+                <div className="p-3 bg-white border border-[#E6E6E6] space-y-1.5 text-[10px] text-[#737373]">
+                  <div className="flex items-center gap-1.5 font-semibold text-[#111111]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#111111]" />
                     <span>{t.qualityPromiseTitle}</span>
                   </div>
                   <p>{t.qualityPromisePoint1}</p>

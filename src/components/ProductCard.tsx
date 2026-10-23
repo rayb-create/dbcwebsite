@@ -132,12 +132,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span className="inline-flex items-center px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest bg-[#111111] text-white">
             {product.fabricWeight || 'Heavyweight'}
           </span>
-          {product.isB2BAvailable && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono tracking-widest bg-white text-[#111111] border border-[#E6E6E6] font-bold">
-              <Building2 className="w-2.5 h-2.5" />
-              B2B & B2C
-            </span>
-          )}
         </div>
 
         {/* Wishlist Button */}
@@ -235,13 +229,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </span>
               )}
             </div>
-
-            {/* B2B Wholesale Indicator */}
-            {product.wholesalePriceDzd && (
-              <span className="text-[10px] font-mono text-[#111111] bg-[#F3F3F1] px-1.5 py-0.5 border border-[#E6E6E6]" title={t.minWholesaleQty}>
-                {t.wholesaleBadge}: {formatPrice(product.wholesalePriceDzd, currency, isArabic)}
-              </span>
-            )}
           </div>
 
           {/* Quick Add Sizes or Trigger */}

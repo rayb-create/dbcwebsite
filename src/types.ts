@@ -32,6 +32,7 @@ export interface CustomCategory {
 
 export interface Product {
   id: string;
+  slug?: string;
   name: string;
   nameAr?: string;
   nameEn?: string;
@@ -152,6 +153,8 @@ export interface Order {
     city: string;
     wilayaCode: string;
     wilayaName: string;
+    daira?: string;
+    commune?: string;
     notes?: string;
   };
   deliveryType: 'home' | 'desk';
@@ -226,6 +229,7 @@ export interface StoreSettings {
   defaultDeliveryFeeDzd: number;
   instagram: string;
   facebook: string;
+  tiktok?: string;
   mapsUrl?: string;
   heroImage?: string;
   heroImages?: string[];

@@ -29,6 +29,8 @@ import { B2BWholesaleModal } from './components/B2BWholesaleModal';
 import { FloatingWhatsAppWidget } from './components/FloatingWhatsAppWidget';
 import { ProductWhatsAppModal } from './components/ProductWhatsAppModal';
 import { OrderLookupModal } from './components/OrderLookupModal';
+import { WorkshopStoryModal } from './components/WorkshopStoryModal';
+import { FaqModal } from './components/FaqModal';
 import { Footer } from './components/Footer';
 
 import { 
@@ -139,6 +141,8 @@ export default function App() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isB2BOpen, setIsB2BOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [orderLookupQuery, setOrderLookupQuery] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>(() => {
@@ -203,18 +207,63 @@ export default function App() {
       } else {
         setCurrentPath(pathname);
       }
+
+      // Check for deep link to product: e.g. #product-p1, #product-123 or ?product=p1
+      let targetProductId = '';
+      if (hash.startsWith('#product-')) {
+        targetProductId = hash.replace('#product-', '').trim();
+      } else if (search.includes('product=')) {
+        const params = new URLSearchParams(search);
+        targetProductId = params.get('product') || '';
+      }
+
+      if (targetProductId) {
+        const pool = products.length > 0 ? products : PRODUCTS;
+        const found = pool.find((p) => p.id === targetProductId || p.slug === targetProductId);
+        if (found) {
+          setSelectedProduct(found);
+          setLastViewedProduct(found);
+        }
+      } else if (!hash.startsWith('#admin') && !hash.startsWith('#/admin') && !pathname.includes('/admin')) {
+        // If user navigated back from #product-xxx, close the modal cleanly
+        if (selectedProduct && !window.location.hash.startsWith('#product-')) {
+          setSelectedProduct(null);
+        }
+      }
     };
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
 
-    // Initial check in case loaded with #admin
+    // Initial check in case loaded with #admin or #product-...
     handleLocationChange();
 
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('hashchange', handleLocationChange);
     };
-  }, []);
+  }, [products]);
+
+  // Synchronize initial deep-link when products load from persistent storage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    const search = window.location.search;
+    let targetProductId = '';
+    if (hash.startsWith('#product-')) {
+      targetProductId = hash.replace('#product-', '').trim();
+    } else if (search.includes('product=')) {
+      const params = new URLSearchParams(search);
+      targetProductId = params.get('product') || '';
+    }
+    if (targetProductId) {
+      const pool = products.length > 0 ? products : PRODUCTS;
+      const found = pool.find((p) => p.id === targetProductId || p.slug === targetProductId);
+      if (found) {
+        setSelectedProduct(found);
+        setLastViewedProduct(found);
+      }
+    }
+  }, [products]);
 
   // Initialize and live-subscribe to Firestore database
   useEffect(() => {
@@ -262,10 +311,9 @@ export default function App() {
   };
 
   // Cart helpers
-  const [discountCode, setDiscountCode] = useState<string>('DBC2026');
+  const [discountCode, setDiscountCode] = useState<string>('');
   const [appliedDiscountPct, setAppliedDiscountPct] = useState<number>(0);
   const [orderNotes, setOrderNotes] = useState<string>('');
-  const [faqExpanded, setFaqExpanded] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const t = TRANSLATIONS[currentLanguage];
@@ -435,6 +483,21 @@ export default function App() {
     setSelectedProduct(product);
     if (product) {
       setLastViewedProduct(product);
+      try {
+        if (typeof window !== 'undefined' && window.location.hash !== `#product-${product.id}`) {
+          window.history.pushState(null, '', `#product-${product.id}`);
+        }
+      } catch {
+        // Safe in sandboxed iframes
+      }
+    } else {
+      try {
+        if (typeof window !== 'undefined' && window.location.hash.startsWith('#product-')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } catch {
+        // Safe in sandboxed iframes
+      }
     }
   };
 
@@ -738,6 +801,7 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenContact={() => setIsContactOpen(true)}
         onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenStory={() => setIsStoryOpen(true)}
         onOpenOrderLookup={() => handleOpenOrderLookup('')}
         activeCategory={activeCategory}
         onSelectCategory={handleCategorySelect}
@@ -818,19 +882,19 @@ export default function App() {
         />
 
         {/* Collection Section */}
-        <section id="collection-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <section id="collection-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header & Controls */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-[#E8E1D5]">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#E6E6E6]">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-sans tracking-widest text-[#737373] uppercase font-semibold">
+                <span className="text-[11px] font-sans tracking-widest text-[#737373] uppercase font-semibold">
                   {t.subTagline || t.tagline}
                 </span>
                 <span className="text-[11px] font-mono text-[#111111] bg-[#F3F3F1] border border-[#E6E6E6] px-2 py-0.5">
                   {filteredProducts.length} {isArabic ? 'منتج معروض' : currentLanguage === 'en' ? 'Items' : currentLanguage === 'es' ? 'Artículos' : 'Articles'}
                 </span>
               </div>
-              <h2 className="font-serif text-2xl sm:text-3xl font-medium text-[#1F1C19] mt-1 capitalize">
+              <h2 className="font-serif text-2xl sm:text-3xl font-medium text-[#111111] mt-1 capitalize tracking-tight">
                 {activeCategory === 'all'
                   ? t.winterCollectionHeader
                   : activeCategory === 'b2b'
@@ -842,12 +906,12 @@ export default function App() {
             {/* Quick Action & Filter Controls */}
             <div className="flex flex-wrap items-center gap-3">
               {/* Category Quick Filter */}
-              <div className="flex items-center gap-2 bg-[#F3F3F1] px-3 py-2 border border-[#E6E6E6] text-xs font-mono">
-                <span className="text-[#737373]">{t.filterAll} :</span>
+              <div className="flex items-center gap-2 bg-[#F8F8F7] px-3.5 py-2 border border-[#E6E6E6] text-xs font-sans">
+                <span className="text-[#737373] text-[11px] uppercase tracking-wider">{t.filterAll} :</span>
                 <select
                   value={activeCategory}
                   onChange={(e) => handleCategorySelect(e.target.value)}
-                  className="bg-transparent text-[#111111] font-bold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-[#111111] font-medium focus:outline-none cursor-pointer"
                 >
                   <option value="all">{t.navAll}</option>
                   <option value="hoodies">{t.navHoodies}</option>
@@ -866,12 +930,12 @@ export default function App() {
               </div>
 
               {/* Sort selector */}
-              <div className="flex items-center gap-2 bg-[#F3F3F1] px-3 py-2 border border-[#E6E6E6] text-xs font-mono">
-                <span className="text-[#737373]">{t.sortBy} :</span>
+              <div className="flex items-center gap-2 bg-[#F8F8F7] px-3.5 py-2 border border-[#E6E6E6] text-xs font-sans">
+                <span className="text-[#737373] text-[11px] uppercase tracking-wider">{t.sortBy} :</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-[#111111] font-bold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-[#111111] font-medium focus:outline-none cursor-pointer"
                 >
                   <option value="featured">{t.sortFeatured}</option>
                   <option value="price-asc">{t.sortPriceAsc}</option>
@@ -885,11 +949,11 @@ export default function App() {
           {/* Active Filter Chips */}
           {(activeCategory !== 'all' || searchQuery) && (
             <div className="flex flex-wrap items-center gap-2 pt-3">
-              <span className="text-xs font-mono text-[#8C8377]">{t.filterAll} :</span>
+              <span className="text-xs text-[#737373]">{t.filterAll} :</span>
               {activeCategory !== 'all' && (
                 <button
                   onClick={() => setActiveCategory('all')}
-                  className="px-2.5 py-0.5 bg-[#EAE2D5] text-[#2C2825] text-xs font-mono rounded-full flex items-center gap-1 hover:bg-[#DDD2C0] cursor-pointer"
+                  className="px-2.5 py-1 bg-[#F3F3F1] text-[#111111] border border-[#E6E6E6] text-xs font-sans flex items-center gap-1.5 hover:bg-[#E6E6E6] cursor-pointer"
                 >
                   <span>{activeCategory}</span>
                   <span className="font-bold">×</span>
@@ -898,7 +962,7 @@ export default function App() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="px-2.5 py-0.5 bg-[#EAE2D5] text-[#2C2825] text-xs font-mono rounded-full flex items-center gap-1 hover:bg-[#DDD2C0] cursor-pointer"
+                  className="px-2.5 py-1 bg-[#F3F3F1] text-[#111111] border border-[#E6E6E6] text-xs font-sans flex items-center gap-1.5 hover:bg-[#E6E6E6] cursor-pointer"
                 >
                   <span>"{searchQuery}"</span>
                   <span className="font-bold">×</span>
@@ -909,7 +973,7 @@ export default function App() {
                   setActiveCategory('all');
                   setSearchQuery('');
                 }}
-                className="text-xs font-sans text-[#111111] font-bold hover:underline cursor-pointer ml-1"
+                className="text-xs font-sans text-[#111111] font-semibold hover:underline cursor-pointer ml-1"
               >
                 {isArabic ? 'إعادة ضبط' : currentLanguage === 'en' ? 'Reset' : currentLanguage === 'es' ? 'Restablecer' : 'Réinitialiser'}
               </button>
@@ -918,15 +982,15 @@ export default function App() {
 
           {/* Product Grid or Onboarding Empty Catalog State */}
           {products.length === 0 ? (
-            <div className="py-16 px-6 max-w-xl mx-auto my-8 bg-white border border-[#E0D7C9] rounded-lg text-center shadow-xs space-y-4">
-              <div className="w-14 h-14 mx-auto rounded-full bg-[#F3F3F1] border border-[#E6E6E6] flex items-center justify-center text-[#111111]">
-                <Plus className="w-7 h-7" />
+            <div className="py-16 px-6 max-w-xl mx-auto my-8 bg-white border border-[#E6E6E6] text-center space-y-4">
+              <div className="w-12 h-12 mx-auto bg-[#F8F8F7] border border-[#E6E6E6] flex items-center justify-center text-[#111111]">
+                <Plus className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold text-[#1F1C19]">
+                <h3 className="font-serif text-2xl font-medium text-[#111111]">
                   {isArabic ? 'كتالوج ورشتك جاهز لاستقبال منتجاتك' : currentLanguage === 'en' ? 'Your catalog is ready for your garments' : currentLanguage === 'es' ? 'Su catálogo está listo para sus confecciones' : 'Votre catalogue est prêt pour vos confections'}
                 </h3>
-                <p className="text-xs text-[#7A7367] max-w-md mx-auto leading-relaxed">
+                <p className="text-xs text-[#737373] max-w-md mx-auto leading-relaxed">
                   {isAdmin
                     ? (isArabic
                       ? 'تم تفريغ المقالات السابقة بنجاح. أضف الآن مقالاتك وملابسك الخاصة مع صورك، الأسعار بالدينار الجزائري، المقاسات، والألوان.'
@@ -947,7 +1011,7 @@ export default function App() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => setIsContactOpen(true)}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[#1F1D1A] text-white text-xs font-mono font-bold rounded hover:bg-[#3D3730] flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full sm:w-auto px-6 py-3 bg-[#111111] text-white text-xs font-sans uppercase tracking-wider font-semibold hover:bg-black flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4 text-white" />
                   <span>{isArabic ? 'تواصل مع الورشة' : currentLanguage === 'en' ? 'Contact the Workshop' : currentLanguage === 'es' ? 'Contactar el Taller' : 'Contacter l’atelier'}</span>
@@ -955,7 +1019,7 @@ export default function App() {
                 {isAdmin && (
                   <button
                     onClick={handleResetDefaultProducts}
-                    className="w-full sm:w-auto px-4 py-2.5 bg-[#F3F3F1] hover:bg-[#E6E6E6] text-[#111111] border border-[#E6E6E6] text-xs font-sans font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-3 bg-[#F8F8F7] hover:bg-[#E6E6E6] text-[#111111] border border-[#E6E6E6] text-xs font-sans font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                     title="Charger des modèles"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -966,11 +1030,11 @@ export default function App() {
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="py-20 text-center space-y-3">
-              <Layers className="w-10 h-10 text-[#C9BFB0] mx-auto" />
-              <h3 className="font-serif text-xl font-medium text-[#1F1C19]">
+              <Layers className="w-10 h-10 text-[#A3A3A3] mx-auto" />
+              <h3 className="font-serif text-xl font-medium text-[#111111]">
                 {isArabic ? 'لا توجد منتجات مطابقة لهذا الفلتر' : currentLanguage === 'en' ? 'No products match these filters' : currentLanguage === 'es' ? 'Ningún producto coincide con estos criterios' : 'Aucun produit ne correspond à ces critères'}
               </h3>
-              <p className="text-xs text-[#7A7367] max-w-sm mx-auto">
+              <p className="text-xs text-[#737373] max-w-sm mx-auto">
                 {isArabic
                   ? 'يرجى تجربة فلتر آخر أو إعادة ضبط البحث للاطلاع على كافة معروضات الورشة.'
                   : currentLanguage === 'en'
@@ -985,14 +1049,14 @@ export default function App() {
                     setActiveCategory('all');
                     setSearchQuery('');
                   }}
-                  className="px-4 py-2 bg-[#1F1D1A] text-white text-xs font-mono rounded cursor-pointer"
+                  className="px-5 py-2.5 bg-[#111111] text-white text-xs font-sans uppercase tracking-wider cursor-pointer hover:bg-black"
                 >
                   {isArabic ? 'عرض جميع المنتجات' : currentLanguage === 'en' ? 'View All Collection' : currentLanguage === 'es' ? 'Ver Toda la Colección' : 'Voir toute la collection'}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -1009,229 +1073,6 @@ export default function App() {
             </div>
           )}
         </section>
-
-        {/* B2B Wholesale Callout Section for Stores & Retailers */}
-        <section className="bg-[#111111] text-[#FFFFFF] py-16 sm:py-24 border-y border-black">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-8 space-y-3.5">
-                <div className="flex items-center gap-2 text-white font-mono text-xs uppercase tracking-widest">
-                  <Building2 className="w-4 h-4" />
-                  <span>{t.b2bSectionTitle}</span>
-                </div>
-                <h2 className="font-serif text-2xl sm:text-4xl font-medium tracking-tight">
-                  {isArabic
-                    ? 'أصحاب المحلات وموزعي الملابس في الجزائر؟'
-                    : currentLanguage === 'en'
-                    ? 'Retail Store Owner or Clothing Distributor in Algeria?'
-                    : currentLanguage === 'es'
-                    ? '¿Tiene una tienda de ropa en Argelia?'
-                    : 'Vous possédez une boutique de vêtements en Algérie ?'} <br />
-                  <span className="italic text-white">
-                    {isArabic
-                      ? 'وفر لزبائنك تشكيلة ملابس ذات جودة تصنيع عالية وأسعار جملة منافسة.'
-                      : currentLanguage === 'en'
-                      ? 'Enjoy factory wholesale prices starting from 6 pieces per style.'
-                      : currentLanguage === 'es'
-                      ? 'Aproveche nuestras tarifas mayoristas de fábrica desde 6 piezas.'
-                      : 'Profitez de nos tarifs de confection usine B2B dès 6 pièces.'}
-                  </span>
-                </h2>
-                <p className="text-xs sm:text-sm text-[#BDB5AA] max-w-2xl leading-relaxed">
-                  {t.b2bSectionDesc || t.b2bSectionSubtitle}
-                </p>
-              </div>
-
-              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
-                <button
-                  id="open-b2b-modal-cta"
-                  onClick={() => setIsB2BOpen(true)}
-                  className="w-full px-6 py-4 bg-white hover:bg-[#F3F3F1] text-[#111111] text-xs font-sans uppercase tracking-widest font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>{isArabic ? 'طلب تسعيرة الجملة والكتالوج (B2B)' : currentLanguage === 'en' ? 'Request B2B Wholesale Pricing' : currentLanguage === 'es' ? 'Solicitar Precios B2B' : 'Demander Tarifs Gros & B2B'}</span>
-                </button>
-
-                <button
-                  id="open-contact-modal-cta"
-                  onClick={() => setIsContactOpen(true)}
-                  className="w-full px-6 py-3.5 border border-white/20 text-white hover:bg-white/10 text-xs font-sans uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Phone className="w-4 h-4 text-white" />
-                  <span>{t.navContact} ({storeSettings.phone})</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 69 Wilayas Coverage & Delivery Guarantees */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-b border-[#E6E6E6]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-[#F8F8F7] border border-[#E6E6E6] space-y-3">
-              <div className="w-10 h-10 bg-white border border-[#E6E6E6] flex items-center justify-center text-[#111111]">
-                <Truck className="w-5 h-5" />
-              </div>
-              <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-                {t.delivery58Wilayas}
-              </h3>
-              <p className="text-xs text-[#6E6659] leading-relaxed font-sans">
-                {isArabic
-                  ? 'تغطية شاملة لكافة الولايات الجزائرية الـ 69 من الشمال إلى الجنوب، مع خياري التوصيل للمنزل أو الاستلام من المكتب (StopDesk).'
-                  : currentLanguage === 'en'
-                  ? 'Fast shipping across all 69 Wilayas of Algeria with home delivery or StopDesk pickup options.'
-                  : currentLanguage === 'es'
-                  ? 'Envíos rápidos a las 69 wilayas de Argelia con entrega a domicilio o punto StopDesk.'
-                  : 'Expédition rapide vers toutes les 69 wilayas d’Algérie avec option livraison à domicile ou retrait en bureau StopDesk.'}
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleOpenOrderLookup('')}
-                  className="text-xs font-sans font-bold text-[#111111] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <Truck className="w-3.5 h-3.5" />
-                  <span>{isArabic ? 'تتبع طلبيتك أو اكتشف جدول التعريفات ←' : currentLanguage === 'en' ? 'Track order & view shipping rates →' : currentLanguage === 'es' ? 'Seguir pedido y ver tarifas →' : 'Suivre une commande & voir les tarifs →'}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-5 bg-white border border-[#E6E6E6] rounded space-y-2">
-              <div className="w-10 h-10 rounded bg-white border border-[#E6E6E6] flex items-center justify-center text-[#111111]">
-                <Layers className="w-5 h-5" />
-              </div>
-              <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-                {isArabic ? 'بيع بالتجزئة وبالجملة' : currentLanguage === 'en' ? 'Retail (B2C) & Wholesale (B2B)' : currentLanguage === 'es' ? 'Venta al Detalle (B2C) y por Mayor (B2B)' : 'Vente B2C (Détail) & B2B (Gros)'}
-              </h3>
-              <p className="text-xs text-[#6E6659] leading-relaxed font-sans">
-                {isArabic
-                  ? 'اشتري قطعة واحدة لنفسك أو اطلب كميات تجارية لمتاجرك بأسعار جملة مخفضة مع حرية اختيار المقاسات والألوان.'
-                  : currentLanguage === 'en'
-                  ? 'Order single pieces for yourself or supply your boutiques with preferential factory reseller rates.'
-                  : currentLanguage === 'es'
-                  ? 'Compre prendas individuales o abastezca sus tiendas con precios mayoristas preferenciales.'
-                  : 'Commandez pour vous-même à l’unité ou approvisionnez vos magasins avec nos tarifs revendeurs préférentiels.'}
-              </p>
-            </div>
-
-            <div className="p-5 bg-white border border-[#E6E6E6] rounded space-y-2">
-              <div className="w-10 h-10 rounded bg-white border border-[#E6E6E6] flex items-center justify-center text-[#111111]">
-                <MessageCircle className="w-5 h-5 text-[#25D366]" />
-              </div>
-              <h3 className="font-serif text-base font-bold text-[#1F1C19]">
-                {isArabic ? 'طلب سريع ومباشر عبر واتساب' : currentLanguage === 'en' ? 'Direct Order via WhatsApp' : currentLanguage === 'es' ? 'Pedido Directo por WhatsApp' : 'Commande Directe via WhatsApp'}
-              </h3>
-              <p className="text-xs text-[#6E6659] leading-relaxed font-sans">
-                {isArabic
-                  ? 'تواصل معنا في أي وقت لتأكيد طلبيتك، اختيار الألوان، أو معرفة حالة الإرسالية مع فريق خدمة العملاء.'
-                  : currentLanguage === 'en'
-                  ? 'Responsive customer care on WhatsApp at ' + storeSettings.phone + ' to advise you and confirm your orders.'
-                  : currentLanguage === 'es'
-                  ? 'Atención al cliente rápida por WhatsApp al ' + storeSettings.phone + ' para asesorarle en sus compras.'
-                  : 'Un service client réactif disponible sur WhatsApp au ' + storeSettings.phone + ' pour vous conseiller et confirmer vos expéditions.'}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Client Reviews */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-[#E6E6E6]">
-          <div className="text-center max-w-2xl mx-auto space-y-2 mb-12">
-            <span className="text-xs font-mono uppercase tracking-widest text-[#737373]">
-              {isArabic ? 'آراء وتجارب الزبائن في الجزائر' : currentLanguage === 'en' ? 'Customer Reviews & Feedback in Algeria' : currentLanguage === 'es' ? 'Opiniones y Reseñas de Clientes en Argelia' : 'Avis & Témoignages Clients en Algérie'}
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-medium text-[#1F1C19]">
-              {isArabic ? 'جودة تصنيع موثوقة عبر كافة الولايات' : currentLanguage === 'en' ? 'Trusted Craftsmanship Across All Wilayas' : currentLanguage === 'es' ? 'Calidad de Confección Confiable en Toda Argelia' : 'Recommandé par les particuliers et boutiques'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {REVIEWS.map((rev) => (
-              <div
-                key={rev.id}
-                className="p-5 bg-white border border-[#E5DFD4] rounded flex flex-col justify-between shadow-xs hover:border-[#2C2825] transition-colors"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex text-amber-500">
-                      {Array.from({ length: rev.rating }).map((_, idx) => (
-                        <Star key={idx} className="w-3.5 h-3.5 fill-amber-500" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-mono text-[#8C8377]">
-                      {currentLanguage === 'ar' ? (rev.dateAr || rev.date) : currentLanguage === 'en' ? (rev.dateEn || rev.date) : currentLanguage === 'es' ? (rev.dateEs || rev.date) : rev.date}
-                    </span>
-                  </div>
-
-                  <h4 className="font-serif text-sm font-semibold text-[#1F1C19] leading-snug">
-                    "{currentLanguage === 'ar' ? (rev.titleAr || rev.title) : currentLanguage === 'en' ? (rev.titleEn || rev.title) : currentLanguage === 'es' ? (rev.titleEs || rev.title) : rev.title}"
-                  </h4>
-
-                  <p className="text-xs text-[#5C554B] leading-relaxed mt-2 font-sans">
-                    {currentLanguage === 'ar' ? (rev.commentAr || rev.comment) : currentLanguage === 'en' ? (rev.commentEn || rev.comment) : currentLanguage === 'es' ? (rev.commentEs || rev.comment) : rev.comment}
-                  </p>
-                </div>
-
-                <div className="pt-3 mt-3 border-t border-[#F2ECE1]">
-                  <div className="font-semibold text-xs text-[#1F1C19]">
-                    {rev.author}
-                  </div>
-                  <div className="text-[11px] font-mono text-[#8C8377]">
-                    📍 {currentLanguage === 'ar' ? (rev.locationAr || rev.location) : rev.location}
-                  </div>
-                  <div className="text-[10px] font-mono text-[#737373] mt-0.5">
-                    {currentLanguage === 'ar' ? (rev.garmentSpecAr || rev.garmentSpec) : currentLanguage === 'en' ? (rev.garmentSpecEn || rev.garmentSpec) : currentLanguage === 'es' ? (rev.garmentSpecEs || rev.garmentSpec) : rev.garmentSpec}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Workshop FAQ Accordion */}
-        <section className="bg-[#F4EFE7] border-t border-[#E3DBD0] py-12">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
-            <div className="text-center space-y-1.5 mb-8">
-              <span className="text-xs font-sans uppercase tracking-widest text-[#737373] font-semibold">
-                {isArabic ? 'الأسئلة الشائعة' : currentLanguage === 'en' ? 'Frequently Asked Questions' : currentLanguage === 'es' ? 'Preguntas Frecuentes' : 'Questions Fréquentes'}
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-medium text-[#1F1C19]">
-                {isArabic ? 'كل ما تود معرفته عن الشحن والطلبيات' : currentLanguage === 'en' ? 'Delivery, Sizes & Wholesale Pricing' : currentLanguage === 'es' ? 'Envíos, Tallas y Tarifas Mayoristas' : 'Livraison, Tailles & Tarifs Gros'}
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              {WORKSHOP_FAQS.map((faq, idx) => {
-                const isOpen = faqExpanded === idx;
-                return (
-                  <div
-                    key={idx}
-                    className="border border-[#DDD4C5] rounded bg-white overflow-hidden"
-                  >
-                    <button
-                      onClick={() => setFaqExpanded(isOpen ? null : idx)}
-                      className="w-full px-5 py-4 text-left rtl:text-right flex items-center justify-between text-xs sm:text-sm font-medium text-[#1F1C19] hover:bg-[#FFFFFF] transition-colors cursor-pointer"
-                    >
-                      <span className="font-serif text-sm sm:text-base font-semibold">
-                        {currentLanguage === 'ar' ? (faq.questionAr || faq.question) : currentLanguage === 'en' ? (faq.questionEn || faq.question) : currentLanguage === 'es' ? (faq.questionEs || faq.question) : faq.question}
-                      </span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-[#7C756B] transition-transform duration-200 ${
-                          isOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="px-5 pb-4 text-xs text-[#595246] leading-relaxed border-t border-[#F2ECE1] pt-3 animate-in fade-in-50 duration-150 font-sans">
-                        {currentLanguage === 'ar' ? (faq.answerAr || faq.answer) : currentLanguage === 'en' ? (faq.answerEn || faq.answer) : currentLanguage === 'es' ? (faq.answerEs || faq.answer) : faq.answer}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Workshop Footer */}
@@ -1239,6 +1080,8 @@ export default function App() {
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
         onOpenContact={() => setIsContactOpen(true)}
         onOpenB2B={() => setIsB2BOpen(true)}
+        onOpenStory={() => setIsStoryOpen(true)}
+        onOpenFaq={() => setIsFaqOpen(true)}
         onOpenOrderLookup={() => handleOpenOrderLookup('')}
         onSelectCategory={handleCategorySelect}
         storeSettings={storeSettings}
@@ -1252,7 +1095,7 @@ export default function App() {
           product={selectedProduct}
           currency={currency}
           isOpen={true}
-          onClose={() => setSelectedProduct(null)}
+          onClose={() => handleSelectProduct(null)}
           onAddToCart={handleAddToCart}
           onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
           currentLanguage={currentLanguage}
@@ -1260,7 +1103,7 @@ export default function App() {
           isAdmin={isAdmin}
           onDeleteProduct={isAdmin ? handleDeleteProduct : undefined}
           onEditProduct={isAdmin ? () => {
-            setSelectedProduct(null);
+            handleSelectProduct(null);
             window.location.hash = 'admin';
             setCurrentPath('/admin');
           } : undefined}
@@ -1371,6 +1214,19 @@ export default function App() {
         currentLanguage={currentLanguage}
         storeSettings={storeSettings}
         initialQuery={orderLookupQuery}
+      />
+
+      {/* 12. RENASC Atelier Manifesto & Story Modal */}
+      <WorkshopStoryModal
+        isOpen={isStoryOpen}
+        onClose={() => setIsStoryOpen(false)}
+      />
+
+      {/* 13. Dedicated FAQ Modal (Triggered via Footer) */}
+      <FaqModal
+        isOpen={isFaqOpen}
+        onClose={() => setIsFaqOpen(false)}
+        currentLanguage={currentLanguage}
       />
     </div>
   );

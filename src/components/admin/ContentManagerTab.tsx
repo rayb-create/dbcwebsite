@@ -621,7 +621,7 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
           <span>{t.contentSocialLinks}</span>
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-mono text-[#7C756B] uppercase mb-1">
               {t.contentInstagramLabel}
@@ -642,6 +642,19 @@ export const ContentManagerTab: React.FC<ContentManagerTabProps> = ({
               type="url"
               value={formData.facebook}
               onChange={(e) => handleChange('facebook', e.target.value)}
+              className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-[#7C756B] uppercase mb-1">
+              TikTok URL
+            </label>
+            <input
+              type="url"
+              placeholder="https://tiktok.com/@..."
+              value={formData.tiktok || ''}
+              onChange={(e) => handleChange('tiktok', e.target.value)}
               className="w-full px-3 py-2 border border-[#DDD4C5] rounded-lg text-xs font-mono focus:outline-none focus:border-black"
             />
           </div>
